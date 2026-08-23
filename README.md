@@ -22,28 +22,33 @@ Schrift Founders Grotesk — im Web durch die freie Schrift „Jost“ angenähe
 ## Projektstruktur
 
 ```
-public/                  die eigentliche Website — unverändert eingecheckt, das ist es, was GitLab Pages ausliefert
+docs/                     die eigentliche Website — unverändert eingecheckt, das ist es, was GitHub Pages ausliefert
   index.html
+  .nojekyll                deaktiviert GitHubs Jekyll-Verarbeitung (reine statische Dateien)
   css/style.css
-  js/main.js              Orchestrierung: Stationen, Zeitleiste, Vergleichsdiagramm
-  js/spaghetti-plot.js     das interaktive Hauptdiagramm (vendored D3, kein Framework)
-  js/vendor/d3.v7.min.js   lokal eingebunden, damit das Exponat auch ohne Internet läuft
-  fonts/jost-latin.woff2   Schrift Jost (variabel, 100–900), ebenfalls lokal eingebunden
-  data/processed/*.json    vorberechnete Stationsdaten, die die Seite zur Laufzeit lädt
+  js/main.js               Orchestrierung: Stationen, Zeitleiste, Vergleichsdiagramm
+  js/spaghetti-plot.js      das interaktive Hauptdiagramm (vendored D3, kein Framework)
+  js/vendor/d3.v7.min.js    lokal eingebunden, damit das Exponat auch ohne Internet läuft
+  fonts/jost-latin.woff2    Schrift Jost (variabel, 100–900), ebenfalls lokal eingebunden
+  data/processed/*.json     vorberechnete Stationsdaten, die die Seite zur Laufzeit lädt
 
-data/raw/                 rohe DWD-Stationsdateien, für Nachvollziehbarkeit (werden nicht an den Browser ausgeliefert)
+data/raw/                 rohe DWD-Stationsdateien, für Nachvollziehbarkeit (liegen außerhalb von docs/, werden also nicht mit ausgeliefert)
 scripts/
   fetch_data.py            lädt Rohdaten + Stationsmetadaten für die 2 Stationen herunter
-  build_data.py            erzeugt daraus public/data/processed/*.json
+  build_data.py            erzeugt daraus docs/data/processed/*.json
 ```
 
-Es gibt keinen clientseitigen Build-Schritt — `public/` ist reines
-HTML/CSS/JS und wird unverändert auf GitLab Pages veröffentlicht.
+Es gibt keinen clientseitigen Build-Schritt — `docs/` ist reines HTML/CSS/JS
+und wird unverändert auf GitHub Pages veröffentlicht. `docs/` ist bewusst
+gewählt (statt z. B. `public/`), weil GitHub Pages im Modus „Deploy from a
+branch“ nur `/` (Repo-Root) oder `/docs` als Quellordner erlaubt — alles
+außerhalb von `docs/` (Rohdaten, Build-Skripte) wird dadurch automatisch
+nicht mit veröffentlicht.
 
 ## Lokale Vorschau
 
 ```bash
-cd public
+cd docs
 python3 -m http.server 8000
 # http://localhost:8000 öffnen
 ```
@@ -55,15 +60,17 @@ Nur nötig, um ein neueres Jahr DWD-Daten nachzuziehen. Benötigt
 
 ```bash
 uv run scripts/fetch_data.py   # lädt rohe Stationsdateien nach data/raw/
-uv run scripts/build_data.py   # baut public/data/processed/*.json neu
+uv run scripts/build_data.py   # baut docs/data/processed/*.json neu
 ```
 
 Anschließend die geänderten Dateien unter `data/raw/` und
-`public/data/processed/` committen — die Daten sind Teil des Repos und werden
+`docs/data/processed/` committen — die Daten sind Teil des Repos und werden
 nicht live von der Seite nachgeladen.
 
-## Deployment auf GitLab Pages
+## Deployment auf GitHub Pages
 
-Push auf den Default-Branch; `.gitlab-ci.yml` definiert einen `pages`-Job,
-der `public/` unverändert veröffentlicht (kein Build-Schritt nötig). GitLab
-Pages übernimmt das automatisch, sobald CI/CD für das Projekt aktiviert ist.
+Einmalig in den Repo-Einstellungen unter **Settings → Pages → Build and
+deployment → Source** auf **„Deploy from a branch“** stellen und als Branch
+`main` mit Ordner `/docs` wählen. Ab dann veröffentlicht GitHub Pages bei
+jedem Push auf `main` automatisch den aktuellen Stand von `docs/` — ohne
+Build-Schritt, ohne GitHub Actions.
