@@ -1,13 +1,15 @@
 // Interactive climate chart: one thin line per year of daily mean temperature,
 // coloured by that year's own annual mean (kälter -> wärmer), plus two dashed
-// 30-year climate-mean reference lines. Built with vendored D3 v7, no build step.
+// 30-year climate-mean reference lines. Which year is highlighted is driven
+// entirely by the timeline (slider/play) in main.js — moving the pointer over
+// the chart only shows that calendar day's historic min/mean/max, it never
+// changes the highlighted year. Built with vendored D3 v7, no build step.
 (function () {
   "use strict";
 
   const MARGIN = { top: 18, right: 24, bottom: 30, left: 44 };
   const MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
   const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-  const HOVER_PIXEL_THRESHOLD = 26;
   const TOOLTIP_IDLE_MS = 5000;
 
   const COLD_COLOR = "#2b3990";
@@ -17,14 +19,11 @@
   function createSpaghettiPlot(opts) {
     const svg = d3.select(opts.svgEl);
     const tooltipEl = opts.tooltipEl;
-    const strandLabelEl = opts.strandLabelEl;
-    const onYearChange = opts.onYearChange || function () {};
 
     let data = null;
     let width = 0;
     let height = 0;
     let xScale, yScale, colorScale;
-    let lockedYear = null;
     let idleTimer = null;
 
     const gAxes = svg.append("g").attr("class", "axes-layer");
@@ -52,7 +51,6 @@
 
     function render(stationData) {
       data = stationData;
-      lockedYear = null;
       measure();
 
       const innerW = width - MARGIN.left - MARGIN.right;
@@ -95,7 +93,7 @@
       wireOverlay();
 
       if (data.years.length) {
-        setLockedYear(data.years[data.years.length - 1], { silent: true });
+        setYear(data.years[data.years.length - 1]);
       }
     }
 
@@ -151,21 +149,6 @@
           .attr("class", `period-line ${key === "period_a" ? "period-a" : "period-b"}`)
           .attr("d", line);
       }
-    }
-
-    function nearestYearAt(doy, my) {
-      let best = null;
-      let bestDist = Infinity;
-      for (const year of data.years) {
-        const v = data.strands[year][doy - 1];
-        if (v === null) continue;
-        const d = Math.abs(yScale(v) - my);
-        if (d < bestDist) {
-          bestDist = d;
-          best = year;
-        }
-      }
-      return bestDist <= HOVER_PIXEL_THRESHOLD ? best : null;
     }
 
     function doyToDateLabel(doy) {
@@ -239,77 +222,38 @@
       gAnomaly.append("path").datum(rows).attr("class", "anomaly-area cooler").attr("d", areaCooler);
     }
 
-    function applyHighlight(year) {
+    function setYear(year) {
       gStrands.selectAll("path.year-strand")
         .classed("highlighted", (d) => d.year === year)
         .classed("dimmed", (d) => year !== null && d.year !== year);
-
       drawAnomaly(year);
-
-      if (year) {
-        const pts = strandPoints(year).filter((p) => p[1] !== null);
-        const last = pts[pts.length - 1];
-        const amt = data.annual_mean_temp[year];
-        const label = amt !== undefined ? `${year} · ${amt.toFixed(1)}°C im Schnitt` : `${year} (unvollständiges Jahr)`;
-        strandLabelEl.textContent = label;
-        const wrapBox = opts.svgEl.parentElement.getBoundingClientRect();
-        const svgBox = opts.svgEl.getBoundingClientRect();
-        const px = MARGIN.left + xScale(last[0]);
-        const py = MARGIN.top + yScale(last[1]);
-        const scaleX = svgBox.width / width;
-        const scaleY = svgBox.height / height;
-        strandLabelEl.style.left = px * scaleX + (svgBox.left - wrapBox.left) + "px";
-        strandLabelEl.style.top = py * scaleY + (svgBox.top - wrapBox.top) + "px";
-        strandLabelEl.hidden = false;
-      } else {
-        strandLabelEl.hidden = true;
-      }
-    }
-
-    function setLockedYear(year, options) {
-      lockedYear = year;
-      applyHighlight(year);
-      if (!(options && options.silent)) onYearChange(year);
     }
 
     function wireOverlay() {
       overlay.on("pointermove", (event) => {
         resetIdleTimer();
-        const [mx, my] = d3.pointer(event, gStrands.node());
+        const [mx] = d3.pointer(event, gStrands.node());
         const doy = Math.min(365, Math.max(1, Math.round(xScale.invert(mx))));
         drawGuide(doy);
         showDayTooltip(doy, event.clientX, event.clientY);
-
-        if (event.pointerType !== "touch") {
-          const hovered = nearestYearAt(doy, my);
-          applyHighlight(hovered !== null ? hovered : lockedYear);
-        }
       });
 
       overlay.on("pointerdown", (event) => {
         resetIdleTimer();
-        const [mx, my] = d3.pointer(event, gStrands.node());
+        const [mx] = d3.pointer(event, gStrands.node());
         const doy = Math.min(365, Math.max(1, Math.round(xScale.invert(mx))));
-        const hovered = nearestYearAt(doy, my);
-        setLockedYear(hovered, { silent: false });
         drawGuide(doy);
         showDayTooltip(doy, event.clientX, event.clientY);
       });
 
-      overlay.on("pointerleave", () => {
-        applyHighlight(lockedYear);
-      });
+      overlay.on("pointerleave", hideTooltip);
     }
 
     window.addEventListener("resize", debounce(() => {
       if (data) render(data);
     }, 200));
 
-    return {
-      render,
-      setYear: (year) => setLockedYear(year, { silent: true }),
-      getSelectedYear: () => lockedYear,
-    };
+    return { render, setYear };
   }
 
   function debounce(fn, ms) {

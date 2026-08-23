@@ -13,7 +13,6 @@
     switcher: document.getElementById("station-switcher"),
     chart: document.getElementById("chart"),
     tooltip: document.getElementById("tooltip"),
-    strandLabel: document.getElementById("strand-label"),
     legendGradient: document.getElementById("legend-gradient"),
     legendPeriods: document.getElementById("legend-periods"),
     deviationValue: document.getElementById("deviation-value"),
@@ -70,8 +69,6 @@
     state.plot = window.SpaghettiPlot.create({
       svgEl: el.chart,
       tooltipEl: el.tooltip,
-      strandLabelEl: el.strandLabel,
-      onYearChange: onPlotYearChange,
       onColorScaleReady: renderLegend,
     });
 
@@ -170,17 +167,6 @@
     updateReadout(years[years.length - 1]);
   }
 
-  function onPlotYearChange(year) {
-    if (!year) {
-      el.readout.textContent = " ";
-      setDeviation(null);
-      return;
-    }
-    const idx = state.currentData.years.indexOf(year);
-    if (idx >= 0) el.slider.value = idx;
-    updateReadout(year);
-  }
-
   function setDeviation(diff) {
     if (diff === null || diff === undefined) {
       el.deviationValue.textContent = "–";
@@ -204,14 +190,16 @@
     const baseline = data.period_a.mean_annual_temperature;
 
     if (amt === undefined) {
-      el.readout.textContent = `${year} — unvollständiges Jahr`;
+      el.readout.textContent = `Jahr ${year}: unvollständige Messreihe`;
       setDeviation(null);
       return;
     }
     const diff = amt - baseline;
     setDeviation(diff);
     const sign = diff >= 0 ? "+" : "−";
-    el.readout.textContent = `${year} — ${amt.toFixed(1)} °C, ${sign}${Math.abs(diff).toFixed(1)} °C ggü. ${data.period_a.start}–${data.period_a.end}`;
+    el.readout.textContent =
+      `Jahr ${year} — Mitteltemperatur: ${amt.toFixed(1)} °C — ` +
+      `Abweichung ggü. Referenzperiode ${data.period_a.start}–${data.period_a.end}: ${sign}${Math.abs(diff).toFixed(1)} °C`;
   }
 
   function startPlaying() {
