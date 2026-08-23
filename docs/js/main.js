@@ -34,6 +34,7 @@
     methodologyDay: document.getElementById("methodology-day"),
     methodologyYear: document.getElementById("methodology-year"),
     methodologyPeriod: document.getElementById("methodology-period"),
+    methodologyContext: document.getElementById("methodology-context"),
   };
 
   const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
@@ -62,7 +63,7 @@
         `<span class="tt-cold">kälteste: ${stat.min}°C (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">wärmste: ${stat.max}°C (${stat.maxYear})</span>`,
       formatReadout: (year, amt, diff, periodA) =>
-        `Jahr ${year} — Mitteltemperatur: ${amt.toFixed(1)} °C — ` +
+        `Jahr ${year} — Mitteltemperatur: ${amt.toFixed(1)} °C<br>` +
         `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} °C`,
       formatCompareHeadline: (pa, pb, diff) =>
         `${pb.start}–${pb.end} war im Jahresmittel <strong>${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} °C ${diff >= 0 ? "wärmer" : "kühler"}</strong> ` +
@@ -71,6 +72,8 @@
         day: "<strong>Tagesmitteltemperatur:</strong> An jeder Wetterstation wird die Temperatur mehrmals täglich gemessen. Der Mittelwert dieser Messungen ergibt einen einzigen Wert pro Tag — die Tagesmitteltemperatur.",
         year: "<strong>Jahresmitteltemperatur:</strong> Der Durchschnitt aller rund 365 Tagesmittelwerte eines Kalenderjahres ergibt die Jahresmitteltemperatur. Jede dünne Linie im Diagramm oben zeigt den Tagesverlauf genau eines Jahres.",
         period: "<strong>Klimareferenzperiode:</strong> Der Durchschnitt der Jahresmitteltemperaturen über 30 Jahre ergibt das Klimamittel einer Referenzperiode. Die beiden gestrichelten Linien zeigen die offiziellen Referenzperioden 1961–1990 und 1991–2020.",
+        context:
+          "Die über Jahrzehnte sichtbare Erwärmung passt zum globalen Trend: Treibhausgase wie CO₂ verstärken den natürlichen Treibhauseffekt der Erdatmosphäre, was die Klimaforschung als Haupttreiber der weltweiten Erwärmung seit der Industrialisierung einordnet. Einzelne Jahre schwanken durch natürliche Variabilität (z. B. Meeresströmungen, Vulkanausbrüche, einzelne Wetterlagen) stark um diesen langfristigen Trend — erst der Vergleich vieler Jahrzehnte macht das zugrunde liegende Muster überhaupt sichtbar.",
       },
     },
     precipitation: {
@@ -91,7 +94,7 @@
         `<span class="tt-cold">am wenigsten: ${stat.min} mm (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">am meisten: ${stat.max} mm (${stat.maxYear})</span>`,
       formatReadout: (year, amt, diff, periodA) =>
-        `Jahr ${year} — Jahresniederschlag: ${amt.toFixed(0)} mm — ` +
+        `Jahr ${year} — Jahresniederschlag: ${amt.toFixed(0)} mm<br>` +
         `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} mm`,
       formatCompareHeadline: (pa, pb, diff) =>
         `${pb.start}–${pb.end} brachte im Schnitt <strong>${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} mm ${diff >= 0 ? "mehr" : "weniger"} Niederschlag pro Jahr</strong> ` +
@@ -100,6 +103,8 @@
         day: "<strong>Tagesniederschlag:</strong> An jeder Wetterstation wird die gefallene Niederschlagsmenge (Regen, Schnee als Wasseräquivalent) einmal täglich gemessen — ein Wert pro Tag in Millimetern.",
         year: "<strong>Jahresniederschlag:</strong> Die Summe aller Tageswerte eines Kalenderjahres ergibt den Jahresniederschlag. Jede Linie im Diagramm oben zeigt die aufsummierte (kumulierte) Niederschlagsmenge im Verlauf genau eines Jahres.",
         period: "<strong>Klimareferenzperiode:</strong> Der Durchschnitt der Jahresniederschläge über 30 Jahre ergibt den mittleren Jahresniederschlag einer Referenzperiode. Die gestrichelten Linien zeigen die offiziellen Referenzperioden 1961–1990 und 1991–2020.",
+        context:
+          "Anders als bei der Temperatur zeigt der Jahresniederschlag über die Zeit kein so eindeutiges Muster — das ist wissenschaftlich plausibel: Niederschlag hängt stark von großräumigen Wettermustern und großer Jahr-zu-Jahr-Schwankung ab, die einen langsamen Trend leicht überdecken. Die Klimaforschung geht eher davon aus, dass sich mit der Erwärmung die Verteilung des Niederschlags verändert — etwa häufigere Starkregenereignisse oder verschobene Jahreszeiten — als dass sich allein die Jahressumme gleichmäßig in eine Richtung entwickelt.",
       },
     },
     sunshine: {
@@ -120,15 +125,18 @@
         `<span class="tt-cold">am wenigsten: ${stat.min} h (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">am meisten: ${stat.max} h (${stat.maxYear})</span>`,
       formatReadout: (year, amt, diff, periodA) =>
-        `Jahr ${year} — Sonnenscheindauer: ${amt.toFixed(0)} h — ` +
+        `Jahr ${year} — Sonnenscheindauer: ${amt.toFixed(0)} h<br>` +
         `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h`,
       formatCompareHeadline: (pa, pb, diff) =>
         `${pb.start}–${pb.end} brachte im Schnitt <strong>${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h ${diff >= 0 ? "mehr" : "weniger"} Sonnenschein pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,
       methodology: {
-        day: "<strong>Tagessonnenscheindauer:</strong> An jeder Wetterstation wird gemessen, wie viele Stunden am Tag die Sonne schien — ein Wert pro Tag in Stunden.",
+        day:
+          "<strong>Tagessonnenscheindauer:</strong> Gemessen wird, wie viele Stunden am Tag die Sonne direkt und ungehindert schien — diffuses Licht bei bedecktem Himmel zählt nicht mit. Traditionell erfassten das Sonnenscheinautographen nach Campbell-Stokes: Eine Glaskugel bündelt das Sonnenlicht wie eine Lupe und brennt bei ausreichender Intensität eine Spur in einen Registrierstreifen; heute übernehmen automatische Sensoren diese Messung. Die Einheit ist Stunden (h) pro Tag. Wichtigster Einflussfaktor ist die Bewölkung, aber auch Dunst, Feinstaub und andere Schwebteilchen in der Luft können die gemessene Sonnenscheindauer verringern — selbst bei auf den ersten Blick klarem Himmel.",
         year: "<strong>Jahressonnenscheindauer:</strong> Die Summe aller Tageswerte eines Kalenderjahres ergibt die jährliche Sonnenscheindauer. Jede Linie im Diagramm oben zeigt den Tagesverlauf genau eines Jahres.",
         period: "<strong>Klimareferenzperiode:</strong> Der Durchschnitt der Jahressonnenscheindauern über 30 Jahre ergibt die mittlere Sonnenscheindauer einer Referenzperiode. Die gestrichelten Linien zeigen die offiziellen Referenzperioden 1961–1990 und 1991–2020.",
+        context:
+          "Die Sonnenscheindauer wird von mehr als nur der Wolkenmenge beeinflusst: Feinstaub und Aerosole in der Atmosphäre — etwa aus Industrie, Verkehr oder Vulkanausbrüchen — können Sonnenlicht streuen oder reflektieren und so die gemessene Sonnenscheindauer verringern, auch ohne dass mehr Wolken am Himmel stehen. Für weite Teile Europas wird in der Forschung ein Rückgang der Sonnenscheindauer bis etwa in die 1980er-Jahre diskutiert ('Global Dimming'), gefolgt von einem Wiederanstieg seither ('Global Brightening'), der zeitlich mit einer verbesserten Luftreinhaltung zusammenfällt. Das ist eine plausible, wissenschaftlich diskutierte Erklärung für den großräumigen Trend — ob und wie deutlich sich dieses Muster in den Daten einer einzelnen Station zeigt, hängt von vielen lokalen Faktoren ab und lässt sich nicht allein aus dieser Grafik ableiten.",
       },
     },
   };
@@ -214,6 +222,7 @@
     el.methodologyDay.innerHTML = config.methodology.day;
     el.methodologyYear.innerHTML = config.methodology.year;
     el.methodologyPeriod.innerHTML = config.methodology.period;
+    el.methodologyContext.innerHTML = config.methodology.context;
 
     state.plot.render(data, {
       colorStops: config.colorStops,
@@ -331,15 +340,15 @@
       return;
     }
     if (baseline === null || baseline === undefined) {
-      el.readout.textContent =
-        `Jahr ${year} — ${config.formatValue(amt)} — keine Referenzperiode ${data.period_a.start}–${data.period_a.end} verfügbar ` +
-        `(zu wenige vollständige Jahre bei dieser Station)`;
+      el.readout.innerHTML =
+        `Jahr ${year} — ${config.formatValue(amt)}<br>` +
+        `keine Referenzperiode ${data.period_a.start}–${data.period_a.end} verfügbar (zu wenige vollständige Jahre bei dieser Station)`;
       setDeviation(null, config);
       return;
     }
     const diff = amt - baseline;
     setDeviation(diff, config);
-    el.readout.textContent = config.formatReadout(year, amt, diff, data.period_a);
+    el.readout.innerHTML = config.formatReadout(year, amt, diff, data.period_a);
   }
 
   function startPlaying() {
