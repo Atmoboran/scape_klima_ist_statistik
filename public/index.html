@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Klima ist Statistik — ein SCAPE° Exponat</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="brand-bar">
+  <div class="brand-quad" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <svg class="brand-arc" viewBox="0 0 100 100"><path d="M 15 85 A 35 35 0 0 1 85 85" /></svg>
+  </div>
+  <div class="brand-word">
+    <span class="brand-logo">SCAPE<sup>°</sup></span>
+    <span class="brand-sub">WETTER&nbsp; KLIMA&nbsp; MENSCH</span>
+  </div>
+</div>
+
+<header class="app-header">
+  <h1>Klima ist Statistik</h1>
+  <p class="subtitle">Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster — und die Abweichung vom Mittelwert.</p>
+</header>
+
+<nav class="station-switcher" id="station-switcher" aria-label="Messstation wählen">
+</nav>
+
+<main class="plot-shell">
+  <div class="plot-toolbar">
+    <div class="legend" id="legend" aria-hidden="true">
+      <div class="legend-row">
+        <span class="legend-label legend-label-cold">kälteres Jahr</span>
+        <svg id="legend-gradient" width="180" height="12"></svg>
+        <span class="legend-label legend-label-warm">wärmeres Jahr</span>
+      </div>
+      <div class="legend-row legend-row-periods" id="legend-periods"></div>
+    </div>
+    <div class="deviation-badge" id="deviation-badge">
+      <span class="deviation-label">ABWEICHUNG VOM MITTEL <span id="deviation-period-label"></span></span>
+      <span class="deviation-value" id="deviation-value">–</span>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <svg id="chart" role="img" aria-label="Verlauf der Tagesmitteltemperatur für jedes verfügbare Jahr"></svg>
+    <div id="tooltip" class="tooltip" hidden></div>
+    <div id="strand-label" class="strand-label" hidden></div>
+  </div>
+  <p class="hint" id="hint">Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Tippe eine Linie an, um ein Jahr hervorzuheben.</p>
+
+  <div class="timeline">
+    <button id="play-btn" class="play-btn" aria-label="Durch die Jahre abspielen">&#9654;</button>
+    <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" aria-label="Jahr auswählen" />
+    <div class="timeline-readout" id="timeline-readout">&nbsp;</div>
+  </div>
+
+  <section class="compare" id="compare">
+    <h2 id="compare-title">Klimavergleich</h2>
+    <p class="compare-headline" id="compare-headline"></p>
+    <svg class="compare-chart" id="compare-chart" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <p>Daten: Deutscher Wetterdienst (DWD) Climate Data Center, Tageswerte, CC BY 4.0.</p>
+  <p class="footer-scape">Ein Exponat von SCAPE° — Frankfurter Str. 39, 63065 Offenbach am Main</p>
+</footer>
+
+<script src="js/vendor/d3.v7.min.js"></script>
+<script src="js/spaghetti-plot.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

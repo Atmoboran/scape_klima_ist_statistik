@@ -1,0 +1,22 @@
+{
+  "01420": {
+    "station_id": "01420",
+    "name": "Frankfurt/Main",
+    "bundesland": "Hessen",
+    "lat": 50.0259,
+    "lon": 8.5213,
+    "elevation_m": 100,
+    "record_start": "19350701",
+    "record_end": "20260822"
+  },
+  "02601": {
+    "station_id": "02601",
+    "name": "Kleiner Feldberg/Taunus",
+    "bundesland": "Hessen",
+    "lat": 50.2218,
+    "lon": 8.4469,
+    "elevation_m": 822,
+    "record_start": "19360101",
+    "record_end": "20260822"
+  }
+}
