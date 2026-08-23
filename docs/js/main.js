@@ -27,6 +27,7 @@
     viewToggle: document.getElementById("view-toggle"),
   };
 
+  const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
   const VIEW_STORAGE_KEY = "scapeViewMode";
   const MOBILE_QUERY = "(max-width: 699px)";
 
@@ -75,7 +76,8 @@
     });
 
     el.select.addEventListener("change", () => selectStation(el.select.value));
-    await selectStation(state.stations[0].station_id);
+    const defaultStation = state.stations.find((s) => s.station_id === DEFAULT_STATION_ID) || state.stations[0];
+    await selectStation(defaultStation.station_id);
   }
 
   function buildSwitcher() {
