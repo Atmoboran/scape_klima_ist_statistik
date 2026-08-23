@@ -15,6 +15,7 @@
     tooltip: document.getElementById("tooltip"),
     legendGradient: document.getElementById("legend-gradient"),
     legendPeriods: document.getElementById("legend-periods"),
+    deviationYear: document.getElementById("deviation-year"),
     deviationValue: document.getElementById("deviation-value"),
     deviationPeriodLabel: document.getElementById("deviation-period-label"),
     slider: document.getElementById("year-slider"),
@@ -181,6 +182,7 @@
 
   function updateReadout(year) {
     const data = state.currentData;
+    el.deviationYear.textContent = year || "–";
     if (!year) {
       el.readout.textContent = " ";
       setDeviation(null);
