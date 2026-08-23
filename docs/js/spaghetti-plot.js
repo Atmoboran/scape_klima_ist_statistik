@@ -185,10 +185,21 @@
         `Durchschnitt: ${stat.mean}°C<br/>` +
         `<span class="tt-cold">kälteste: ${stat.min}°C (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">wärmste: ${stat.max}°C (${stat.maxYear})</span>`;
-      const wrapBox = opts.svgEl.parentElement.getBoundingClientRect();
-      tooltipEl.style.left = clientX - wrapBox.left + "px";
-      tooltipEl.style.top = clientY - wrapBox.top + "px";
       tooltipEl.hidden = false;
+
+      const wrapBox = opts.svgEl.parentElement.getBoundingClientRect();
+      const tw = tooltipEl.offsetWidth;
+      const th = tooltipEl.offsetHeight;
+      const margin = 6;
+
+      let left = clientX - wrapBox.left - tw / 2;
+      left = Math.max(margin, Math.min(left, wrapBox.width - tw - margin));
+
+      let top = clientY - wrapBox.top - th - 14;
+      if (top < margin) top = clientY - wrapBox.top + 18; // flip below the pointer near the top edge
+
+      tooltipEl.style.left = left + "px";
+      tooltipEl.style.top = top + "px";
     }
 
     function drawGuide(doy) {
@@ -206,7 +217,7 @@
       gAnomaly.selectAll("*").remove();
       if (!year) return;
       const strand = data.strands[year];
-      const baseline = data.period_b.daily_mean_temperature;
+      const baseline = data.period_a.daily_mean_temperature;
 
       const rows = strand.map((v, i) => ({ doy: i + 1, strand: v, baseline: baseline[i] }));
 

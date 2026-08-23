@@ -24,9 +24,45 @@
     compareTitle: document.getElementById("compare-title"),
     compareHeadline: document.getElementById("compare-headline"),
     compareChart: document.getElementById("compare-chart"),
+    viewToggle: document.getElementById("view-toggle"),
   };
 
+  const VIEW_STORAGE_KEY = "scapeViewMode";
+  const MOBILE_QUERY = "(max-width: 699px)";
+
+  function setViewMode(mode) {
+    document.documentElement.setAttribute("data-view", mode);
+    el.viewToggle.textContent = mode === "mobile" ? "Desktop-Ansicht" : "Mobile-Ansicht";
+    el.viewToggle.setAttribute(
+      "aria-label",
+      mode === "mobile" ? "Zur Desktop-Ansicht wechseln" : "Zur Mobile-Ansicht wechseln"
+    );
+  }
+
+  function setupViewToggle() {
+    setViewMode(document.documentElement.getAttribute("data-view") || "mobile");
+
+    el.viewToggle.addEventListener("click", () => {
+      const next = document.documentElement.getAttribute("data-view") === "mobile" ? "desktop" : "mobile";
+      setViewMode(next);
+      try {
+        localStorage.setItem(VIEW_STORAGE_KEY, next);
+      } catch (e) {}
+    });
+
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const onViewportChange = (e) => {
+      let hasOverride = false;
+      try {
+        hasOverride = localStorage.getItem(VIEW_STORAGE_KEY) !== null;
+      } catch (err) {}
+      if (!hasOverride) setViewMode(e.matches ? "mobile" : "desktop");
+    };
+    if (mql.addEventListener) mql.addEventListener("change", onViewportChange);
+  }
+
   async function main() {
+    setupViewToggle();
     const res = await fetch("data/processed/stations_index.json");
     state.stations = await res.json();
     buildSwitcher();
@@ -107,7 +143,7 @@
       span.innerHTML = `<span class="swatch-line"></span>${item.label}`;
       el.legendPeriods.appendChild(span);
     }
-    el.deviationPeriodLabel.textContent = `(vs. ${data.period_b.start}–${data.period_b.end})`;
+    el.deviationPeriodLabel.textContent = `(vs. ${data.period_a.start}–${data.period_a.end})`;
   }
 
   function setupTimeline(data) {
@@ -165,7 +201,7 @@
       return;
     }
     const amt = data.annual_mean_temp[year];
-    const baseline = data.period_b.mean_annual_temperature;
+    const baseline = data.period_a.mean_annual_temperature;
 
     if (amt === undefined) {
       el.readout.textContent = `${year} — unvollständiges Jahr`;
@@ -175,7 +211,7 @@
     const diff = amt - baseline;
     setDeviation(diff);
     const sign = diff >= 0 ? "+" : "−";
-    el.readout.textContent = `${year} — ${amt.toFixed(1)} °C, ${sign}${Math.abs(diff).toFixed(1)} °C ggü. ${data.period_b.start}–${data.period_b.end}`;
+    el.readout.textContent = `${year} — ${amt.toFixed(1)} °C, ${sign}${Math.abs(diff).toFixed(1)} °C ggü. ${data.period_a.start}–${data.period_a.end}`;
   }
 
   function startPlaying() {

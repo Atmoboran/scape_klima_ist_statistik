@@ -5,18 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Klima ist Statistik — ein SCAPE° Exponat</title>
 <link rel="stylesheet" href="css/style.css" />
+<script>
+  (function () {
+    var mode;
+    try {
+      var stored = localStorage.getItem("scapeViewMode");
+      mode = (stored === "mobile" || stored === "desktop") ? stored : null;
+    } catch (e) {}
+    if (!mode) {
+      mode = window.matchMedia("(max-width: 699px)").matches ? "mobile" : "desktop";
+    }
+    document.documentElement.setAttribute("data-view", mode);
+  })();
+</script>
 </head>
 <body>
 
 <div class="brand-bar">
-  <div class="brand-quad" aria-hidden="true">
-    <span></span><span></span><span></span><span></span>
-    <svg class="brand-arc" viewBox="0 0 100 100"><path d="M 15 85 A 35 35 0 0 1 85 85" /></svg>
+  <div class="brand-identity">
+    <div class="brand-quad" aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+      <svg class="brand-arc" viewBox="0 0 100 100"><path d="M 15 85 A 35 35 0 0 1 85 85" /></svg>
+    </div>
+    <div class="brand-word">
+      <span class="brand-logo">SCAPE<sup>°</sup></span>
+      <span class="brand-sub">WETTER · KLIMA · MENSCH</span>
+    </div>
   </div>
-  <div class="brand-word">
-    <span class="brand-logo">SCAPE<sup>°</sup></span>
-    <span class="brand-sub">WETTER&nbsp; KLIMA&nbsp; MENSCH</span>
-  </div>
+  <button id="view-toggle" class="view-toggle" type="button"></button>
 </div>
 
 <header class="app-header">
