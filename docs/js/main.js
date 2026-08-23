@@ -24,6 +24,8 @@
     deviationPeriodLabel: document.getElementById("deviation-period-label"),
     slider: document.getElementById("year-slider"),
     playBtn: document.getElementById("play-btn"),
+    prevYearBtn: document.getElementById("prev-year-btn"),
+    nextYearBtn: document.getElementById("next-year-btn"),
     readout: document.getElementById("timeline-readout"),
     compareTitle: document.getElementById("compare-title"),
     compareHeadline: document.getElementById("compare-headline"),
@@ -52,7 +54,7 @@
       aboveColor: "#dd2a26",
       belowColor: "#2b3990",
       chartAriaLabel: "Verlauf der Tagesmitteltemperatur für jedes verfügbare Jahr",
-      formatMetric: (v) => `${v.toFixed(1)} °C`,
+      formatValue: (v) => `${v.toFixed(1)} °C`,
       formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} °C`,
       incompleteLabel: "unvollständige Messreihe",
       formatDayTooltip: (stat, dateLabel) =>
@@ -81,7 +83,7 @@
       aboveColor: "#1ca3d6",
       belowColor: "#d35b22",
       chartAriaLabel: "Kumulierter Niederschlag im Jahresverlauf für jedes verfügbare Jahr",
-      formatMetric: (v) => `${v.toFixed(0)} mm`,
+      formatValue: (v) => `${v.toFixed(0)} mm`,
       formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} mm`,
       incompleteLabel: "unvollständige Messreihe",
       formatDayTooltip: (stat, dateLabel) =>
@@ -98,6 +100,35 @@
         day: "<strong>Tagesniederschlag:</strong> An jeder Wetterstation wird die gefallene Niederschlagsmenge (Regen, Schnee als Wasseräquivalent) einmal täglich gemessen — ein Wert pro Tag in Millimetern.",
         year: "<strong>Jahresniederschlag:</strong> Die Summe aller Tageswerte eines Kalenderjahres ergibt den Jahresniederschlag. Jede Linie im Diagramm oben zeigt die aufsummierte (kumulierte) Niederschlagsmenge im Verlauf genau eines Jahres.",
         period: "<strong>Klimareferenzperiode:</strong> Der Durchschnitt der Jahresniederschläge über 30 Jahre ergibt den mittleren Jahresniederschlag einer Referenzperiode. Die gestrichelten Linien zeigen die offiziellen Referenzperioden 1961–1990 und 1991–2020.",
+      },
+    },
+    sunshine: {
+      label: "Sonnenscheindauer",
+      axisSuffix: " h",
+      yMin: 0,
+      colorStops: ["#6b7280", "#f2e6c9", "#f0b429"],
+      legendCold: "trübes Jahr",
+      legendWarm: "sonniges Jahr",
+      aboveColor: "#f0b429",
+      belowColor: "#6b7280",
+      chartAriaLabel: "Verlauf der täglichen Sonnenscheindauer für jedes verfügbare Jahr",
+      formatValue: (v) => `${v.toFixed(0)} h`,
+      formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h`,
+      incompleteLabel: "unvollständige Messreihe",
+      formatDayTooltip: (stat, dateLabel) =>
+        `<b>${dateLabel}</b><br/>Durchschnitt: ${stat.mean} h<br/>` +
+        `<span class="tt-cold">am wenigsten: ${stat.min} h (${stat.minYear})</span><br/>` +
+        `<span class="tt-warm">am meisten: ${stat.max} h (${stat.maxYear})</span>`,
+      formatReadout: (year, amt, diff, periodA) =>
+        `Jahr ${year} — Sonnenscheindauer: ${amt.toFixed(0)} h — ` +
+        `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h`,
+      formatCompareHeadline: (pa, pb, diff) =>
+        `${pb.start}–${pb.end} brachte im Schnitt <strong>${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h ${diff >= 0 ? "mehr" : "weniger"} Sonnenschein pro Jahr</strong> ` +
+        `als ${pa.start}–${pa.end}.`,
+      methodology: {
+        day: "<strong>Tagessonnenscheindauer:</strong> An jeder Wetterstation wird gemessen, wie viele Stunden am Tag die Sonne schien — ein Wert pro Tag in Stunden.",
+        year: "<strong>Jahressonnenscheindauer:</strong> Die Summe aller Tageswerte eines Kalenderjahres ergibt die jährliche Sonnenscheindauer. Jede Linie im Diagramm oben zeigt den Tagesverlauf genau eines Jahres.",
+        period: "<strong>Klimareferenzperiode:</strong> Der Durchschnitt der Jahressonnenscheindauern über 30 Jahre ergibt die mittlere Sonnenscheindauer einer Referenzperiode. Die gestrichelten Linien zeigen die offiziellen Referenzperioden 1961–1990 und 1991–2020.",
       },
     },
   };
@@ -256,7 +287,20 @@
       }
     };
 
+    el.prevYearBtn.onclick = () => stepYear(-1);
+    el.nextYearBtn.onclick = () => stepYear(1);
+
     updateReadout(years[years.length - 1]);
+  }
+
+  function stepYear(delta) {
+    stopPlaying();
+    const years = state.currentData.years;
+    const idx = Math.min(years.length - 1, Math.max(0, +el.slider.value + delta));
+    el.slider.value = idx;
+    const year = years[idx];
+    state.plot.setYear(year);
+    updateReadout(year);
   }
 
   function setDeviation(diff, config) {
@@ -283,6 +327,13 @@
 
     if (amt === undefined) {
       el.readout.textContent = `Jahr ${year}: ${config.incompleteLabel}`;
+      setDeviation(null, config);
+      return;
+    }
+    if (baseline === null || baseline === undefined) {
+      el.readout.textContent =
+        `Jahr ${year} — ${config.formatValue(amt)} — keine Referenzperiode ${data.period_a.start}–${data.period_a.end} verfügbar ` +
+        `(zu wenige vollständige Jahre bei dieser Station)`;
       setDeviation(null, config);
       return;
     }
@@ -319,13 +370,23 @@
     const pa = data.period_a;
     const pb = data.period_b;
     const config = VARIABLE_CONFIG[state.currentVariable];
-    const diff = pb.mean_annual_metric - pa.mean_annual_metric;
 
     el.compareTitle.textContent = `Klimavergleich für ${meta.name}`;
-    el.compareHeadline.innerHTML = config.formatCompareHeadline(pa, pb, diff);
 
     const svg = d3.select(el.compareChart);
     svg.selectAll("*").remove();
+
+    if (pa.mean_annual_metric === null || pb.mean_annual_metric === null) {
+      const missing = pa.mean_annual_metric === null ? `${pa.start}–${pa.end}` : `${pb.start}–${pb.end}`;
+      el.compareHeadline.textContent =
+        `Für die Referenzperiode ${missing} liegen bei dieser Station zu wenige vollständige Jahre vor, ` +
+        `um einen verlässlichen Vergleich zu berechnen.`;
+      return;
+    }
+
+    const diff = pb.mean_annual_metric - pa.mean_annual_metric;
+    el.compareHeadline.innerHTML = config.formatCompareHeadline(pa, pb, diff);
+
     const W = 800, H = 320, M = { top: 16, right: 20, bottom: 34, left: 44 };
     const innerW = W - M.left - M.right;
     const innerH = H - M.top - M.bottom;

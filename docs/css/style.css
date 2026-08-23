@@ -400,6 +400,24 @@ html, body {
 .play-btn:active { transform: scale(0.95); }
 .play-btn.playing { background: var(--red); }
 
+.step-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-btn:active { transform: scale(0.95); }
+
 .year-slider {
   flex: 1 1 auto;
   min-width: 0;

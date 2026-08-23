@@ -4,18 +4,26 @@ For each station and each variable (temperature, precipitation) this produces
 a self-contained JSON file with a generic shape so the frontend doesn't need
 to know which variable it's rendering:
 
-- `strands`: one 365-day series per year (temperature: the daily mean value
-  itself; precipitation: the *cumulative* sum by day-of-year, since raw daily
-  rainfall is too spiky to read as an overlaid line chart the way daily mean
-  temperature is - a running total gives a smooth, comparable curve instead).
-- `annual_metric`: one number per year (temperature: annual mean; precipitation:
-  annual total) - drives the colour scale and the deviation readout.
-- `by_day_stats`: cross-year min/mean/max at each day-of-year, derived from
-  `strands` (so it means "coldest/warmest reading" for temperature, but
-  "least/most accumulated so far" for precipitation).
+- `strands`: one 365-day series per year (temperature/sunshine: the daily
+  value itself; precipitation: the *cumulative* sum by day-of-year, since raw
+  daily rainfall is too spiky to read as an overlaid line chart the way daily
+  mean temperature is - a running total gives a smooth, comparable curve
+  instead).
+- `annual_metric`: one number per year (temperature: annual mean; precipitation
+  and sunshine: annual total) - drives the colour scale and the deviation
+  readout. Only years with at least MIN_VALID_DAYS_FOR_YEAR valid readings get
+  an entry here - a year with too many gaps (e.g. a station's early,
+  sparsely-digitised sunshine records, or a station that only reported for
+  part of a year) is excluded rather than silently averaged/summed in as if
+  it were complete, since that would quietly bias precisely the statistics
+  (climate reference periods, day-of-year records) meant to describe "normal".
+- `by_day_stats`: cross-year min/mean/max at each day-of-year, computed only
+  from years present in `annual_metric` (see above) - so an incomplete year
+  can never masquerade as a record.
 - `period_a` / `period_b`: the two official DWD/WMO climate reference periods
   (1961-1990, 1991-2020), each with a `daily_series` (the period-averaged
-  version of `strands`) and a `mean_annual_metric` scalar.
+  version of `strands`, again only over years present in `annual_metric`) and
+  a `mean_annual_metric` scalar.
 
 Run after scripts/fetch_data.py:
 
@@ -61,8 +69,27 @@ PERIOD_B = (1991, 2020)
 MIN_VALID_DAYS_FOR_YEAR = 300  # a year needs this many valid readings to count
 
 VARIABLES = {
-    "temperature": {"column": "TMK", "mode": "mean", "unit": "°C", "subdir": "temperature"},
-    "precipitation": {"column": "RSK", "mode": "cumulative_sum", "unit": "mm", "subdir": "precipitation"},
+    "temperature": {
+        "column": "TMK",
+        "strand_mode": "raw",
+        "annual_agg": "mean",
+        "unit": "°C",
+        "subdir": "temperature",
+    },
+    "precipitation": {
+        "column": "RSK",
+        "strand_mode": "cumulative",
+        "annual_agg": "sum",
+        "unit": "mm",
+        "subdir": "precipitation",
+    },
+    "sunshine": {
+        "column": "SDK",
+        "strand_mode": "raw",
+        "annual_agg": "sum",
+        "unit": "h",
+        "subdir": "sunshine",
+    },
 }
 
 
@@ -91,7 +118,7 @@ def load_station_frame(station_id: str) -> pd.DataFrame:
 
 
 def build_year_strands(
-    df: pd.DataFrame, column: str, mode: str
+    df: pd.DataFrame, column: str, strand_mode: str, annual_agg: str
 ) -> tuple[dict[str, list[float | None]], dict[str, float]]:
     strands: dict[str, list[float | None]] = {}
     annual_metric: dict[str, float] = {}
@@ -101,26 +128,31 @@ def build_year_strands(
         daily = group.groupby("aligned_doy")[column].mean().reindex(full_index)
         valid_days = int(daily.notna().sum())
 
-        if mode == "cumulative_sum":
+        if strand_mode == "cumulative":
             cum = daily.fillna(0.0).cumsum()
             series = [round(float(v), 1) for v in cum]
-            metric = round(float(daily.sum()), 1) if valid_days >= MIN_VALID_DAYS_FOR_YEAR else None
         else:
             series = [round(float(v), 1) if pd.notna(v) else None for v in daily]
-            metric = round(float(daily.mean()), 2) if valid_days >= MIN_VALID_DAYS_FOR_YEAR else None
-
         strands[str(int(year))] = series
-        if metric is not None:
-            annual_metric[str(int(year))] = metric
+
+        # A year with too many missing readings is excluded from every
+        # aggregate stat below it (annual_metric, by_day_stats, the two
+        # climate reference periods) - the strand itself still shows
+        # whatever raw data exists, but it can't distort "normal".
+        if valid_days >= MIN_VALID_DAYS_FOR_YEAR:
+            metric = float(daily.sum()) if annual_agg == "sum" else float(daily.mean())
+            annual_metric[str(int(year))] = round(metric, 1 if annual_agg == "sum" else 2)
 
     return strands, annual_metric
 
 
-def build_by_day_stats(strands: dict[str, list[float | None]], years: list[str]) -> list[dict]:
+def build_by_day_stats(
+    strands: dict[str, list[float | None]], complete_years: list[str]
+) -> list[dict]:
     stats = []
     for doy in range(1, 366):
         i = doy - 1
-        vals = [(y, strands[y][i]) for y in years if strands[y][i] is not None]
+        vals = [(y, strands[y][i]) for y in complete_years if strands[y][i] is not None]
         if not vals:
             stats.append({"doy": doy, "mean": None, "min": None, "minYear": None, "max": None, "maxYear": None})
             continue
@@ -143,21 +175,24 @@ def build_by_day_stats(strands: dict[str, list[float | None]], years: list[str])
 def build_period(
     strands: dict[str, list[float | None]],
     annual_metric: dict[str, float],
-    years_all: list[str],
+    complete_years: list[str],
     start: int,
     end: int,
 ) -> dict:
-    years_in_period = [y for y in years_all if start <= int(y) <= end]
+    # Only years that passed the completeness bar (i.e. have an annual_metric
+    # entry) contribute to a reference period - an incomplete year must not
+    # pull the 30-year "normal" up or down.
+    years_in_period = [y for y in complete_years if start <= int(y) <= end]
 
     daily_series: list[float | None] = []
-    arrs = [strands[y] for y in years_in_period if y in strands]
+    arrs = [strands[y] for y in years_in_period]
     for day_values in zip(*arrs) if arrs else []:
         present = [v for v in day_values if v is not None]
         daily_series.append(round(sum(present) / len(present), 1) if present else None)
     if not arrs:
         daily_series = [None] * 365
 
-    totals = [annual_metric[y] for y in years_in_period if y in annual_metric]
+    totals = [annual_metric[y] for y in years_in_period]
     mean_annual_metric = round(sum(totals) / len(totals), 2) if totals else None
 
     return {"start": start, "end": end, "daily_series": daily_series, "mean_annual_metric": mean_annual_metric}
@@ -177,10 +212,11 @@ def build_variable_payload(
     first_year: int,
     last_year: int,
 ) -> dict:
-    strands, annual_metric = build_year_strands(df, spec["column"], spec["mode"])
-    by_day_stats = build_by_day_stats(strands, years_all)
-    period_a = build_period(strands, annual_metric, years_all, *clip(PERIOD_A, first_year, last_year))
-    period_b = build_period(strands, annual_metric, years_all, *clip(PERIOD_B, first_year, last_year))
+    strands, annual_metric = build_year_strands(df, spec["column"], spec["strand_mode"], spec["annual_agg"])
+    complete_years = [y for y in years_all if y in annual_metric]
+    by_day_stats = build_by_day_stats(strands, complete_years)
+    period_a = build_period(strands, annual_metric, complete_years, *clip(PERIOD_A, first_year, last_year))
+    period_b = build_period(strands, annual_metric, complete_years, *clip(PERIOD_B, first_year, last_year))
 
     return {
         "meta": {**meta, "first_year": first_year, "last_year": last_year},

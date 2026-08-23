@@ -46,6 +46,7 @@
     <select id="variable-select" class="station-select">
       <option value="temperature">Temperatur</option>
       <option value="precipitation">Niederschlag</option>
+      <option value="sunshine">Sonnenscheindauer</option>
     </select>
   </div>
   <div class="station-picker">
@@ -78,7 +79,9 @@
   <p class="hint" id="hint">Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler darunter, um durch die einzelnen Jahre zu blättern.</p>
 
   <div class="timeline">
+    <button id="prev-year-btn" class="step-btn" aria-label="Ein Jahr zurück">&#9664;</button>
     <button id="play-btn" class="play-btn" aria-label="Durch die Jahre abspielen">&#9654;</button>
+    <button id="next-year-btn" class="step-btn" aria-label="Ein Jahr vor">&#9654;</button>
     <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" aria-label="Jahr auswählen" />
     <div class="timeline-readout" id="timeline-readout">&nbsp;</div>
   </div>
