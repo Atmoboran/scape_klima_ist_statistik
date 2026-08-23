@@ -28,7 +28,26 @@ STATIONS_META_FILE = "KL_Tageswerte_Beschreibung_Stationen.txt"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = REPO_ROOT / "data" / "raw"
 
-STATION_IDS = ["01420", "02601"]
+STATION_IDS = [
+    "01420",  # Frankfurt/Main
+    "02601",  # Kleiner Feldberg/Taunus
+    "00433",  # Berlin-Tempelhof
+    "03987",  # Potsdam
+    "01975",  # Hamburg-Fuhlsbuettel
+    "03379",  # Muenchen-Stadt
+    "02290",  # Hohenpeissenberg
+    "02968",  # Koeln-Stammheim
+    "04928",  # Stuttgart (Schnarrenberg)
+    "01078",  # Duesseldorf
+    "02928",  # Leipzig-Holzhausen
+    "02932",  # Leipzig/Halle
+    "00555",  # Bochum
+    "01303",  # Essen-Bredeney
+    "00691",  # Bremen
+    "01048",  # Dresden-Klotzsche
+    "02014",  # Hannover
+    "03668",  # Nuernberg
+]
 
 
 def download_and_extract_station_data(station_id: str, save_dir: Path) -> Path:

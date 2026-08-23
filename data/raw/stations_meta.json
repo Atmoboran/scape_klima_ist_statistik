@@ -1,4 +1,64 @@
 {
+  "00433": {
+    "station_id": "00433",
+    "name": "Berlin-Tempelhof",
+    "bundesland": "Berlin",
+    "lat": 52.4676,
+    "lon": 13.402,
+    "elevation_m": 48,
+    "record_start": "19480101",
+    "record_end": "20260822"
+  },
+  "00555": {
+    "station_id": "00555",
+    "name": "Bochum",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 51.5026,
+    "lon": 7.2289,
+    "elevation_m": 110,
+    "record_start": "19400101",
+    "record_end": "20260822"
+  },
+  "00691": {
+    "station_id": "00691",
+    "name": "Bremen",
+    "bundesland": "Bremen",
+    "lat": 53.0451,
+    "lon": 8.7981,
+    "elevation_m": 4,
+    "record_start": "18900101",
+    "record_end": "20260822"
+  },
+  "01048": {
+    "station_id": "01048",
+    "name": "Dresden-Klotzsche",
+    "bundesland": "Sachsen",
+    "lat": 51.1278,
+    "lon": 13.7543,
+    "elevation_m": 228,
+    "record_start": "19340101",
+    "record_end": "20260822"
+  },
+  "01078": {
+    "station_id": "01078",
+    "name": "Düsseldorf",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 51.296,
+    "lon": 6.7686,
+    "elevation_m": 37,
+    "record_start": "19520101",
+    "record_end": "20260822"
+  },
+  "01303": {
+    "station_id": "01303",
+    "name": "Essen-Bredeney",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 51.4041,
+    "lon": 6.9677,
+    "elevation_m": 150,
+    "record_start": "19350101",
+    "record_end": "20260822"
+  },
   "01420": {
     "station_id": "01420",
     "name": "Frankfurt/Main",
@@ -9,6 +69,36 @@
     "record_start": "19350701",
     "record_end": "20260822"
   },
+  "01975": {
+    "station_id": "01975",
+    "name": "Hamburg-Fuhlsbüttel",
+    "bundesland": "Hamburg",
+    "lat": 53.6332,
+    "lon": 9.9881,
+    "elevation_m": 11,
+    "record_start": "19360101",
+    "record_end": "20260822"
+  },
+  "02014": {
+    "station_id": "02014",
+    "name": "Hannover",
+    "bundesland": "Niedersachsen",
+    "lat": 52.4644,
+    "lon": 9.6779,
+    "elevation_m": 55,
+    "record_start": "19360101",
+    "record_end": "20260822"
+  },
+  "02290": {
+    "station_id": "02290",
+    "name": "Hohenpeißenberg",
+    "bundesland": "Bayern",
+    "lat": 47.8009,
+    "lon": 11.0108,
+    "elevation_m": 977,
+    "record_start": "17810101",
+    "record_end": "20260822"
+  },
   "02601": {
     "station_id": "02601",
     "name": "Kleiner Feldberg/Taunus",
@@ -17,6 +107,76 @@
     "lon": 8.4469,
     "elevation_m": 822,
     "record_start": "19360101",
+    "record_end": "20260822"
+  },
+  "02928": {
+    "station_id": "02928",
+    "name": "Leipzig-Holzhausen",
+    "bundesland": "Sachsen",
+    "lat": 51.3151,
+    "lon": 12.4462,
+    "elevation_m": 138,
+    "record_start": "17591101",
+    "record_end": "20260822"
+  },
+  "02932": {
+    "station_id": "02932",
+    "name": "Leipzig/Halle",
+    "bundesland": "Sachsen",
+    "lat": 51.4347,
+    "lon": 12.2396,
+    "elevation_m": 131,
+    "record_start": "19340101",
+    "record_end": "20260822"
+  },
+  "02968": {
+    "station_id": "02968",
+    "name": "Köln-Stammheim",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 50.9894,
+    "lon": 6.9777,
+    "elevation_m": 43,
+    "record_start": "19450101",
+    "record_end": "20240831"
+  },
+  "03379": {
+    "station_id": "03379",
+    "name": "München-Stadt",
+    "bundesland": "Bayern",
+    "lat": 48.1632,
+    "lon": 11.5429,
+    "elevation_m": 515,
+    "record_start": "19540601",
+    "record_end": "20260822"
+  },
+  "03668": {
+    "station_id": "03668",
+    "name": "Nürnberg",
+    "bundesland": "Bayern",
+    "lat": 49.503,
+    "lon": 11.0549,
+    "elevation_m": 314,
+    "record_start": "18790101",
+    "record_end": "20260822"
+  },
+  "03987": {
+    "station_id": "03987",
+    "name": "Potsdam",
+    "bundesland": "Brandenburg",
+    "lat": 52.3812,
+    "lon": 13.0622,
+    "elevation_m": 81,
+    "record_start": "18930101",
+    "record_end": "20260822"
+  },
+  "04928": {
+    "station_id": "04928",
+    "name": "Stuttgart (Schnarrenberg)",
+    "bundesland": "Baden-Württemberg",
+    "lat": 48.8281,
+    "lon": 9.2,
+    "elevation_m": 314,
+    "record_start": "19580101",
     "record_end": "20260822"
   }
 }

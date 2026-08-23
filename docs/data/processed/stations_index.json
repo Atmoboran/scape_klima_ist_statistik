@@ -18,5 +18,165 @@
     "elevation_m": 822,
     "first_year": 1936,
     "last_year": 2025
+  },
+  {
+    "station_id": "00433",
+    "name": "Berlin-Tempelhof",
+    "bundesland": "Berlin",
+    "lat": 52.4676,
+    "lon": 13.402,
+    "elevation_m": 48,
+    "first_year": 1948,
+    "last_year": 2025
+  },
+  {
+    "station_id": "03987",
+    "name": "Potsdam",
+    "bundesland": "Brandenburg",
+    "lat": 52.3812,
+    "lon": 13.0622,
+    "elevation_m": 81,
+    "first_year": 1893,
+    "last_year": 2025
+  },
+  {
+    "station_id": "01975",
+    "name": "Hamburg-Fuhlsbüttel",
+    "bundesland": "Hamburg",
+    "lat": 53.6332,
+    "lon": 9.9881,
+    "elevation_m": 11,
+    "first_year": 1936,
+    "last_year": 2025
+  },
+  {
+    "station_id": "03379",
+    "name": "München-Stadt",
+    "bundesland": "Bayern",
+    "lat": 48.1632,
+    "lon": 11.5429,
+    "elevation_m": 515,
+    "first_year": 1954,
+    "last_year": 2025
+  },
+  {
+    "station_id": "02290",
+    "name": "Hohenpeißenberg",
+    "bundesland": "Bayern",
+    "lat": 47.8009,
+    "lon": 11.0108,
+    "elevation_m": 977,
+    "first_year": 1781,
+    "last_year": 2025
+  },
+  {
+    "station_id": "02968",
+    "name": "Köln-Stammheim",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 50.9894,
+    "lon": 6.9777,
+    "elevation_m": 43,
+    "first_year": 1945,
+    "last_year": 2024
+  },
+  {
+    "station_id": "04928",
+    "name": "Stuttgart (Schnarrenberg)",
+    "bundesland": "Baden-Württemberg",
+    "lat": 48.8281,
+    "lon": 9.2,
+    "elevation_m": 314,
+    "first_year": 1958,
+    "last_year": 2025
+  },
+  {
+    "station_id": "01078",
+    "name": "Düsseldorf",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 51.296,
+    "lon": 6.7686,
+    "elevation_m": 37,
+    "first_year": 1952,
+    "last_year": 2025
+  },
+  {
+    "station_id": "02928",
+    "name": "Leipzig-Holzhausen",
+    "bundesland": "Sachsen",
+    "lat": 51.3151,
+    "lon": 12.4462,
+    "elevation_m": 138,
+    "first_year": 1759,
+    "last_year": 2025
+  },
+  {
+    "station_id": "02932",
+    "name": "Leipzig/Halle",
+    "bundesland": "Sachsen",
+    "lat": 51.4347,
+    "lon": 12.2396,
+    "elevation_m": 131,
+    "first_year": 1934,
+    "last_year": 2025
+  },
+  {
+    "station_id": "00555",
+    "name": "Bochum",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 51.5026,
+    "lon": 7.2289,
+    "elevation_m": 110,
+    "first_year": 1940,
+    "last_year": 2025
+  },
+  {
+    "station_id": "01303",
+    "name": "Essen-Bredeney",
+    "bundesland": "Nordrhein-Westfalen",
+    "lat": 51.4041,
+    "lon": 6.9677,
+    "elevation_m": 150,
+    "first_year": 1935,
+    "last_year": 2025
+  },
+  {
+    "station_id": "00691",
+    "name": "Bremen",
+    "bundesland": "Bremen",
+    "lat": 53.0451,
+    "lon": 8.7981,
+    "elevation_m": 4,
+    "first_year": 1890,
+    "last_year": 2025
+  },
+  {
+    "station_id": "01048",
+    "name": "Dresden-Klotzsche",
+    "bundesland": "Sachsen",
+    "lat": 51.1278,
+    "lon": 13.7543,
+    "elevation_m": 228,
+    "first_year": 1934,
+    "last_year": 2025
+  },
+  {
+    "station_id": "02014",
+    "name": "Hannover",
+    "bundesland": "Niedersachsen",
+    "lat": 52.4644,
+    "lon": 9.6779,
+    "elevation_m": 55,
+    "first_year": 1936,
+    "last_year": 2025
+  },
+  {
+    "station_id": "03668",
+    "name": "Nürnberg",
+    "bundesland": "Bayern",
+    "lat": 49.503,
+    "lon": 11.0549,
+    "elevation_m": 314,
+    "first_year": 1955,
+    "last_year": 2025
   }
 ]

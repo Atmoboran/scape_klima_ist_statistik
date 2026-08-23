@@ -10,7 +10,7 @@
   };
 
   const el = {
-    switcher: document.getElementById("station-switcher"),
+    select: document.getElementById("station-select"),
     chart: document.getElementById("chart"),
     tooltip: document.getElementById("tooltip"),
     legendGradient: document.getElementById("legend-gradient"),
@@ -65,6 +65,7 @@
     setupViewToggle();
     const res = await fetch("data/processed/stations_index.json");
     state.stations = await res.json();
+    state.stations.sort((a, b) => a.name.localeCompare(b.name, "de"));
     buildSwitcher();
 
     state.plot = window.SpaghettiPlot.create({
@@ -73,28 +74,24 @@
       onColorScaleReady: renderLegend,
     });
 
+    el.select.addEventListener("change", () => selectStation(el.select.value));
     await selectStation(state.stations[0].station_id);
   }
 
   function buildSwitcher() {
-    el.switcher.innerHTML = "";
+    el.select.innerHTML = "";
     for (const s of state.stations) {
-      const btn = document.createElement("button");
-      btn.className = "station-btn";
-      btn.type = "button";
-      btn.textContent = `${s.name} (${s.first_year}–${s.last_year})`;
-      btn.addEventListener("click", () => selectStation(s.station_id));
-      btn.dataset.stationId = s.station_id;
-      el.switcher.appendChild(btn);
+      const opt = document.createElement("option");
+      opt.value = s.station_id;
+      opt.textContent = `${s.name} (${s.first_year}–${s.last_year})`;
+      el.select.appendChild(opt);
     }
   }
 
   async function selectStation(stationId) {
     stopPlaying();
     state.currentStationId = stationId;
-    [...el.switcher.children].forEach((btn) =>
-      btn.classList.toggle("active", btn.dataset.stationId === stationId)
-    );
+    el.select.value = stationId;
 
     const res = await fetch(`data/processed/${stationId}.json`);
     const data = await res.json();
