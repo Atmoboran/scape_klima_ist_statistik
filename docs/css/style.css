@@ -164,12 +164,19 @@ html, body {
   line-height: 1.5;
 }
 
+.picker-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.1rem 0.75rem 0.4rem;
+}
+
 .station-picker {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  padding: 1.1rem 0.75rem 0.4rem;
 }
 
 .station-picker-label {
@@ -230,8 +237,7 @@ html, body {
   flex-wrap: wrap;
 }
 
-.legend-label-cold { color: var(--indigo); font-weight: 600; }
-.legend-label-warm { color: var(--rust); font-weight: 600; }
+.legend-label { font-weight: 600; }
 
 #legend-gradient { border-radius: 4px; overflow: hidden; display: block; }
 
@@ -284,9 +290,6 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
-.deviation-value.warmer { color: var(--red); }
-.deviation-value.cooler { color: var(--indigo); }
-
 .chart-wrap {
   position: relative;
   background: var(--card);
@@ -318,9 +321,8 @@ html, body {
 
 .anomaly-area {
   pointer-events: none;
+  opacity: 0.16;
 }
-.anomaly-area.warmer { fill: var(--red); opacity: 0.16; }
-.anomaly-area.cooler { fill: var(--indigo); opacity: 0.16; }
 
 .period-line {
   fill: none;
@@ -504,10 +506,16 @@ html, body {
   font-size: clamp(1rem, 1.4vw, 1.15rem);
 }
 
+:root[data-view="desktop"] .picker-row {
+  flex-direction: row;
+  justify-content: center;
+  gap: 1.8rem;
+  padding: 1.4rem clamp(1rem, 4vw, 3rem) 0.4rem;
+}
+
 :root[data-view="desktop"] .station-picker {
   flex-direction: row;
   gap: 0.7rem;
-  padding: 1.4rem clamp(1rem, 4vw, 3rem) 0.4rem;
 }
 
 :root[data-view="desktop"] .station-select {

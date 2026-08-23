@@ -1,11 +1,21 @@
 """Turn the raw DWD daily station files into the compact JSON the website reads.
 
-For each station this produces: one 365-day temperature series per year (for
-the year-by-year overlay chart), that year's annual mean temperature (for the
-colour scale and the deviation readout), cross-year day statistics (for the
-hover tooltip), and the two official DWD/WMO climate reference periods
-(1961-1990 and 1991-2020) used to draw two climate-mean reference lines and
-the "Klimavergleich" panel.
+For each station and each variable (temperature, precipitation) this produces
+a self-contained JSON file with a generic shape so the frontend doesn't need
+to know which variable it's rendering:
+
+- `strands`: one 365-day series per year (temperature: the daily mean value
+  itself; precipitation: the *cumulative* sum by day-of-year, since raw daily
+  rainfall is too spiky to read as an overlaid line chart the way daily mean
+  temperature is - a running total gives a smooth, comparable curve instead).
+- `annual_metric`: one number per year (temperature: annual mean; precipitation:
+  annual total) - drives the colour scale and the deviation readout.
+- `by_day_stats`: cross-year min/mean/max at each day-of-year, derived from
+  `strands` (so it means "coldest/warmest reading" for temperature, but
+  "least/most accumulated so far" for precipitation).
+- `period_a` / `period_b`: the two official DWD/WMO climate reference periods
+  (1961-1990, 1991-2020), each with a `daily_series` (the period-averaged
+  version of `strands`) and a `mean_annual_metric` scalar.
 
 Run after scripts/fetch_data.py:
 
@@ -44,10 +54,16 @@ STATION_IDS = [
     "02014",  # Hannover
     "03668",  # Nuernberg
 ]
+
 # The two official DWD/WMO climate reference periods ("Klimareferenzperioden").
 PERIOD_A = (1961, 1990)
 PERIOD_B = (1991, 2020)
-MIN_VALID_DAYS_FOR_YEAR = 300  # a year needs this many valid TMK days to count
+MIN_VALID_DAYS_FOR_YEAR = 300  # a year needs this many valid readings to count
+
+VARIABLES = {
+    "temperature": {"column": "TMK", "mode": "mean", "unit": "°C", "subdir": "temperature"},
+    "precipitation": {"column": "RSK", "mode": "cumulative_sum", "unit": "mm", "subdir": "precipitation"},
+}
 
 
 def load_station_frame(station_id: str) -> pd.DataFrame:
@@ -56,7 +72,10 @@ def load_station_frame(station_id: str) -> pd.DataFrame:
     df.columns = df.columns.str.strip()
     df["MESS_DATUM"] = pd.to_datetime(df["MESS_DATUM"], format="%Y%m%d")
 
-    df["TMK"] = df["TMK"].replace(-999.0, np.nan).replace(-999, np.nan)
+    for spec in VARIABLES.values():
+        col = spec["column"]
+        df[col] = df[col].replace(-999.0, np.nan).replace(-999, np.nan)
+
     df["year"] = df["MESS_DATUM"].dt.year
     df["is_feb29"] = (df["MESS_DATUM"].dt.month == 2) & (df["MESS_DATUM"].dt.day == 29)
 
@@ -71,76 +90,109 @@ def load_station_frame(station_id: str) -> pd.DataFrame:
     return aligned
 
 
-def build_year_strands(df: pd.DataFrame) -> tuple[dict[str, list[float | None]], dict[str, float]]:
+def build_year_strands(
+    df: pd.DataFrame, column: str, mode: str
+) -> tuple[dict[str, list[float | None]], dict[str, float]]:
     strands: dict[str, list[float | None]] = {}
-    annual_mean_temp: dict[str, float] = {}
+    annual_metric: dict[str, float] = {}
+    full_index = pd.RangeIndex(1, 366)
 
     for year, group in df.groupby("year"):
-        series = [None] * 365
-        for _, row in group.iterrows():
-            doy = int(row["aligned_doy"])
-            if 1 <= doy <= 365 and pd.notna(row["TMK"]):
-                series[doy - 1] = round(float(row["TMK"]), 1)
+        daily = group.groupby("aligned_doy")[column].mean().reindex(full_index)
+        valid_days = int(daily.notna().sum())
+
+        if mode == "cumulative_sum":
+            cum = daily.fillna(0.0).cumsum()
+            series = [round(float(v), 1) for v in cum]
+            metric = round(float(daily.sum()), 1) if valid_days >= MIN_VALID_DAYS_FOR_YEAR else None
+        else:
+            series = [round(float(v), 1) if pd.notna(v) else None for v in daily]
+            metric = round(float(daily.mean()), 2) if valid_days >= MIN_VALID_DAYS_FOR_YEAR else None
+
         strands[str(int(year))] = series
+        if metric is not None:
+            annual_metric[str(int(year))] = metric
 
-        valid = group["TMK"].dropna()
-        if len(valid) >= MIN_VALID_DAYS_FOR_YEAR:
-            annual_mean_temp[str(int(year))] = round(float(valid.mean()), 2)
-
-    return strands, annual_mean_temp
+    return strands, annual_metric
 
 
-def build_by_day_stats(df: pd.DataFrame) -> list[dict]:
+def build_by_day_stats(strands: dict[str, list[float | None]], years: list[str]) -> list[dict]:
     stats = []
     for doy in range(1, 366):
-        day_rows = df[(df["aligned_doy"] == doy) & df["TMK"].notna()]
-        if day_rows.empty:
+        i = doy - 1
+        vals = [(y, strands[y][i]) for y in years if strands[y][i] is not None]
+        if not vals:
             stats.append({"doy": doy, "mean": None, "min": None, "minYear": None, "max": None, "maxYear": None})
             continue
-        min_row = day_rows.loc[day_rows["TMK"].idxmin()]
-        max_row = day_rows.loc[day_rows["TMK"].idxmax()]
+        values_only = [v for _, v in vals]
+        min_year, min_v = min(vals, key=lambda x: x[1])
+        max_year, max_v = max(vals, key=lambda x: x[1])
         stats.append(
             {
                 "doy": doy,
-                "mean": round(float(day_rows["TMK"].mean()), 1),
-                "min": round(float(min_row["TMK"]), 1),
-                "minYear": int(min_row["year"]),
-                "max": round(float(max_row["TMK"]), 1),
-                "maxYear": int(max_row["year"]),
+                "mean": round(sum(values_only) / len(values_only), 1),
+                "min": round(min_v, 1),
+                "minYear": int(min_year),
+                "max": round(max_v, 1),
+                "maxYear": int(max_year),
             }
         )
     return stats
 
 
-def series_365(s: pd.Series) -> list[float | None]:
-    out = [None] * 365
-    for doy, value in s.items():
-        if 1 <= int(doy) <= 365 and pd.notna(value):
-            out[int(doy) - 1] = round(float(value), 1)
-    return out
+def build_period(
+    strands: dict[str, list[float | None]],
+    annual_metric: dict[str, float],
+    years_all: list[str],
+    start: int,
+    end: int,
+) -> dict:
+    years_in_period = [y for y in years_all if start <= int(y) <= end]
+
+    daily_series: list[float | None] = []
+    arrs = [strands[y] for y in years_in_period if y in strands]
+    for day_values in zip(*arrs) if arrs else []:
+        present = [v for v in day_values if v is not None]
+        daily_series.append(round(sum(present) / len(present), 1) if present else None)
+    if not arrs:
+        daily_series = [None] * 365
+
+    totals = [annual_metric[y] for y in years_in_period if y in annual_metric]
+    mean_annual_metric = round(sum(totals) / len(totals), 2) if totals else None
+
+    return {"start": start, "end": end, "daily_series": daily_series, "mean_annual_metric": mean_annual_metric}
 
 
-def build_period(df: pd.DataFrame, start: int, end: int) -> dict:
-    period_df = df[(df["year"] >= start) & (df["year"] <= end)]
-    daily_temp = period_df.groupby("aligned_doy")["TMK"].mean()
-    annual_means = period_df.groupby("year")["TMK"].mean()
+def clip(period: tuple[int, int], first_year: int, last_year: int) -> tuple[int, int]:
+    start, end = period
+    return max(start, first_year), min(end, last_year)
+
+
+def build_variable_payload(
+    df: pd.DataFrame,
+    variable_key: str,
+    spec: dict,
+    meta: dict,
+    years_all: list[str],
+    first_year: int,
+    last_year: int,
+) -> dict:
+    strands, annual_metric = build_year_strands(df, spec["column"], spec["mode"])
+    by_day_stats = build_by_day_stats(strands, years_all)
+    period_a = build_period(strands, annual_metric, years_all, *clip(PERIOD_A, first_year, last_year))
+    period_b = build_period(strands, annual_metric, years_all, *clip(PERIOD_B, first_year, last_year))
+
     return {
-        "start": start,
-        "end": end,
-        "daily_mean_temperature": series_365(daily_temp),
-        "mean_annual_temperature": round(float(annual_means.mean()), 2),
+        "meta": {**meta, "first_year": first_year, "last_year": last_year},
+        "variable": variable_key,
+        "unit": spec["unit"],
+        "years": [int(y) for y in years_all],
+        "strands": strands,
+        "annual_metric": annual_metric,
+        "by_day_stats": by_day_stats,
+        "period_a": period_a,
+        "period_b": period_b,
     }
-
-
-def build_comparison_periods(df: pd.DataFrame, first_year: int, last_year: int) -> tuple[dict, dict]:
-    def clip(period: tuple[int, int]) -> tuple[int, int]:
-        start, end = period
-        return max(start, first_year), min(end, last_year)
-
-    return (
-        build_period(df, *clip(PERIOD_A)),
-        build_period(df, *clip(PERIOD_B)),
-    )
 
 
 def main() -> None:
@@ -151,31 +203,20 @@ def main() -> None:
     for station_id in STATION_IDS:
         print(f"Building {station_id}...")
         df = load_station_frame(station_id)
-        strands, annual_mean_temp = build_year_strands(df)
-        by_day_stats = build_by_day_stats(df)
-
-        years_with_strands = sorted(int(y) for y in strands.keys())
-        first_year, last_year = years_with_strands[0], years_with_strands[-1]
-        period_a, period_b = build_comparison_periods(df, first_year, last_year)
-
         meta = stations_meta[station_id]
-        payload = {
-            "meta": {**meta, "first_year": first_year, "last_year": last_year},
-            "years": years_with_strands,
-            "strands": strands,
-            "annual_mean_temp": annual_mean_temp,
-            "by_day_stats": by_day_stats,
-            "period_a": period_a,
-            "period_b": period_b,
-        }
 
-        out_path = OUT_DIR / f"{station_id}.json"
-        out_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-        size_kb = out_path.stat().st_size / 1024
-        print(
-            f"  wrote {out_path} ({size_kb:.0f} KB, {len(years_with_strands)} years, "
-            f"period A {period_a['start']}-{period_a['end']}, period B {period_b['start']}-{period_b['end']})"
-        )
+        years_all_int = sorted(int(y) for y in df["year"].unique())
+        years_all = [str(y) for y in years_all_int]
+        first_year, last_year = years_all_int[0], years_all_int[-1]
+
+        for variable_key, spec in VARIABLES.items():
+            payload = build_variable_payload(df, variable_key, spec, meta, years_all, first_year, last_year)
+            out_dir = OUT_DIR / spec["subdir"]
+            out_dir.mkdir(parents=True, exist_ok=True)
+            out_path = out_dir / f"{station_id}.json"
+            out_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            size_kb = out_path.stat().st_size / 1024
+            print(f"  {variable_key}: wrote {out_path} ({size_kb:.0f} KB)")
 
         index.append(
             {

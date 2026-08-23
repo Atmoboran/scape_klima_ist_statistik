@@ -1,9 +1,12 @@
-// Interactive climate chart: one thin line per year of daily mean temperature,
-// coloured by that year's own annual mean (kälter -> wärmer), plus two dashed
-// 30-year climate-mean reference lines. Which year is highlighted is driven
-// entirely by the timeline (slider/play) in main.js — moving the pointer over
-// the chart only shows that calendar day's historic min/mean/max, it never
-// changes the highlighted year. Built with vendored D3 v7, no build step.
+// Interactive climate chart: one thin line per year (temperature: daily mean;
+// precipitation: cumulative sum by day-of-year), coloured by that year's
+// annual metric, plus two dashed 30-year climate-mean reference lines. Which
+// year is highlighted is driven entirely by the timeline (slider/play) in
+// main.js — moving the pointer over the chart only shows that calendar day's
+// historic min/mean/max, it never changes the highlighted year. Variable-
+// specific presentation (units, colours, tooltip wording) is passed in via a
+// `config` object on each render() call, so this module doesn't need to know
+// which variable it's drawing. Built with vendored D3 v7, no build step.
 (function () {
   "use strict";
 
@@ -12,15 +15,24 @@
   const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
   const TOOLTIP_IDLE_MS = 5000;
 
-  const COLD_COLOR = "#2b3990";
-  const MID_COLOR = "#f2e6c9";
-  const WARM_COLOR = "#d35b22";
+  const DEFAULT_CONFIG = {
+    colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
+    axisSuffix: "°",
+    yMin: null, // null = auto-pad below the lowest value; set e.g. 0 to anchor a magnitude that can't go negative
+    aboveColor: "#dd2a26",
+    belowColor: "#2b3990",
+    formatDayTooltip: (stat, dateLabel) =>
+      `<b>${dateLabel}</b><br/>Durchschnitt: ${stat.mean}<br/>` +
+      `<span class="tt-cold">Minimum: ${stat.min} (${stat.minYear})</span><br/>` +
+      `<span class="tt-warm">Maximum: ${stat.max} (${stat.maxYear})</span>`,
+  };
 
   function createSpaghettiPlot(opts) {
     const svg = d3.select(opts.svgEl);
     const tooltipEl = opts.tooltipEl;
 
     let data = null;
+    let config = DEFAULT_CONFIG;
     let width = 0;
     let height = 0;
     let xScale, yScale, colorScale;
@@ -49,8 +61,9 @@
       gGuide.selectAll("*").remove();
     }
 
-    function render(stationData) {
+    function render(stationData, renderConfig) {
       data = stationData;
+      config = Object.assign({}, DEFAULT_CONFIG, renderConfig || {});
       measure();
 
       const innerW = width - MARGIN.left - MARGIN.right;
@@ -63,15 +76,17 @@
         for (const v of data.strands[year]) if (v !== null) allValues.push(v);
       }
       const [minV, maxV] = d3.extent(allValues);
-      yScale = d3.scaleLinear().domain([minV - 2, maxV + 2]).range([innerH, 0]);
+      const pad = (maxV - minV) * 0.03 || 1;
+      const yMin = config.yMin !== null ? config.yMin : minV - pad;
+      yScale = d3.scaleLinear().domain([yMin, maxV + pad]).range([innerH, 0]);
 
-      const amtValues = Object.values(data.annual_mean_temp);
+      const amtValues = Object.values(data.annual_metric);
       const [minAmt, maxAmt] = d3.extent(amtValues);
       const midAmt = (minAmt + maxAmt) / 2;
       colorScale = d3
         .scaleLinear()
         .domain([minAmt, midAmt, maxAmt])
-        .range([COLD_COLOR, MID_COLOR, WARM_COLOR])
+        .range(config.colorStops)
         .interpolate(d3.interpolateRgb);
       opts.onColorScaleReady && opts.onColorScaleReady(colorScale, minAmt, maxAmt);
 
@@ -110,7 +125,7 @@
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => d + "°");
+      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => d + config.axisSuffix);
       gAxes.append("g").attr("class", "axis").call(yAxis);
     }
 
@@ -129,7 +144,7 @@
       const strandData = data.years.map((year) => ({
         year,
         points: strandPoints(year),
-        amt: data.annual_mean_temp[year],
+        amt: data.annual_metric[year],
       }));
 
       gStrands.selectAll("path.year-strand")
@@ -142,7 +157,7 @@
       gStrands.selectAll("path.period-line").remove();
       for (const key of ["period_a", "period_b"]) {
         const period = data[key];
-        const points = period.daily_mean_temperature.map((v, i) => [i + 1, v]);
+        const points = period.daily_series.map((v, i) => [i + 1, v]);
         gStrands
           .append("path")
           .datum(points)
@@ -163,11 +178,7 @@
         tooltipEl.hidden = true;
         return;
       }
-      tooltipEl.innerHTML =
-        `<b>${doyToDateLabel(doy)}</b><br/>` +
-        `Durchschnitt: ${stat.mean}°C<br/>` +
-        `<span class="tt-cold">kälteste: ${stat.min}°C (${stat.minYear})</span><br/>` +
-        `<span class="tt-warm">wärmste: ${stat.max}°C (${stat.maxYear})</span>`;
+      tooltipEl.innerHTML = config.formatDayTooltip(stat, doyToDateLabel(doy));
       tooltipEl.hidden = false;
 
       const wrapBox = opts.svgEl.parentElement.getBoundingClientRect();
@@ -200,26 +211,26 @@
       gAnomaly.selectAll("*").remove();
       if (!year) return;
       const strand = data.strands[year];
-      const baseline = data.period_a.daily_mean_temperature;
+      const baseline = data.period_a.daily_series;
 
       const rows = strand.map((v, i) => ({ doy: i + 1, strand: v, baseline: baseline[i] }));
 
-      const areaWarmer = d3
+      const areaAbove = d3
         .area()
         .defined((d) => d.strand !== null && d.baseline !== null && d.strand >= d.baseline)
         .x((d) => xScale(d.doy))
         .y0((d) => yScale(d.baseline))
         .y1((d) => yScale(d.strand));
 
-      const areaCooler = d3
+      const areaBelow = d3
         .area()
         .defined((d) => d.strand !== null && d.baseline !== null && d.strand < d.baseline)
         .x((d) => xScale(d.doy))
         .y0((d) => yScale(d.baseline))
         .y1((d) => yScale(d.strand));
 
-      gAnomaly.append("path").datum(rows).attr("class", "anomaly-area warmer").attr("d", areaWarmer);
-      gAnomaly.append("path").datum(rows).attr("class", "anomaly-area cooler").attr("d", areaCooler);
+      gAnomaly.append("path").datum(rows).attr("class", "anomaly-area").attr("fill", config.aboveColor).attr("d", areaAbove);
+      gAnomaly.append("path").datum(rows).attr("class", "anomaly-area").attr("fill", config.belowColor).attr("d", areaBelow);
     }
 
     function setYear(year) {
@@ -250,7 +261,7 @@
     }
 
     window.addEventListener("resize", debounce(() => {
-      if (data) render(data);
+      if (data) render(data, config);
     }, 200));
 
     return { render, setYear };
