@@ -445,17 +445,15 @@
       .datum(pa.daily_series.map((v, i) => [i + 1, v]))
       .attr("d", line)
       .attr("fill", "none")
-      .attr("stroke", "#2b3990")
-      .attr("stroke-width", 2.5)
-      .attr("stroke-dasharray", "7 4");
+      .attr("stroke", "#5a3c8d")
+      .attr("stroke-width", 2.5);
 
     g.append("path")
       .datum(pb.daily_series.map((v, i) => [i + 1, v]))
       .attr("d", line)
       .attr("fill", "none")
-      .attr("stroke", "#dd2a26")
-      .attr("stroke-width", 2.5)
-      .attr("stroke-dasharray", "7 4");
+      .attr("stroke", "#6e6b25")
+      .attr("stroke-width", 2.5);
   }
 
   main();
