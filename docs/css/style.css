@@ -208,6 +208,13 @@ html, body {
   outline-offset: 2px;
 }
 
+.station-meta {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  margin: 0.3rem 0.75rem 0;
+}
+
 .plot-shell {
   margin: 0 auto;
   padding: 0 0.6rem 2rem;

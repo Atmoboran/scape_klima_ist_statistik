@@ -13,6 +13,7 @@
   const el = {
     variableSelect: document.getElementById("variable-select"),
     select: document.getElementById("station-select"),
+    stationMeta: document.getElementById("station-meta"),
     chart: document.getElementById("chart"),
     tooltip: document.getElementById("tooltip"),
     legendLabelCold: document.getElementById("legend-label-cold"),
@@ -213,6 +214,10 @@
     const data = await res.json();
     state.currentData = data;
     const config = VARIABLE_CONFIG[variableKey];
+
+    const meta = data.meta;
+    el.stationMeta.textContent =
+      `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O · ${meta.elevation_m} m ü. NHN · ${meta.bundesland}`;
 
     el.chart.setAttribute("aria-label", config.chartAriaLabel);
     el.legendLabelCold.textContent = config.legendCold;
@@ -441,14 +446,16 @@
       .attr("d", line)
       .attr("fill", "none")
       .attr("stroke", "#2b3990")
-      .attr("stroke-width", 2.5);
+      .attr("stroke-width", 2.5)
+      .attr("stroke-dasharray", "7 4");
 
     g.append("path")
       .datum(pb.daily_series.map((v, i) => [i + 1, v]))
       .attr("d", line)
       .attr("fill", "none")
       .attr("stroke", "#dd2a26")
-      .attr("stroke-width", 2.5);
+      .attr("stroke-width", 2.5)
+      .attr("stroke-dasharray", "7 4");
   }
 
   main();
