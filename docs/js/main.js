@@ -23,15 +23,17 @@
     legendGradient: document.getElementById("legend-gradient"),
     legendPeriods: document.getElementById("legend-periods"),
     deviationYear: document.getElementById("deviation-year"),
+    deviationMean: document.getElementById("deviation-mean"),
+    statLabelMean: document.getElementById("stat-label-mean"),
     deviationValue: document.getElementById("deviation-value"),
     deviationPeriodLabel: document.getElementById("deviation-period-label"),
     slider: document.getElementById("year-slider"),
     playBtn: document.getElementById("play-btn"),
     prevYearBtn: document.getElementById("prev-year-btn"),
     nextYearBtn: document.getElementById("next-year-btn"),
-    readout: document.getElementById("timeline-readout"),
     compareTitle: document.getElementById("compare-title"),
     compareHeadline: document.getElementById("compare-headline"),
+    compareLegend: document.getElementById("compare-legend"),
     compareChart: document.getElementById("compare-chart"),
     viewToggle: document.getElementById("view-toggle"),
     methodologyDay: document.getElementById("methodology-day"),
@@ -53,21 +55,19 @@
       axisSuffix: "°",
       yMin: null,
       colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
-      legendCold: "kälter als Referenzperiode",
-      legendWarm: "wärmer als Referenzperiode",
+      legendCold: "kälter",
+      legendWarm: "wärmer",
+      valueLabel: "Jahresmittel",
       aboveColor: "#dd2a26",
       belowColor: "#2b3990",
       chartAriaLabel: "Verlauf der Tagesmitteltemperatur für jedes verfügbare Jahr",
       formatValue: (v) => `${v.toFixed(1)} °C`,
       formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} °C`,
-      incompleteLabel: "unvollständige Messreihe",
+      incompleteLabel: "lückenhaft",
       formatDayTooltip: (stat, dateLabel) =>
         `<b>${dateLabel}</b><br/>Durchschnitt: ${stat.mean}°C<br/>` +
         `<span class="tt-cold">kälteste: ${stat.min}°C (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">wärmste: ${stat.max}°C (${stat.maxYear})</span>`,
-      formatReadout: (year, amt, diff, periodA) =>
-        `Jahr ${year} — Mitteltemperatur: ${amt.toFixed(1)} °C<br>` +
-        `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} °C`,
       formatCompareHeadline: (pa, pb, diff) =>
         `${pb.start}–${pb.end} war im Jahresmittel <strong>${Math.abs(diff).toFixed(1)} °C ${diff >= 0 ? "wärmer" : "kühler"}</strong> ` +
         `als ${pa.start}–${pa.end}.`,
@@ -84,21 +84,19 @@
       axisSuffix: " mm",
       yMin: 0,
       colorStops: ["#d35b22", "#f2e6c9", "#1ca3d6"],
-      legendCold: "trockener als Referenzperiode",
-      legendWarm: "nasser als Referenzperiode",
+      legendCold: "trockener",
+      legendWarm: "nasser",
+      valueLabel: "Jahressumme",
       aboveColor: "#1ca3d6",
       belowColor: "#d35b22",
       chartAriaLabel: "Kumulierter Niederschlag im Jahresverlauf für jedes verfügbare Jahr",
       formatValue: (v) => `${v.toFixed(0)} mm`,
       formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} mm`,
-      incompleteLabel: "unvollständige Messreihe",
+      incompleteLabel: "lückenhaft",
       formatDayTooltip: (stat, dateLabel) =>
         `<b>bis ${dateLabel}</b><br/>im Schnitt: ${stat.mean} mm<br/>` +
         `<span class="tt-cold">am wenigsten: ${stat.min} mm (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">am meisten: ${stat.max} mm (${stat.maxYear})</span>`,
-      formatReadout: (year, amt, diff, periodA) =>
-        `Jahr ${year} — Jahresniederschlag: ${amt.toFixed(0)} mm<br>` +
-        `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} mm`,
       formatCompareHeadline: (pa, pb, diff) =>
         `${pb.start}–${pb.end} brachte im Schnitt <strong>${Math.abs(diff).toFixed(0)} mm ${diff >= 0 ? "mehr" : "weniger"} Niederschlag pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,
@@ -115,21 +113,19 @@
       axisSuffix: " h",
       yMin: 0,
       colorStops: ["#6b7280", "#f2e6c9", "#f0b429"],
-      legendCold: "trüber als Referenzperiode",
-      legendWarm: "sonniger als Referenzperiode",
+      legendCold: "trüber",
+      legendWarm: "sonniger",
+      valueLabel: "Jahressumme",
       aboveColor: "#f0b429",
       belowColor: "#6b7280",
       chartAriaLabel: "Verlauf der täglichen Sonnenscheindauer für jedes verfügbare Jahr",
       formatValue: (v) => `${v.toFixed(0)} h`,
       formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h`,
-      incompleteLabel: "unvollständige Messreihe",
+      incompleteLabel: "lückenhaft",
       formatDayTooltip: (stat, dateLabel) =>
         `<b>${dateLabel}</b><br/>Durchschnitt: ${stat.mean} h<br/>` +
         `<span class="tt-cold">am wenigsten: ${stat.min} h (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">am meisten: ${stat.max} h (${stat.maxYear})</span>`,
-      formatReadout: (year, amt, diff, periodA) =>
-        `Jahr ${year} — Sonnenscheindauer: ${amt.toFixed(0)} h<br>` +
-        `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h`,
       formatCompareHeadline: (pa, pb, diff) =>
         `${pb.start}–${pb.end} brachte im Schnitt <strong>${Math.abs(diff).toFixed(0)} h ${diff >= 0 ? "mehr" : "weniger"} Sonnenschein pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,
@@ -222,6 +218,7 @@
       `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O · ${meta.elevation_m} m ü. NHN · ${meta.bundesland}`;
 
     el.chart.setAttribute("aria-label", config.chartAriaLabel);
+    el.statLabelMean.textContent = config.valueLabel;
     el.legendLabelCold.textContent = config.legendCold;
     el.legendLabelWarm.textContent = config.legendWarm;
     el.legendLabelCold.style.color = config.colorStops[0];
@@ -261,7 +258,7 @@
 
   function renderLegend(colorScale, minAmt, maxAmt) {
     const width = 180;
-    const height = 12;
+    const height = 10;
     el.legendGradient.setAttribute("viewBox", `0 0 ${width} ${height}`);
     el.legendGradient.innerHTML = "";
     const svg = d3.select(el.legendGradient);
@@ -294,7 +291,7 @@
       const active = state.activePeriod === item.key;
       btn.className = `period-toggle-btn ${item.cls}${active ? " active" : ""}`;
       btn.setAttribute("aria-pressed", active ? "true" : "false");
-      btn.innerHTML = `<span class="swatch-line"></span>Referenzperiode ${item.label}`;
+      btn.textContent = item.label;
       btn.addEventListener("click", () => setActivePeriod(item.key));
       el.legendPeriods.appendChild(btn);
     }
@@ -378,7 +375,7 @@
     const period = data[state.activePeriod];
     el.deviationYear.textContent = year || "–";
     if (!year) {
-      el.readout.textContent = " ";
+      el.deviationMean.textContent = "–";
       setDeviation(null, config);
       return;
     }
@@ -386,20 +383,16 @@
     const baseline = period.mean_annual_metric;
 
     if (amt === undefined) {
-      el.readout.textContent = `Jahr ${year}: ${config.incompleteLabel}`;
+      el.deviationMean.textContent = config.incompleteLabel;
       setDeviation(null, config);
       return;
     }
+    el.deviationMean.textContent = config.formatValue(amt);
     if (baseline === null || baseline === undefined) {
-      el.readout.innerHTML =
-        `Jahr ${year} — ${config.formatValue(amt)}<br>` +
-        `keine Referenzperiode ${period.start}–${period.end} verfügbar (zu wenige vollständige Jahre bei dieser Station)`;
       setDeviation(null, config);
       return;
     }
-    const diff = amt - baseline;
-    setDeviation(diff, config);
-    el.readout.innerHTML = config.formatReadout(year, amt, diff, period);
+    setDeviation(amt - baseline, config);
   }
 
   function startPlaying() {
@@ -441,11 +434,23 @@
       el.compareHeadline.textContent =
         `Für die Referenzperiode ${missing} liegen bei dieser Station zu wenige vollständige Jahre vor, ` +
         `um einen verlässlichen Vergleich zu berechnen.`;
+      el.compareLegend.innerHTML = "";
       return;
     }
 
     const diff = pb.mean_annual_metric - pa.mean_annual_metric;
     el.compareHeadline.innerHTML = config.formatCompareHeadline(pa, pb, diff);
+
+    el.compareLegend.innerHTML = "";
+    for (const item of [
+      { cls: "period-a", label: `${pa.start}–${pa.end}` },
+      { cls: "period-b", label: `${pb.start}–${pb.end}` },
+    ]) {
+      const span = document.createElement("span");
+      span.className = `compare-legend-item ${item.cls}`;
+      span.innerHTML = `<span class="swatch-line"></span>${item.label}`;
+      el.compareLegend.appendChild(span);
+    }
 
     const W = 800, H = 320, M = { top: 16, right: 20, bottom: 34, left: 44 };
     const innerW = W - M.left - M.right;
@@ -491,14 +496,14 @@
       .datum(pa.daily_series.map((v, i) => [i + 1, v]))
       .attr("d", line)
       .attr("fill", "none")
-      .attr("stroke", "#5a3c8d")
+      .attr("stroke", "#2b3990")
       .attr("stroke-width", 2.5);
 
     g.append("path")
       .datum(pb.daily_series.map((v, i) => [i + 1, v]))
       .attr("d", line)
       .attr("fill", "none")
-      .attr("stroke", "#6e6b25")
+      .attr("stroke", "#dd2a26")
       .attr("stroke-width", 2.5);
   }
 

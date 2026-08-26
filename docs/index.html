@@ -59,19 +59,20 @@
 
 <main class="plot-shell">
   <div class="plot-toolbar">
-    <div class="legend" id="legend" aria-hidden="true">
-      <div class="legend-row">
-        <span class="legend-label" id="legend-label-cold">kälteres Jahr</span>
-        <svg id="legend-gradient" width="180" height="12"></svg>
-        <span class="legend-label" id="legend-label-warm">wärmeres Jahr</span>
-      </div>
-      <div class="legend-row legend-row-periods" id="legend-periods"></div>
-    </div>
     <div class="deviation-badge" id="deviation-badge">
       <span class="deviation-year" id="deviation-year">–</span>
-      <span class="deviation-label">ABWEICHUNG VOM MITTEL <span id="deviation-period-label"></span></span>
-      <span class="deviation-value" id="deviation-value">–</span>
+      <div class="deviation-stats">
+        <div class="stat-block">
+          <span class="stat-label" id="stat-label-mean">Mittelwert</span>
+          <span class="deviation-mean" id="deviation-mean">–</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-label">Abweichung <span id="deviation-period-label"></span></span>
+          <span class="deviation-value" id="deviation-value">–</span>
+        </div>
+      </div>
     </div>
+    <div class="period-toggle-row" id="legend-periods"></div>
   </div>
 
   <div class="timeline">
@@ -79,7 +80,12 @@
     <button id="play-btn" class="play-btn" aria-label="Durch die Jahre abspielen">&#9654;</button>
     <button id="next-year-btn" class="step-btn" aria-label="Ein Jahr vor">&#9654;</button>
     <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" aria-label="Jahr auswählen" />
-    <div class="timeline-readout" id="timeline-readout">&nbsp;</div>
+  </div>
+
+  <div class="colorbar-row" id="colorbar-row" aria-hidden="true">
+    <span class="legend-label" id="legend-label-cold">kälter</span>
+    <svg id="legend-gradient" width="180" height="10"></svg>
+    <span class="legend-label" id="legend-label-warm">wärmer</span>
   </div>
 
   <div class="chart-wrap">
@@ -91,6 +97,7 @@
   <section class="compare" id="compare">
     <h2 id="compare-title">Klimavergleich</h2>
     <p class="compare-headline" id="compare-headline"></p>
+    <div class="compare-legend" id="compare-legend"></div>
     <svg class="compare-chart" id="compare-chart" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
   </section>
 
