@@ -6,6 +6,8 @@
     currentStationId: null,
     currentVariable: "temperature",
     currentData: null,
+    activePeriod: "period_a",
+    annualDiffScale: null,
     plot: null,
     playTimer: null,
   };
@@ -51,8 +53,8 @@
       axisSuffix: "°",
       yMin: null,
       colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
-      legendCold: "kälteres Jahr",
-      legendWarm: "wärmeres Jahr",
+      legendCold: "kälter als Referenzperiode",
+      legendWarm: "wärmer als Referenzperiode",
       aboveColor: "#dd2a26",
       belowColor: "#2b3990",
       chartAriaLabel: "Verlauf der Tagesmitteltemperatur für jedes verfügbare Jahr",
@@ -67,7 +69,7 @@
         `Jahr ${year} — Mitteltemperatur: ${amt.toFixed(1)} °C<br>` +
         `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} °C`,
       formatCompareHeadline: (pa, pb, diff) =>
-        `${pb.start}–${pb.end} war im Jahresmittel <strong>${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} °C ${diff >= 0 ? "wärmer" : "kühler"}</strong> ` +
+        `${pb.start}–${pb.end} war im Jahresmittel <strong>${Math.abs(diff).toFixed(1)} °C ${diff >= 0 ? "wärmer" : "kühler"}</strong> ` +
         `als ${pa.start}–${pa.end}.`,
       methodology: {
         day: "<strong>Tagesmitteltemperatur:</strong> An jeder Wetterstation wird die Temperatur mehrmals täglich gemessen. Der Mittelwert dieser Messungen ergibt einen einzigen Wert pro Tag — die Tagesmitteltemperatur.",
@@ -82,8 +84,8 @@
       axisSuffix: " mm",
       yMin: 0,
       colorStops: ["#d35b22", "#f2e6c9", "#1ca3d6"],
-      legendCold: "trockeneres Jahr",
-      legendWarm: "nasseres Jahr",
+      legendCold: "trockener als Referenzperiode",
+      legendWarm: "nasser als Referenzperiode",
       aboveColor: "#1ca3d6",
       belowColor: "#d35b22",
       chartAriaLabel: "Kumulierter Niederschlag im Jahresverlauf für jedes verfügbare Jahr",
@@ -98,7 +100,7 @@
         `Jahr ${year} — Jahresniederschlag: ${amt.toFixed(0)} mm<br>` +
         `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} mm`,
       formatCompareHeadline: (pa, pb, diff) =>
-        `${pb.start}–${pb.end} brachte im Schnitt <strong>${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} mm ${diff >= 0 ? "mehr" : "weniger"} Niederschlag pro Jahr</strong> ` +
+        `${pb.start}–${pb.end} brachte im Schnitt <strong>${Math.abs(diff).toFixed(0)} mm ${diff >= 0 ? "mehr" : "weniger"} Niederschlag pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,
       methodology: {
         day: "<strong>Tagesniederschlag:</strong> An jeder Wetterstation wird die gefallene Niederschlagsmenge (Regen, Schnee als Wasseräquivalent) einmal täglich gemessen — ein Wert pro Tag in Millimetern.",
@@ -113,8 +115,8 @@
       axisSuffix: " h",
       yMin: 0,
       colorStops: ["#6b7280", "#f2e6c9", "#f0b429"],
-      legendCold: "trübes Jahr",
-      legendWarm: "sonniges Jahr",
+      legendCold: "trüber als Referenzperiode",
+      legendWarm: "sonniger als Referenzperiode",
       aboveColor: "#f0b429",
       belowColor: "#6b7280",
       chartAriaLabel: "Verlauf der täglichen Sonnenscheindauer für jedes verfügbare Jahr",
@@ -129,7 +131,7 @@
         `Jahr ${year} — Sonnenscheindauer: ${amt.toFixed(0)} h<br>` +
         `Abweichung ggü. Referenzperiode ${periodA.start}–${periodA.end}: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h`,
       formatCompareHeadline: (pa, pb, diff) =>
-        `${pb.start}–${pb.end} brachte im Schnitt <strong>${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h ${diff >= 0 ? "mehr" : "weniger"} Sonnenschein pro Jahr</strong> ` +
+        `${pb.start}–${pb.end} brachte im Schnitt <strong>${Math.abs(diff).toFixed(0)} h ${diff >= 0 ? "mehr" : "weniger"} Sonnenschein pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,
       methodology: {
         day:
@@ -229,6 +231,8 @@
     el.methodologyPeriod.innerHTML = config.methodology.period;
     el.methodologyContext.innerHTML = config.methodology.context;
 
+    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
+
     state.plot.render(data, {
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
@@ -236,10 +240,23 @@
       aboveColor: config.aboveColor,
       belowColor: config.belowColor,
       formatDayTooltip: config.formatDayTooltip,
+      activePeriod: state.activePeriod,
     });
     renderPeriodLegend(data);
     setupTimeline(data);
     renderCompare(data);
+  }
+
+  // A symmetric diverging scale over how far each complete year's annual
+  // metric sits from the active reference period's mean - drives the shade
+  // of the big deviation figure so it reflects magnitude, not just sign.
+  function buildAnnualDiffScale(data, activePeriodKey, colorStops) {
+    const baselineMean = data[activePeriodKey].mean_annual_metric;
+    if (baselineMean === null || baselineMean === undefined) return null;
+    const diffs = Object.values(data.annual_metric).map((v) => v - baselineMean);
+    if (!diffs.length) return null;
+    const maxAbs = Math.max(...diffs.map(Math.abs)) || 1;
+    return d3.scaleLinear().domain([-maxAbs, 0, maxAbs]).range(colorStops).interpolate(d3.interpolateRgb).clamp(true);
   }
 
   function renderLegend(colorScale, minAmt, maxAmt) {
@@ -268,16 +285,42 @@
   function renderPeriodLegend(data) {
     el.legendPeriods.innerHTML = "";
     const items = [
-      { cls: "period-a", label: `Klimareferenzperiode ${data.period_a.start}–${data.period_a.end}` },
-      { cls: "period-b", label: `Klimareferenzperiode ${data.period_b.start}–${data.period_b.end}` },
+      { key: "period_a", cls: "period-a", label: `${data.period_a.start}–${data.period_a.end}` },
+      { key: "period_b", cls: "period-b", label: `${data.period_b.start}–${data.period_b.end}` },
     ];
     for (const item of items) {
-      const span = document.createElement("span");
-      span.className = `period-swatch ${item.cls}`;
-      span.innerHTML = `<span class="swatch-line"></span>${item.label}`;
-      el.legendPeriods.appendChild(span);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      const active = state.activePeriod === item.key;
+      btn.className = `period-toggle-btn ${item.cls}${active ? " active" : ""}`;
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+      btn.innerHTML = `<span class="swatch-line"></span>Referenzperiode ${item.label}`;
+      btn.addEventListener("click", () => setActivePeriod(item.key));
+      el.legendPeriods.appendChild(btn);
     }
-    el.deviationPeriodLabel.textContent = `(vs. ${data.period_a.start}–${data.period_a.end})`;
+    const active = data[state.activePeriod];
+    el.deviationPeriodLabel.textContent = `(vs. ${active.start}–${active.end})`;
+  }
+
+  function setActivePeriod(key) {
+    if (state.activePeriod === key) return;
+    state.activePeriod = key;
+    const data = state.currentData;
+    const config = VARIABLE_CONFIG[state.currentVariable];
+
+    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
+    state.plot.render(data, {
+      colorStops: config.colorStops,
+      axisSuffix: config.axisSuffix,
+      yMin: config.yMin,
+      aboveColor: config.aboveColor,
+      belowColor: config.belowColor,
+      formatDayTooltip: config.formatDayTooltip,
+      activePeriod: state.activePeriod,
+      preserveYear: true,
+    });
+    renderPeriodLegend(data);
+    updateReadout(data.years[+el.slider.value]);
   }
 
   function setupTimeline(data) {
@@ -324,12 +367,15 @@
       return;
     }
     el.deviationValue.textContent = config.formatDiff(diff);
-    el.deviationValue.style.color = diff >= 0 ? config.aboveColor : config.belowColor;
+    el.deviationValue.style.color = state.annualDiffScale
+      ? state.annualDiffScale(diff)
+      : diff >= 0 ? config.aboveColor : config.belowColor;
   }
 
   function updateReadout(year) {
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
+    const period = data[state.activePeriod];
     el.deviationYear.textContent = year || "–";
     if (!year) {
       el.readout.textContent = " ";
@@ -337,7 +383,7 @@
       return;
     }
     const amt = data.annual_metric[year];
-    const baseline = data.period_a.mean_annual_metric;
+    const baseline = period.mean_annual_metric;
 
     if (amt === undefined) {
       el.readout.textContent = `Jahr ${year}: ${config.incompleteLabel}`;
@@ -347,13 +393,13 @@
     if (baseline === null || baseline === undefined) {
       el.readout.innerHTML =
         `Jahr ${year} — ${config.formatValue(amt)}<br>` +
-        `keine Referenzperiode ${data.period_a.start}–${data.period_a.end} verfügbar (zu wenige vollständige Jahre bei dieser Station)`;
+        `keine Referenzperiode ${period.start}–${period.end} verfügbar (zu wenige vollständige Jahre bei dieser Station)`;
       setDeviation(null, config);
       return;
     }
     const diff = amt - baseline;
     setDeviation(diff, config);
-    el.readout.innerHTML = config.formatReadout(year, amt, diff, data.period_a);
+    el.readout.innerHTML = config.formatReadout(year, amt, diff, period);
   }
 
   function startPlaying() {

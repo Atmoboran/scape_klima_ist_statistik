@@ -1,12 +1,14 @@
 // Interactive climate chart: one thin line per year (temperature: daily mean;
-// precipitation: cumulative sum by day-of-year), coloured by that year's
-// annual metric, plus two dashed 30-year climate-mean reference lines. Which
-// year is highlighted is driven entirely by the timeline (slider/play) in
-// main.js — moving the pointer over the chart only shows that calendar day's
-// historic min/mean/max, it never changes the highlighted year. Variable-
-// specific presentation (units, colours, tooltip wording) is passed in via a
-// `config` object on each render() call, so this module doesn't need to know
-// which variable it's drawing. Built with vendored D3 v7, no build step.
+// precipitation: cumulative sum by day-of-year). Every point along a strand
+// is coloured by how far that day deviates from the active 30-year climate
+// reference period (a per-year linear gradient, not one flat colour), and
+// that same reference period is drawn as a single dashed line. Which year is
+// highlighted is driven entirely by the timeline (slider/play) in main.js —
+// moving the pointer over the chart only shows that calendar day's historic
+// min/mean/max, it never changes the highlighted year. Variable-specific
+// presentation (units, colours, tooltip wording) is passed in via a `config`
+// object on each render() call, so this module doesn't need to know which
+// variable it's drawing. Built with vendored D3 v7, no build step.
 (function () {
   "use strict";
 
@@ -21,6 +23,7 @@
     yMin: null, // null = auto-pad below the lowest value; set e.g. 0 to anchor a magnitude that can't go negative
     aboveColor: "#dd2a26",
     belowColor: "#2b3990",
+    activePeriod: "period_a", // which climate reference period ("period_a"/"period_b") strands are colored against
     formatDayTooltip: (stat, dateLabel) =>
       `<b>${dateLabel}</b><br/>Durchschnitt: ${stat.mean}<br/>` +
       `<span class="tt-cold">Minimum: ${stat.min} (${stat.minYear})</span><br/>` +
@@ -35,9 +38,11 @@
     let config = DEFAULT_CONFIG;
     let width = 0;
     let height = 0;
-    let xScale, yScale, colorScale;
+    let xScale, yScale, devColorScale, baseline;
+    let highlightedYear = null;
     let idleTimer = null;
 
+    const gDefs = svg.append("defs");
     const gAxes = svg.append("g").attr("class", "axes-layer");
     const gAnomaly = svg.append("g").attr("class", "anomaly-layer");
     const gStrands = svg.append("g").attr("class", "strands-layer");
@@ -80,15 +85,29 @@
       const yMin = config.yMin !== null ? config.yMin : minV - pad;
       yScale = d3.scaleLinear().domain([yMin, maxV + pad]).range([innerH, 0]);
 
-      const amtValues = Object.values(data.annual_metric);
-      const [minAmt, maxAmt] = d3.extent(amtValues);
-      const midAmt = (minAmt + maxAmt) / 2;
-      colorScale = d3
+      // Colour every point on every strand by how far *that day* deviates from
+      // the same calendar day in the active climate reference period - not by
+      // a single colour per year - so the line itself reads as a running
+      // anomaly. A robust (95th-percentile) bound keeps a handful of extreme
+      // record days from washing out the colour contrast everywhere else.
+      const activeKey = config.activePeriod || "period_a";
+      baseline = data[activeKey].daily_series;
+      const deviations = [];
+      for (const year of data.years) {
+        const strand = data.strands[year];
+        for (let i = 0; i < strand.length; i++) {
+          const v = strand[i], b = baseline[i];
+          if (v !== null && b !== null && b !== undefined) deviations.push(v - b);
+        }
+      }
+      const maxAbsDev = robustMaxAbs(deviations);
+      devColorScale = d3
         .scaleLinear()
-        .domain([minAmt, midAmt, maxAmt])
+        .domain([-maxAbsDev, 0, maxAbsDev])
         .range(config.colorStops)
-        .interpolate(d3.interpolateRgb);
-      opts.onColorScaleReady && opts.onColorScaleReady(colorScale, minAmt, maxAmt);
+        .interpolate(d3.interpolateRgb)
+        .clamp(true);
+      opts.onColorScaleReady && opts.onColorScaleReady(devColorScale, -maxAbsDev, maxAbsDev);
 
       svg.attr("width", width).attr("height", height);
       gAxes.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
@@ -108,7 +127,8 @@
       wireOverlay();
 
       if (data.years.length) {
-        setYear(data.years[data.years.length - 1]);
+        const preserve = config.preserveYear && highlightedYear && data.years.includes(highlightedYear);
+        setYear(preserve ? highlightedYear : data.years[data.years.length - 1]);
       }
     }
 
@@ -134,6 +154,11 @@
       return series.map((v, i) => [i + 1, v]);
     }
 
+    function dayColor(strand, i) {
+      const v = strand[i], b = baseline[i];
+      return v !== null && b !== null && b !== undefined ? devColorScale(v - b) : "#8a8a8a";
+    }
+
     function drawStrands() {
       const line = d3
         .line()
@@ -141,29 +166,42 @@
         .x((d) => xScale(d[0]))
         .y((d) => yScale(d[1]));
 
-      const strandData = data.years.map((year) => ({
-        year,
-        points: strandPoints(year),
-        amt: data.annual_metric[year],
-      }));
+      const strandData = data.years.map((year) => ({ year, points: strandPoints(year) }));
+
+      // One horizontal gradient per year, stroked along the path's own
+      // bounding box (objectBoundingBox) so it needs no pixel-coordinate
+      // bookkeeping on resize - each stop is just "day N's deviation colour".
+      const GRADIENT_STEP = 4; // 365 - 1 = 364, evenly divisible by 4
+      gDefs.selectAll("*").remove();
+      for (const d of strandData) {
+        const strand = data.strands[d.year];
+        d.gradId = `year-grad-${d.year}`;
+        const grad = gDefs
+          .append("linearGradient")
+          .attr("id", d.gradId)
+          .attr("x1", "0%").attr("y1", "0%")
+          .attr("x2", "100%").attr("y2", "0%");
+        for (let i = 0; i <= 364; i += GRADIENT_STEP) {
+          grad.append("stop").attr("offset", `${(i / 364) * 100}%`).attr("stop-color", dayColor(strand, i));
+        }
+      }
 
       gStrands.selectAll("path.year-strand")
         .data(strandData, (d) => d.year)
         .join("path")
         .attr("class", "year-strand")
         .attr("d", (d) => line(d.points))
-        .attr("stroke", (d) => (d.amt !== undefined ? colorScale(d.amt) : "#8a8a8a"));
+        .attr("stroke", (d) => `url(#${d.gradId})`);
 
       gStrands.selectAll("path.period-line").remove();
-      for (const key of ["period_a", "period_b"]) {
-        const period = data[key];
-        const points = period.daily_series.map((v, i) => [i + 1, v]);
-        gStrands
-          .append("path")
-          .datum(points)
-          .attr("class", `period-line ${key === "period_a" ? "period-a" : "period-b"}`)
-          .attr("d", line);
-      }
+      const activeKey = config.activePeriod || "period_a";
+      const period = data[activeKey];
+      const points = period.daily_series.map((v, i) => [i + 1, v]);
+      gStrands
+        .append("path")
+        .datum(points)
+        .attr("class", `period-line ${activeKey === "period_a" ? "period-a" : "period-b"}`)
+        .attr("d", line);
     }
 
     function doyToDateLabel(doy) {
@@ -211,7 +249,6 @@
       gAnomaly.selectAll("*").remove();
       if (!year) return;
       const strand = data.strands[year];
-      const baseline = data.period_a.daily_series;
 
       const rows = strand.map((v, i) => ({ doy: i + 1, strand: v, baseline: baseline[i] }));
 
@@ -234,6 +271,7 @@
     }
 
     function setYear(year) {
+      highlightedYear = year;
       gStrands.selectAll("path.year-strand")
         .classed("highlighted", (d) => d.year === year)
         .classed("dimmed", (d) => year !== null && d.year !== year);
@@ -261,7 +299,7 @@
     }
 
     window.addEventListener("resize", debounce(() => {
-      if (data) render(data, config);
+      if (data) render(data, Object.assign({}, config, { preserveYear: true }));
     }, 200));
 
     return { render, setYear };
@@ -274,6 +312,17 @@
       const args = arguments;
       t = setTimeout(() => fn.apply(null, args), ms);
     };
+  }
+
+  // A handful of extreme record days shouldn't stretch the colour scale so
+  // far that everything else collapses toward the neutral midpoint - use a
+  // high percentile of |deviation| as the scale's bound instead of the true
+  // max.
+  function robustMaxAbs(values) {
+    if (!values.length) return 1;
+    const abs = values.map(Math.abs).sort((a, b) => a - b);
+    const idx = Math.min(abs.length - 1, Math.floor(abs.length * 0.95));
+    return abs[idx] || 1;
   }
 
   window.SpaghettiPlot = { create: createSpaghettiPlot };
