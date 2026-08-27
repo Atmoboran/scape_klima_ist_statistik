@@ -27,6 +27,14 @@
     statLabelMean: document.getElementById("stat-label-mean"),
     deviationValue: document.getElementById("deviation-value"),
     deviationPeriodLabel: document.getElementById("deviation-period-label"),
+    hint: document.getElementById("hint"),
+    colorbarRow: document.getElementById("colorbar-row"),
+    chartBar: document.getElementById("chart-bar"),
+    barLegendRow: document.getElementById("bar-legend-row"),
+    barLegendYearSwatch: document.getElementById("bar-legend-year-swatch"),
+    barLegendYearLabel: document.getElementById("bar-legend-year-label"),
+    barLegendPeriodSwatch: document.getElementById("bar-legend-period-swatch"),
+    barLegendPeriodLabel: document.getElementById("bar-legend-period-label"),
     slider: document.getElementById("year-slider"),
     playBtn: document.getElementById("play-btn"),
     prevYearBtn: document.getElementById("prev-year-btn"),
@@ -45,6 +53,11 @@
   const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
   const VIEW_STORAGE_KEY = "scapeViewMode";
   const MOBILE_QUERY = "(max-width: 699px)";
+
+  const HINT_TEXT = {
+    line: "Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
+    bar: "Fahre über einen Monat, um das ausgewählte Jahr mit der Referenzperiode zu vergleichen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
+  };
 
   // All variable-specific presentation lives here so the render functions
   // below stay generic. Add a new variable by adding an entry here plus a
@@ -112,13 +125,14 @@
       label: "Sonnenscheindauer",
       axisSuffix: " h",
       yMin: 0,
+      chartType: "bar",
       colorStops: ["#6b7280", "#f2e6c9", "#f0b429"],
       legendCold: "trüber",
       legendWarm: "sonniger",
       valueLabel: "Jahressumme",
       aboveColor: "#f0b429",
       belowColor: "#6b7280",
-      chartAriaLabel: "Verlauf der täglichen Sonnenscheindauer für jedes verfügbare Jahr",
+      chartAriaLabel: "Monatliche Sonnenscheindauer des ausgewählten Jahres im Vergleich zur Referenzperiode",
       formatValue: (v) => `${v.toFixed(0)} h`,
       formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(0)} h`,
       incompleteLabel: "lückenhaft",
@@ -126,6 +140,12 @@
         `<b>${dateLabel}</b><br/>Durchschnitt: ${stat.mean} h<br/>` +
         `<span class="tt-cold">am wenigsten: ${stat.min} h (${stat.minYear})</span><br/>` +
         `<span class="tt-warm">am meisten: ${stat.max} h (${stat.maxYear})</span>`,
+      formatMonthTooltip: (monthLabel, year, yearVal, periodVal) =>
+        `<b>${monthLabel}</b><br/>` +
+        (yearVal !== null && yearVal !== undefined
+          ? `${year}: <b>${yearVal.toFixed(0)} h</b><br/>`
+          : `${year}: keine Daten<br/>`) +
+        `Referenzperiode: ${periodVal !== null && periodVal !== undefined ? periodVal.toFixed(0) + " h" : "–"}`,
       formatCompareHeadline: (pa, pb, diff) =>
         `${pb.start}–${pb.end} brachte im Schnitt <strong>${Math.abs(diff).toFixed(0)} h ${diff >= 0 ? "mehr" : "weniger"} Sonnenschein pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,
@@ -178,11 +198,16 @@
     state.stations.sort((a, b) => a.name.localeCompare(b.name, "de"));
     buildStationOptions();
 
-    state.plot = window.SpaghettiPlot.create({
+    state.spaghettiPlot = window.SpaghettiPlot.create({
       svgEl: el.chart,
       tooltipEl: el.tooltip,
       onColorScaleReady: renderLegend,
     });
+    state.barPlot = window.MonthlyBarPlot.create({
+      svgEl: el.chartBar,
+      tooltipEl: el.tooltip,
+    });
+    state.plot = state.spaghettiPlot;
 
     el.select.addEventListener("change", () => loadAndRender(el.select.value, state.currentVariable));
     el.variableSelect.addEventListener("change", () => loadAndRender(state.currentStationId, el.variableSelect.value));
@@ -217,7 +242,15 @@
     el.stationMeta.textContent =
       `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O · ${meta.elevation_m} m ü. NHN · ${meta.bundesland}`;
 
-    el.chart.setAttribute("aria-label", config.chartAriaLabel);
+    const mode = config.chartType === "bar" ? "bar" : "line";
+    state.plotMode = mode;
+    state.plot = mode === "bar" ? state.barPlot : state.spaghettiPlot;
+    el.chart.style.display = mode === "bar" ? "none" : "";
+    el.chartBar.style.display = mode === "bar" ? "" : "none";
+    el.colorbarRow.style.display = mode === "bar" ? "none" : "";
+    el.barLegendRow.style.display = mode === "bar" ? "" : "none";
+    el.hint.textContent = HINT_TEXT[mode];
+    (mode === "bar" ? el.chartBar : el.chart).setAttribute("aria-label", config.chartAriaLabel);
     el.statLabelMean.textContent = config.valueLabel;
     el.legendLabelCold.textContent = config.legendCold;
     el.legendLabelWarm.textContent = config.legendWarm;
@@ -237,11 +270,22 @@
       aboveColor: config.aboveColor,
       belowColor: config.belowColor,
       formatDayTooltip: config.formatDayTooltip,
+      formatMonthTooltip: config.formatMonthTooltip,
       activePeriod: state.activePeriod,
     });
     renderPeriodLegend(data);
+    renderBarLegend(data, config);
     setupTimeline(data);
     renderCompare(data);
+  }
+
+  function renderBarLegend(data, config) {
+    if (state.plotMode !== "bar") return;
+    el.barLegendYearSwatch.style.background = config.aboveColor;
+    el.barLegendYearLabel.textContent = "Ausgewähltes Jahr";
+    el.barLegendPeriodSwatch.style.background = "var(--ink-dim)";
+    const period = data[state.activePeriod];
+    el.barLegendPeriodLabel.textContent = `Referenzperiode ${period.start}–${period.end}`;
   }
 
   // A symmetric diverging scale over how far each complete year's annual
@@ -313,10 +357,12 @@
       aboveColor: config.aboveColor,
       belowColor: config.belowColor,
       formatDayTooltip: config.formatDayTooltip,
+      formatMonthTooltip: config.formatMonthTooltip,
       activePeriod: state.activePeriod,
       preserveYear: true,
     });
     renderPeriodLegend(data);
+    renderBarLegend(data, config);
     updateReadout(data.years[+el.slider.value]);
   }
 

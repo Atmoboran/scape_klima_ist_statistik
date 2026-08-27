@@ -88,8 +88,20 @@
     <span class="legend-label" id="legend-label-warm">wärmer</span>
   </div>
 
+  <div class="bar-legend-row" id="bar-legend-row" aria-hidden="true" style="display: none;">
+    <span class="bar-legend-item">
+      <span class="swatch-box" id="bar-legend-year-swatch"></span>
+      <span id="bar-legend-year-label">Jahr</span>
+    </span>
+    <span class="bar-legend-item">
+      <span class="swatch-box" id="bar-legend-period-swatch"></span>
+      <span id="bar-legend-period-label">Referenzperiode</span>
+    </span>
+  </div>
+
   <div class="chart-wrap">
     <svg id="chart" role="img" aria-label="Verlauf der Tagesmitteltemperatur für jedes verfügbare Jahr"></svg>
+    <svg id="chart-bar" role="img" aria-label="Monatliche Sonnenscheindauer im Vergleich zur Referenzperiode" style="display: none;"></svg>
     <div id="tooltip" class="tooltip" hidden></div>
   </div>
   <p class="hint" id="hint">Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.</p>
@@ -122,6 +134,7 @@
 
 <script src="js/vendor/d3.v7.min.js"></script>
 <script src="js/spaghetti-plot.js"></script>
+<script src="js/monthly-bar-plot.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

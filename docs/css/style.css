@@ -319,12 +319,35 @@ html, body {
   padding: 0.4rem 0.3rem;
 }
 
-#chart {
+#chart,
+#chart-bar {
   width: 100%;
   height: clamp(300px, 46vh, 420px);
   display: block;
   touch-action: pan-y;
 }
+
+.bar-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+  margin-bottom: 0.35rem;
+}
+.bar-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+.bar-legend-item .swatch-box {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.month-group-overlay { fill: transparent; cursor: pointer; }
+
+.bar-period { opacity: 0.55; }
 
 .year-strand {
   fill: none;
