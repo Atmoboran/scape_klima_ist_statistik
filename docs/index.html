@@ -41,21 +41,37 @@
 </header>
 
 <div class="picker-row">
-  <div class="station-picker">
-    <label for="variable-select" class="station-picker-label">Messgröße</label>
+  <div class="field-group">
+    <label for="variable-select" class="field-label">Messgröße</label>
     <select id="variable-select" class="station-select">
       <option value="temperature">Temperatur</option>
       <option value="precipitation">Niederschlag</option>
       <option value="sunshine">Sonnenscheindauer</option>
     </select>
   </div>
-  <div class="station-picker">
-    <label for="station-select" class="station-picker-label">Messstation</label>
+  <div class="field-group">
+    <label for="station-select" class="field-label">Messstation</label>
     <select id="station-select" class="station-select"></select>
   </div>
+  <button
+    id="station-info-btn"
+    class="info-btn"
+    type="button"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="station-info-popover"
+    aria-label="Stationsdetails anzeigen"
+  >i</button>
 </div>
 
-<p class="station-meta" id="station-meta"></p>
+<div class="info-popover-backdrop" id="info-popover-backdrop" hidden></div>
+<div class="info-popover" id="station-info-popover" role="dialog" aria-modal="true" aria-labelledby="station-info-title" hidden>
+  <div class="info-popover-header">
+    <span id="station-info-title" class="info-popover-title">Stationsdetails</span>
+    <button type="button" class="info-popover-close" id="station-info-close" aria-label="Schließen">&times;</button>
+  </div>
+  <dl class="info-popover-body" id="station-info-body"></dl>
+</div>
 
 <main class="plot-shell">
   <div class="plot-toolbar">
@@ -72,19 +88,35 @@
         </div>
       </div>
     </div>
-    <div class="period-toggle-row" id="legend-periods"></div>
+    <div class="period-toggle-group">
+      <span class="ref-period-label">Referenzperiode:</span>
+      <div class="period-toggle-row" id="legend-periods"></div>
+    </div>
   </div>
 
-  <div class="timeline">
-    <button id="prev-year-btn" class="step-btn" aria-label="Ein Jahr zurück">&#9664;</button>
-    <button id="play-btn" class="play-btn" aria-label="Durch die Jahre abspielen">&#9654;</button>
-    <button id="next-year-btn" class="step-btn" aria-label="Ein Jahr vor">&#9654;</button>
-    <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" aria-label="Jahr auswählen" />
+  <div class="timeline-wrap">
+    <div class="timeline-track-row">
+      <span class="timeline-year-bound" id="timeline-year-start">–</span>
+      <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" aria-label="Jahr auswählen" />
+      <span class="timeline-year-bound" id="timeline-year-end">–</span>
+    </div>
+    <div class="transport-controls">
+      <button id="prev-year-btn" class="step-btn" aria-label="Ein Jahr zurück">&#9664;</button>
+      <button id="play-btn" class="play-btn" aria-label="Durch die Jahre abspielen">&#9654;</button>
+      <button id="next-year-btn" class="step-btn" aria-label="Ein Jahr vor">&#9654;</button>
+    </div>
   </div>
 
   <div class="colorbar-row" id="colorbar-row" aria-hidden="true">
     <span class="legend-label" id="legend-label-cold">kälter</span>
-    <svg id="legend-gradient" width="180" height="10"></svg>
+    <div class="colorbar-scale">
+      <svg id="legend-gradient" width="180" height="10"></svg>
+      <div class="colorbar-ticks">
+        <span id="colorbar-tick-min">–</span>
+        <span id="colorbar-tick-mid">0</span>
+        <span id="colorbar-tick-max">–</span>
+      </div>
+    </div>
     <span class="legend-label" id="legend-label-warm">wärmer</span>
   </div>
 

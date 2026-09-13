@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  const MARGIN = { top: 18, right: 24, bottom: 30, left: 44 };
+  const MARGIN = { top: 22, right: 24, bottom: 30, left: 52 };
   const MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
   const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
   const TOOLTIP_IDLE_MS = 5000;
@@ -147,6 +147,16 @@
 
       const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => d + config.axisSuffix);
       gAxes.append("g").attr("class", "axis").call(yAxis);
+
+      if (config.axisUnit) {
+        gAxes
+          .append("text")
+          .attr("class", "axis-unit-label")
+          .attr("x", -MARGIN.left + 4)
+          .attr("y", -6)
+          .attr("text-anchor", "start")
+          .text(config.axisUnit);
+      }
     }
 
     function strandPoints(year) {

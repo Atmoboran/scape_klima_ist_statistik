@@ -15,12 +15,19 @@
   const el = {
     variableSelect: document.getElementById("variable-select"),
     select: document.getElementById("station-select"),
-    stationMeta: document.getElementById("station-meta"),
+    infoBtn: document.getElementById("station-info-btn"),
+    infoPopover: document.getElementById("station-info-popover"),
+    infoPopoverBody: document.getElementById("station-info-body"),
+    infoPopoverClose: document.getElementById("station-info-close"),
+    infoPopoverBackdrop: document.getElementById("info-popover-backdrop"),
     chart: document.getElementById("chart"),
     tooltip: document.getElementById("tooltip"),
     legendLabelCold: document.getElementById("legend-label-cold"),
     legendLabelWarm: document.getElementById("legend-label-warm"),
     legendGradient: document.getElementById("legend-gradient"),
+    colorbarTickMin: document.getElementById("colorbar-tick-min"),
+    colorbarTickMid: document.getElementById("colorbar-tick-mid"),
+    colorbarTickMax: document.getElementById("colorbar-tick-max"),
     legendPeriods: document.getElementById("legend-periods"),
     deviationYear: document.getElementById("deviation-year"),
     deviationMean: document.getElementById("deviation-mean"),
@@ -35,6 +42,8 @@
     barLegendYearLabel: document.getElementById("bar-legend-year-label"),
     barLegendPeriodSwatch: document.getElementById("bar-legend-period-swatch"),
     barLegendPeriodLabel: document.getElementById("bar-legend-period-label"),
+    timelineYearStart: document.getElementById("timeline-year-start"),
+    timelineYearEnd: document.getElementById("timeline-year-end"),
     slider: document.getElementById("year-slider"),
     playBtn: document.getElementById("play-btn"),
     prevYearBtn: document.getElementById("prev-year-btn"),
@@ -66,8 +75,14 @@
     temperature: {
       label: "Temperatur",
       axisSuffix: "°",
+      axisUnit: "°C",
       yMin: null,
       colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
+      // High-contrast (WCAG AA) variants of colorStops[0]/[2] for use as
+      // *text* color (legend labels, deviation figure) - the raw colorStops
+      // include a pale midpoint that is unreadable as text.
+      textCold: "#2b3990",
+      textWarm: "#bc511e",
       legendCold: "kälter",
       legendWarm: "wärmer",
       valueLabel: "Jahresmittel",
@@ -95,8 +110,11 @@
     precipitation: {
       label: "Niederschlag",
       axisSuffix: " mm",
+      axisUnit: "mm",
       yMin: 0,
       colorStops: ["#d35b22", "#f2e6c9", "#1ca3d6"],
+      textCold: "#bc511e",
+      textWarm: "#157aa0",
       legendCold: "trockener",
       legendWarm: "nasser",
       valueLabel: "Jahressumme",
@@ -124,9 +142,12 @@
     sunshine: {
       label: "Sonnenscheindauer",
       axisSuffix: " h",
+      axisUnit: "h",
       yMin: 0,
       chartType: "bar",
       colorStops: ["#6b7280", "#f2e6c9", "#f0b429"],
+      textCold: "#6b7280",
+      textWarm: "#936a0a",
       legendCold: "trüber",
       legendWarm: "sonniger",
       valueLabel: "Jahressumme",
@@ -193,6 +214,7 @@
 
   async function main() {
     setupViewToggle();
+    setupInfoPopover();
     const res = await fetch("data/processed/stations_index.json");
     state.stations = await res.json();
     state.stations.sort((a, b) => a.name.localeCompare(b.name, "de"));
@@ -221,7 +243,7 @@
     for (const s of state.stations) {
       const opt = document.createElement("option");
       opt.value = s.station_id;
-      opt.textContent = `${s.name} (${s.first_year}–${s.last_year})`;
+      opt.textContent = s.name;
       el.select.appendChild(opt);
     }
   }
@@ -239,8 +261,7 @@
     const config = VARIABLE_CONFIG[variableKey];
 
     const meta = data.meta;
-    el.stationMeta.textContent =
-      `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O · ${meta.elevation_m} m ü. NHN · ${meta.bundesland}`;
+    renderInfoPopover(meta, data);
 
     const mode = config.chartType === "bar" ? "bar" : "line";
     state.plotMode = mode;
@@ -254,18 +275,19 @@
     el.statLabelMean.textContent = config.valueLabel;
     el.legendLabelCold.textContent = config.legendCold;
     el.legendLabelWarm.textContent = config.legendWarm;
-    el.legendLabelCold.style.color = config.colorStops[0];
-    el.legendLabelWarm.style.color = config.colorStops[2];
+    el.legendLabelCold.style.color = config.textCold;
+    el.legendLabelWarm.style.color = config.textWarm;
     el.methodologyDay.innerHTML = config.methodology.day;
     el.methodologyYear.innerHTML = config.methodology.year;
     el.methodologyPeriod.innerHTML = config.methodology.period;
     el.methodologyContext.innerHTML = config.methodology.context;
 
-    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
+    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config);
 
     state.plot.render(data, {
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
+      axisUnit: config.axisUnit,
       yMin: config.yMin,
       aboveColor: config.aboveColor,
       belowColor: config.belowColor,
@@ -277,6 +299,48 @@
     renderBarLegend(data, config);
     setupTimeline(data);
     renderCompare(data);
+  }
+
+  function renderInfoPopover(meta, data) {
+    el.infoPopoverBody.innerHTML = "";
+    const rows = [
+      ["Koordinaten", `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O`],
+      ["Höhe", `${meta.elevation_m} m ü. NHN`],
+      ["Bundesland", meta.bundesland],
+      ["Aktive Jahre", `${data.years[0]}–${data.years[data.years.length - 1]}`],
+    ];
+    for (const [label, value] of rows) {
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      el.infoPopoverBody.appendChild(dt);
+      el.infoPopoverBody.appendChild(dd);
+    }
+  }
+
+  function openInfoPopover() {
+    el.infoPopover.hidden = false;
+    el.infoPopoverBackdrop.hidden = false;
+    el.infoBtn.setAttribute("aria-expanded", "true");
+  }
+
+  function closeInfoPopover() {
+    el.infoPopover.hidden = true;
+    el.infoPopoverBackdrop.hidden = true;
+    el.infoBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function setupInfoPopover() {
+    el.infoBtn.addEventListener("click", () => {
+      if (el.infoPopover.hidden) openInfoPopover();
+      else closeInfoPopover();
+    });
+    el.infoPopoverClose.addEventListener("click", closeInfoPopover);
+    el.infoPopoverBackdrop.addEventListener("click", closeInfoPopover);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !el.infoPopover.hidden) closeInfoPopover();
+    });
   }
 
   function renderBarLegend(data, config) {
@@ -291,13 +355,21 @@
   // A symmetric diverging scale over how far each complete year's annual
   // metric sits from the active reference period's mean - drives the shade
   // of the big deviation figure so it reflects magnitude, not just sign.
-  function buildAnnualDiffScale(data, activePeriodKey, colorStops) {
+  // Uses accessible text-safe endpoint colors (not the raw chart colorStops,
+  // whose pale midpoint would be unreadable as text) fading through a dark
+  // neutral at zero, so every value stays WCAG AA-legible.
+  function buildAnnualDiffScale(data, activePeriodKey, config) {
     const baselineMean = data[activePeriodKey].mean_annual_metric;
     if (baselineMean === null || baselineMean === undefined) return null;
     const diffs = Object.values(data.annual_metric).map((v) => v - baselineMean);
     if (!diffs.length) return null;
     const maxAbs = Math.max(...diffs.map(Math.abs)) || 1;
-    return d3.scaleLinear().domain([-maxAbs, 0, maxAbs]).range(colorStops).interpolate(d3.interpolateRgb).clamp(true);
+    return d3
+      .scaleLinear()
+      .domain([-maxAbs, 0, maxAbs])
+      .range([config.textCold, "#17140f", config.textWarm])
+      .interpolate(d3.interpolateRgb)
+      .clamp(true);
   }
 
   function renderLegend(colorScale, minAmt, maxAmt) {
@@ -321,6 +393,10 @@
       .attr("height", height)
       .attr("rx", 4)
       .attr("fill", `url(#${gradId})`);
+
+    const config = VARIABLE_CONFIG[state.currentVariable];
+    el.colorbarTickMin.textContent = config.formatDiff(minAmt);
+    el.colorbarTickMax.textContent = config.formatDiff(maxAmt);
   }
 
   function renderPeriodLegend(data) {
@@ -349,10 +425,11 @@
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
 
-    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
+    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config);
     state.plot.render(data, {
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
+      axisUnit: config.axisUnit,
       yMin: config.yMin,
       aboveColor: config.aboveColor,
       belowColor: config.belowColor,
@@ -368,6 +445,8 @@
 
   function setupTimeline(data) {
     const years = data.years;
+    el.timelineYearStart.textContent = years[0];
+    el.timelineYearEnd.textContent = years[years.length - 1];
     el.slider.min = 0;
     el.slider.max = years.length - 1;
     el.slider.value = years.length - 1;
