@@ -183,12 +183,6 @@ html, body {
   min-width: 6.5rem;
 }
 
-.field-label-row {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
 .field-label {
   font-size: 0.62rem;
   font-weight: 700;
@@ -197,28 +191,12 @@ html, body {
   color: var(--ink-dim);
 }
 
-.field-info-btn {
-  appearance: none;
-  flex: none;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  border: 1.5px solid var(--ink-dim);
-  background: none;
-  color: var(--ink-dim);
-  font-family: Georgia, "Times New Roman", serif;
-  font-style: italic;
-  font-weight: 700;
-  font-size: 0.6rem;
-  line-height: 1;
-  padding: 0;
-  cursor: pointer;
+.field-with-info {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
 }
-.field-info-btn:active { transform: scale(0.92); }
-.field-info-btn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
 .station-select {
   appearance: none;
@@ -265,6 +243,12 @@ html, body {
 }
 .info-btn:active { transform: scale(0.95); }
 .info-btn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+.info-btn.small {
+  width: 26px;
+  height: 26px;
+  font-size: 0.78rem;
+}
 
 .info-popover-backdrop {
   position: fixed;
@@ -383,24 +367,7 @@ html, body {
   margin-bottom: 0.35rem;
 }
 
-.colorbar-scale {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 180px;
-  gap: 0.15rem;
-}
-
 #legend-gradient { border-radius: 4px; overflow: hidden; display: block; }
-
-.colorbar-ticks {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
 
 .period-toggle-row { display: flex; gap: 0.5rem; flex-wrap: nowrap; }
 .period-toggle-btn {

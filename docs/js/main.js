@@ -19,6 +19,7 @@
     select: document.getElementById("station-select"),
     variableInfoBtn: document.getElementById("variable-info-btn"),
     stationInfoBtn: document.getElementById("station-info-btn"),
+    periodInfoBtn: document.getElementById("period-info-btn"),
     hintBtn: document.getElementById("hint-btn"),
     methodologyCalcBtn: document.getElementById("methodology-calc-btn"),
     methodologyClimateBtn: document.getElementById("methodology-climate-btn"),
@@ -32,9 +33,6 @@
     legendLabelCold: document.getElementById("legend-label-cold"),
     legendLabelWarm: document.getElementById("legend-label-warm"),
     legendGradient: document.getElementById("legend-gradient"),
-    colorbarTickMin: document.getElementById("colorbar-tick-min"),
-    colorbarTickMid: document.getElementById("colorbar-tick-mid"),
-    colorbarTickMax: document.getElementById("colorbar-tick-max"),
     legendPeriods: document.getElementById("legend-periods"),
     deviationYear: document.getElementById("deviation-year"),
     deviationMean: document.getElementById("deviation-mean"),
@@ -85,13 +83,10 @@
       // ticks jump around) when switching stations.
       maxAbsDev: 10,
       colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
-      // High-contrast (WCAG AA) variants of colorStops[0]/[2] for use as
-      // *text* color (legend labels, deviation figure) - the raw colorStops
-      // include a pale midpoint that is unreadable as text.
-      textCold: "#2b3990",
-      textWarm: "#bc511e",
       legendCold: "kälter",
       legendWarm: "wärmer",
+      generalInfo:
+        "Die Lufttemperatur beschreibt, wie warm oder kalt die Luft in Bodennähe ist. Sie wird in Grad Celsius (°C) gemessen und ist einer der wichtigsten Klimaindikatoren: Ihr langfristiger Verlauf zeigt, ob sich ein Ort über Jahrzehnte erwärmt oder abkühlt.",
       valueLabel: "Jahresmittel",
       aboveColor: "#dd2a26",
       belowColor: "#2b3990",
@@ -121,10 +116,10 @@
       yMin: 0,
       maxAbsDev: 250,
       colorStops: ["#d35b22", "#f2e6c9", "#1ca3d6"],
-      textCold: "#bc511e",
-      textWarm: "#157aa0",
       legendCold: "trockener",
       legendWarm: "nasser",
+      generalInfo:
+        "Niederschlag umfasst alles Wasser, das als Regen, Schnee, Hagel oder Nieselregen auf den Boden fällt. Er wird in Millimetern (mm) gemessen — 1 mm entspricht 1 Liter Wasser pro Quadratmeter. Niederschlag ist entscheidend für Wasserversorgung, Landwirtschaft und das Risiko von Dürren oder Überschwemmungen.",
       valueLabel: "Jahressumme",
       aboveColor: "#1ca3d6",
       belowColor: "#d35b22",
@@ -154,10 +149,10 @@
       yMin: 0,
       chartType: "bar",
       colorStops: ["#6b7280", "#f2e6c9", "#f0b429"],
-      textCold: "#6b7280",
-      textWarm: "#936a0a",
       legendCold: "trüber",
       legendWarm: "sonniger",
+      generalInfo:
+        "Die Sonnenscheindauer gibt an, wie viele Stunden am Tag die Sonne direkt und ungehindert scheint — bewölkter oder diesiger Himmel zählt nicht mit. Sie wird in Stunden (h) gemessen und beeinflusst unter anderem Temperatur, Verdunstung und das Wohlbefinden von Menschen und Ökosystemen.",
       valueLabel: "Jahressumme",
       aboveColor: "#f0b429",
       belowColor: "#6b7280",
@@ -279,10 +274,10 @@
     el.statLabelMean.textContent = config.valueLabel;
     el.legendLabelCold.textContent = config.legendCold;
     el.legendLabelWarm.textContent = config.legendWarm;
-    el.legendLabelCold.style.color = config.textCold;
-    el.legendLabelWarm.style.color = config.textWarm;
+    el.legendLabelCold.style.color = config.colorStops[0];
+    el.legendLabelWarm.style.color = config.colorStops[2];
 
-    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config);
+    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
 
     state.plot.render(data, {
       colorStops: config.colorStops,
@@ -307,6 +302,12 @@
     "<strong>Mittelwert:</strong> Ein Mittelwert (Durchschnitt) fasst mehrere Messungen zu einem typischen Wert zusammen: " +
     "Man addiert alle Werte und teilt die Summe durch ihre Anzahl. Beispiel: Aus den drei Zahlen 10, 15 und 18 ergibt sich " +
     "(10 + 15 + 18) ÷ 3 = 14,3 als Mittelwert.";
+
+  const REFERENZPERIODE_EXPLANATION =
+    "Eine Referenzperiode ist ein fester, 30 Jahre langer Vergleichszeitraum, den die Weltorganisation für Meteorologie " +
+    "als gemeinsamen Maßstab für das Klima festlegt. Der Durchschnitt dieser 30 Jahre gilt als „normales“ Klima, gegen das " +
+    "einzelne Jahre verglichen werden. Diese App nutzt die beiden offiziellen Referenzperioden 1961–1990 und 1991–2020 — " +
+    "der Wechsel zwischen ihnen zeigt, wie sich das Klimamittel selbst über die Zeit verschoben hat.";
 
   // All popover triggers (station details, variable info, chart usage hint,
   // methodology, climate context) share one dialog; this builds the
@@ -337,7 +338,9 @@
         return { title: "Stationsdetails", bodyEl: dl };
       }
       case "variable":
-        return { title: config.label, bodyHTML: `<p>${config.methodology.day}</p>` };
+        return { title: config.label, bodyHTML: `<p>${config.generalInfo}</p>` };
+      case "period":
+        return { title: "Referenzperiode", bodyHTML: `<p>${REFERENZPERIODE_EXPLANATION}</p>` };
       case "hint":
         return { title: "Bedienung", bodyHTML: `<p>${HINT_TEXT[state.plotMode]}</p>` };
       case "calc":
@@ -394,6 +397,7 @@
     };
     el.stationInfoBtn.addEventListener("click", () => toggle("station", el.stationInfoBtn));
     el.variableInfoBtn.addEventListener("click", () => toggle("variable", el.variableInfoBtn));
+    el.periodInfoBtn.addEventListener("click", () => toggle("period", el.periodInfoBtn));
     el.hintBtn.addEventListener("click", () => toggle("hint", el.hintBtn));
     el.methodologyCalcBtn.addEventListener("click", () => toggle("calc", el.methodologyCalcBtn));
     el.methodologyClimateBtn.addEventListener("click", () => toggle("climate", el.methodologyClimateBtn));
@@ -416,21 +420,13 @@
   // A symmetric diverging scale over how far each complete year's annual
   // metric sits from the active reference period's mean - drives the shade
   // of the big deviation figure so it reflects magnitude, not just sign.
-  // Uses accessible text-safe endpoint colors (not the raw chart colorStops,
-  // whose pale midpoint would be unreadable as text) fading through a dark
-  // neutral at zero, so every value stays WCAG AA-legible.
-  function buildAnnualDiffScale(data, activePeriodKey, config) {
+  function buildAnnualDiffScale(data, activePeriodKey, colorStops) {
     const baselineMean = data[activePeriodKey].mean_annual_metric;
     if (baselineMean === null || baselineMean === undefined) return null;
     const diffs = Object.values(data.annual_metric).map((v) => v - baselineMean);
     if (!diffs.length) return null;
     const maxAbs = Math.max(...diffs.map(Math.abs)) || 1;
-    return d3
-      .scaleLinear()
-      .domain([-maxAbs, 0, maxAbs])
-      .range([config.textCold, "#17140f", config.textWarm])
-      .interpolate(d3.interpolateRgb)
-      .clamp(true);
+    return d3.scaleLinear().domain([-maxAbs, 0, maxAbs]).range(colorStops).interpolate(d3.interpolateRgb).clamp(true);
   }
 
   function renderLegend(colorScale, minAmt, maxAmt) {
@@ -454,10 +450,6 @@
       .attr("height", height)
       .attr("rx", 4)
       .attr("fill", `url(#${gradId})`);
-
-    const config = VARIABLE_CONFIG[state.currentVariable];
-    el.colorbarTickMin.textContent = config.formatDiff(minAmt);
-    el.colorbarTickMax.textContent = config.formatDiff(maxAmt);
   }
 
   function renderPeriodLegend(data) {
@@ -486,7 +478,7 @@
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
 
-    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config);
+    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
     state.plot.render(data, {
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,

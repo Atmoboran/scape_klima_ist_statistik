@@ -42,37 +42,39 @@
 
 <div class="picker-row">
   <div class="field-group">
-    <span class="field-label-row">
-      <label for="variable-select" class="field-label">Messgröße</label>
+    <label for="variable-select" class="field-label">Messgröße</label>
+    <div class="field-with-info">
+      <select id="variable-select" class="station-select">
+        <option value="temperature">Temperatur</option>
+        <option value="precipitation">Niederschlag</option>
+        <option value="sunshine">Sonnenscheindauer</option>
+      </select>
       <button
         id="variable-info-btn"
-        class="field-info-btn"
+        class="info-btn"
         type="button"
         aria-haspopup="dialog"
         aria-expanded="false"
         aria-controls="info-popover"
         aria-label="Info zur Messgröße anzeigen"
       >i</button>
-    </span>
-    <select id="variable-select" class="station-select">
-      <option value="temperature">Temperatur</option>
-      <option value="precipitation">Niederschlag</option>
-      <option value="sunshine">Sonnenscheindauer</option>
-    </select>
+    </div>
   </div>
   <div class="field-group">
     <label for="station-select" class="field-label">Messstation</label>
-    <select id="station-select" class="station-select"></select>
+    <div class="field-with-info">
+      <select id="station-select" class="station-select"></select>
+      <button
+        id="station-info-btn"
+        class="info-btn"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="info-popover"
+        aria-label="Stationsdetails anzeigen"
+      >i</button>
+    </div>
   </div>
-  <button
-    id="station-info-btn"
-    class="info-btn"
-    type="button"
-    aria-haspopup="dialog"
-    aria-expanded="false"
-    aria-controls="info-popover"
-    aria-label="Stationsdetails anzeigen"
-  >i</button>
 </div>
 
 <div class="info-popover-backdrop" id="info-popover-backdrop" hidden></div>
@@ -102,6 +104,15 @@
     <div class="period-toggle-group">
       <span class="ref-period-label">Referenzperiode:</span>
       <div class="period-toggle-row" id="legend-periods"></div>
+      <button
+        id="period-info-btn"
+        class="info-btn small"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="info-popover"
+        aria-label="Was ist eine Referenzperiode?"
+      >i</button>
     </div>
   </div>
 
@@ -120,14 +131,7 @@
 
   <div class="colorbar-row" id="colorbar-row" aria-hidden="true">
     <span class="legend-label" id="legend-label-cold">kälter</span>
-    <div class="colorbar-scale">
-      <svg id="legend-gradient" width="180" height="10"></svg>
-      <div class="colorbar-ticks">
-        <span id="colorbar-tick-min">–</span>
-        <span id="colorbar-tick-mid">0</span>
-        <span id="colorbar-tick-max">–</span>
-      </div>
-    </div>
+    <svg id="legend-gradient" width="180" height="10"></svg>
     <span class="legend-label" id="legend-label-warm">wärmer</span>
   </div>
 
