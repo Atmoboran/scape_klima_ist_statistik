@@ -183,6 +183,12 @@ html, body {
   min-width: 6.5rem;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .field-label {
   font-size: 0.62rem;
   font-weight: 700;
@@ -190,6 +196,29 @@ html, body {
   text-transform: uppercase;
   color: var(--ink-dim);
 }
+
+.field-info-btn {
+  appearance: none;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-dim);
+  background: none;
+  color: var(--ink-dim);
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 0.6rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.field-info-btn:active { transform: scale(0.92); }
+.field-info-btn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
 .station-select {
   appearance: none;
@@ -288,17 +317,27 @@ html, body {
 .info-popover-close:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
 .info-popover-body {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-dim);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.info-popover-body p { margin: 0 0 0.7rem; }
+.info-popover-body p:last-child { margin-bottom: 0; }
+.info-popover-body p strong { color: var(--ink); }
+
+.info-popover-dl {
   margin: 0;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.4rem 0.8rem;
-  font-size: 0.88rem;
 }
-.info-popover-body dt {
+.info-popover-dl dt {
   color: var(--ink-dim);
   font-weight: 600;
 }
-.info-popover-body dd {
+.info-popover-dl dd {
   margin: 0;
   color: var(--ink);
   font-weight: 600;
@@ -538,13 +577,22 @@ html, body {
 .tooltip .tt-cold { color: #9fc4ff; }
 .tooltip .tt-warm { color: #ffb199; }
 
-.hint {
-  font-size: 0.8rem;
+.hint-btn {
+  appearance: none;
+  display: block;
+  margin: 0.5rem auto 0;
+  border: none;
+  background: none;
   color: var(--ink-dim);
-  text-align: center;
-  margin: 0.6rem auto 0;
-  max-width: 30rem;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
 }
+.hint-btn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
 .timeline-wrap {
   display: flex;
@@ -669,28 +717,33 @@ html, body {
 
 .compare-chart { width: 100%; height: auto; display: block; }
 
-.methodology {
-  margin: 1.6rem auto 0;
+.methodology-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.4rem auto 0;
   max-width: 34rem;
   padding: 0 0.6rem;
 }
 
-.methodology h2 {
-  font-size: 1rem;
-  font-weight: 700;
+.methodology-link-btn {
+  appearance: none;
+  width: 100%;
+  max-width: 26rem;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
   text-align: center;
-  color: var(--ink-dim);
-  margin: 0 0 0.7rem;
 }
-
-.methodology p {
-  font-size: 0.85rem;
-  line-height: 1.55;
-  color: var(--ink-dim);
-  margin: 0 0 0.7rem;
-}
-
-.methodology p strong { color: var(--ink); }
+.methodology-link-btn:active { transform: scale(0.98); }
+.methodology-link-btn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
 .app-footer {
   text-align: center;
@@ -814,6 +867,7 @@ html, body {
 :root[data-view="desktop"] .info-popover {
   left: 50%;
   right: auto;
+  max-width: 32rem;
   transform: translate(-50%, -50%);
 }
 
@@ -829,11 +883,16 @@ html, body {
   font-size: 1.05rem;
 }
 
-:root[data-view="desktop"] .methodology {
+:root[data-view="desktop"] .methodology-links {
+  flex-direction: row;
+  justify-content: center;
   margin-top: 2rem;
-  max-width: 40rem;
+  max-width: 44rem;
 }
 
-:root[data-view="desktop"] .methodology p { font-size: 0.92rem; }
+:root[data-view="desktop"] .methodology-link-btn {
+  width: auto;
+  flex: 1 1 0;
+}
 
 :root[data-view="desktop"] .app-footer { font-size: 0.8rem; padding: 1.6rem 1rem 2.2rem; }

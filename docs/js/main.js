@@ -10,15 +10,22 @@
     annualDiffScale: null,
     plot: null,
     playTimer: null,
+    openPopoverKind: null,
+    openPopoverTrigger: null,
   };
 
   const el = {
     variableSelect: document.getElementById("variable-select"),
     select: document.getElementById("station-select"),
-    infoBtn: document.getElementById("station-info-btn"),
-    infoPopover: document.getElementById("station-info-popover"),
-    infoPopoverBody: document.getElementById("station-info-body"),
-    infoPopoverClose: document.getElementById("station-info-close"),
+    variableInfoBtn: document.getElementById("variable-info-btn"),
+    stationInfoBtn: document.getElementById("station-info-btn"),
+    hintBtn: document.getElementById("hint-btn"),
+    methodologyCalcBtn: document.getElementById("methodology-calc-btn"),
+    methodologyClimateBtn: document.getElementById("methodology-climate-btn"),
+    infoPopover: document.getElementById("info-popover"),
+    infoPopoverTitle: document.getElementById("info-popover-title"),
+    infoPopoverBody: document.getElementById("info-popover-body"),
+    infoPopoverClose: document.getElementById("info-popover-close"),
     infoPopoverBackdrop: document.getElementById("info-popover-backdrop"),
     chart: document.getElementById("chart"),
     tooltip: document.getElementById("tooltip"),
@@ -34,7 +41,6 @@
     statLabelMean: document.getElementById("stat-label-mean"),
     deviationValue: document.getElementById("deviation-value"),
     deviationPeriodLabel: document.getElementById("deviation-period-label"),
-    hint: document.getElementById("hint"),
     colorbarRow: document.getElementById("colorbar-row"),
     chartBar: document.getElementById("chart-bar"),
     barLegendRow: document.getElementById("bar-legend-row"),
@@ -53,10 +59,6 @@
     compareLegend: document.getElementById("compare-legend"),
     compareChart: document.getElementById("compare-chart"),
     viewToggle: document.getElementById("view-toggle"),
-    methodologyDay: document.getElementById("methodology-day"),
-    methodologyYear: document.getElementById("methodology-year"),
-    methodologyPeriod: document.getElementById("methodology-period"),
-    methodologyContext: document.getElementById("methodology-context"),
   };
 
   const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
@@ -266,9 +268,6 @@
     state.currentData = data;
     const config = VARIABLE_CONFIG[variableKey];
 
-    const meta = data.meta;
-    renderInfoPopover(meta, data);
-
     const mode = config.chartType === "bar" ? "bar" : "line";
     state.plotMode = mode;
     state.plot = mode === "bar" ? state.barPlot : state.spaghettiPlot;
@@ -276,17 +275,12 @@
     el.chartBar.style.display = mode === "bar" ? "" : "none";
     el.colorbarRow.style.display = mode === "bar" ? "none" : "";
     el.barLegendRow.style.display = mode === "bar" ? "" : "none";
-    el.hint.textContent = HINT_TEXT[mode];
     (mode === "bar" ? el.chartBar : el.chart).setAttribute("aria-label", config.chartAriaLabel);
     el.statLabelMean.textContent = config.valueLabel;
     el.legendLabelCold.textContent = config.legendCold;
     el.legendLabelWarm.textContent = config.legendWarm;
     el.legendLabelCold.style.color = config.textCold;
     el.legendLabelWarm.style.color = config.textWarm;
-    el.methodologyDay.innerHTML = config.methodology.day;
-    el.methodologyYear.innerHTML = config.methodology.year;
-    el.methodologyPeriod.innerHTML = config.methodology.period;
-    el.methodologyContext.innerHTML = config.methodology.context;
 
     state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config);
 
@@ -306,43 +300,103 @@
     renderBarLegend(data, config);
     setupTimeline(data);
     renderCompare(data);
+    refreshOpenPopover();
   }
 
-  function renderInfoPopover(meta, data) {
-    el.infoPopoverBody.innerHTML = "";
-    const rows = [
-      ["Koordinaten", `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O`],
-      ["Höhe", `${meta.elevation_m} m ü. NHN`],
-      ["Bundesland", meta.bundesland],
-      ["Aktive Jahre", `${data.years[0]}–${data.years[data.years.length - 1]}`],
-    ];
-    for (const [label, value] of rows) {
-      const dt = document.createElement("dt");
-      dt.textContent = label;
-      const dd = document.createElement("dd");
-      dd.textContent = value;
-      el.infoPopoverBody.appendChild(dt);
-      el.infoPopoverBody.appendChild(dd);
+  const MITTELWERT_EXPLANATION =
+    "<strong>Mittelwert:</strong> Ein Mittelwert (Durchschnitt) fasst mehrere Messungen zu einem typischen Wert zusammen: " +
+    "Man addiert alle Werte und teilt die Summe durch ihre Anzahl. Beispiel: Aus den drei Zahlen 10, 15 und 18 ergibt sich " +
+    "(10 + 15 + 18) ÷ 3 = 14,3 als Mittelwert.";
+
+  // All popover triggers (station details, variable info, chart usage hint,
+  // methodology, climate context) share one dialog; this builds the
+  // title/body for whichever "kind" was opened, always from current state so
+  // it stays correct if the station/variable changes while a popover is open.
+  function popoverContentFor(kind) {
+    const data = state.currentData;
+    const config = VARIABLE_CONFIG[state.currentVariable];
+    switch (kind) {
+      case "station": {
+        const meta = data.meta;
+        const dl = document.createElement("dl");
+        dl.className = "info-popover-dl";
+        const rows = [
+          ["Koordinaten", `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O`],
+          ["Höhe", `${meta.elevation_m} m ü. NHN`],
+          ["Bundesland", meta.bundesland],
+          ["Aktive Jahre", `${data.years[0]}–${data.years[data.years.length - 1]}`],
+        ];
+        for (const [label, value] of rows) {
+          const dt = document.createElement("dt");
+          dt.textContent = label;
+          const dd = document.createElement("dd");
+          dd.textContent = value;
+          dl.appendChild(dt);
+          dl.appendChild(dd);
+        }
+        return { title: "Stationsdetails", bodyEl: dl };
+      }
+      case "variable":
+        return { title: config.label, bodyHTML: `<p>${config.methodology.day}</p>` };
+      case "hint":
+        return { title: "Bedienung", bodyHTML: `<p>${HINT_TEXT[state.plotMode]}</p>` };
+      case "calc":
+        return {
+          title: "Wie werden diese Werte berechnet?",
+          bodyHTML:
+            `<p>${MITTELWERT_EXPLANATION}</p>` +
+            `<p>${config.methodology.day}</p>` +
+            `<p>${config.methodology.year}</p>` +
+            `<p>${config.methodology.period}</p>`,
+        };
+      case "climate":
+        return { title: "Was hat das mit dem Klimawandel zu tun?", bodyHTML: `<p>${config.methodology.context}</p>` };
+      default:
+        return { title: "", bodyHTML: "" };
     }
   }
 
-  function openInfoPopover() {
+  function openInfoPopover(kind, triggerEl) {
+    const content = popoverContentFor(kind);
+    el.infoPopoverTitle.textContent = content.title;
+    el.infoPopoverBody.innerHTML = "";
+    if (content.bodyEl) el.infoPopoverBody.appendChild(content.bodyEl);
+    else el.infoPopoverBody.innerHTML = content.bodyHTML;
+
+    if (state.openPopoverTrigger) state.openPopoverTrigger.setAttribute("aria-expanded", "false");
+    state.openPopoverKind = kind;
+    state.openPopoverTrigger = triggerEl || null;
+    if (triggerEl) triggerEl.setAttribute("aria-expanded", "true");
+
     el.infoPopover.hidden = false;
     el.infoPopoverBackdrop.hidden = false;
-    el.infoBtn.setAttribute("aria-expanded", "true");
   }
 
   function closeInfoPopover() {
+    if (state.openPopoverTrigger) state.openPopoverTrigger.setAttribute("aria-expanded", "false");
+    state.openPopoverKind = null;
+    state.openPopoverTrigger = null;
     el.infoPopover.hidden = true;
     el.infoPopoverBackdrop.hidden = true;
-    el.infoBtn.setAttribute("aria-expanded", "false");
+  }
+
+  // Called whenever the underlying data changes (station/variable switch) so
+  // a popover left open while that happens shows content for the new state
+  // instead of stale text from before the switch.
+  function refreshOpenPopover() {
+    if (state.openPopoverKind) openInfoPopover(state.openPopoverKind, state.openPopoverTrigger);
   }
 
   function setupInfoPopover() {
-    el.infoBtn.addEventListener("click", () => {
-      if (el.infoPopover.hidden) openInfoPopover();
-      else closeInfoPopover();
-    });
+    const toggle = (kind, btn) => {
+      if (!el.infoPopover.hidden && state.openPopoverKind === kind) closeInfoPopover();
+      else openInfoPopover(kind, btn);
+    };
+    el.stationInfoBtn.addEventListener("click", () => toggle("station", el.stationInfoBtn));
+    el.variableInfoBtn.addEventListener("click", () => toggle("variable", el.variableInfoBtn));
+    el.hintBtn.addEventListener("click", () => toggle("hint", el.hintBtn));
+    el.methodologyCalcBtn.addEventListener("click", () => toggle("calc", el.methodologyCalcBtn));
+    el.methodologyClimateBtn.addEventListener("click", () => toggle("climate", el.methodologyClimateBtn));
     el.infoPopoverClose.addEventListener("click", closeInfoPopover);
     el.infoPopoverBackdrop.addEventListener("click", closeInfoPopover);
     document.addEventListener("keydown", (e) => {

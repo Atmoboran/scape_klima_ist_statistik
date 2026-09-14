@@ -40,6 +40,10 @@
     let highlightedYear = null;
     let monthlyPeriod = new Array(12).fill(null);
     let idleTimer = null;
+    // Fixed across every year of the current station/variable (computed once
+    // in render()) so switching the year slider never rescales the y-axis -
+    // only loading a different station or variable does.
+    let stationMaxV = 1;
 
     const gAxes = svg.append("g").attr("class", "axes-layer");
     const gBars = svg.append("g").attr("class", "bars-layer");
@@ -97,6 +101,22 @@
       const activeKey = config.activePeriod || "period_a";
       monthlyPeriod = monthlySums(data[activeKey].daily_series);
 
+      // Scan every year (plus both reference periods) once so the axis ceiling
+      // reflects the whole station/variable, not just whichever year is shown.
+      let maxV = 0;
+      for (const key of ["period_a", "period_b"]) {
+        if (!data[key] || !data[key].daily_series) continue;
+        for (const v of monthlySums(data[key].daily_series)) {
+          if (v !== null && v > maxV) maxV = v;
+        }
+      }
+      for (const year of data.years) {
+        for (const v of monthlySums(data.strands[year])) {
+          if (v !== null && v > maxV) maxV = v;
+        }
+      }
+      stationMaxV = maxV || 1;
+
       svg.attr("width", width).attr("height", height);
       gAxes.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gBars.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
@@ -121,10 +141,8 @@
       const innerW = width - MARGIN.left - MARGIN.right;
       const innerH = height - MARGIN.top - MARGIN.bottom;
 
-      const allVals = monthlyPeriod.concat(yearSums).filter((v) => v !== null);
-      const maxV = allVals.length ? Math.max(...allVals) : 1;
       const yMin = config.yMin !== null ? config.yMin : 0;
-      yScale = d3.scaleLinear().domain([yMin, maxV || 1]).nice().range([innerH, 0]);
+      yScale = d3.scaleLinear().domain([yMin, stationMaxV]).nice().range([innerH, 0]);
 
       drawAxes(innerH);
       drawBars(yearSums, innerH);
