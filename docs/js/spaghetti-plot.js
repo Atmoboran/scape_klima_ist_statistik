@@ -88,19 +88,27 @@
       // Colour every point on every strand by how far *that day* deviates from
       // the same calendar day in the active climate reference period - not by
       // a single colour per year - so the line itself reads as a running
-      // anomaly. A robust (95th-percentile) bound keeps a handful of extreme
-      // record days from washing out the colour contrast everywhere else.
+      // anomaly. The bound is a fixed value from config (config.maxAbsDev) so
+      // the same colour always means the same deviation magnitude at every
+      // station - an adaptive per-station bound would make the legend ticks
+      // (and what a given colour means) jump around when switching stations.
+      // Falls back to a robust (95th-percentile) bound if no fixed value is
+      // configured, so a handful of extreme record days don't wash out the
+      // colour contrast everywhere else.
       const activeKey = config.activePeriod || "period_a";
       baseline = data[activeKey].daily_series;
-      const deviations = [];
-      for (const year of data.years) {
-        const strand = data.strands[year];
-        for (let i = 0; i < strand.length; i++) {
-          const v = strand[i], b = baseline[i];
-          if (v !== null && b !== null && b !== undefined) deviations.push(v - b);
+      let maxAbsDev = config.maxAbsDev;
+      if (!maxAbsDev) {
+        const deviations = [];
+        for (const year of data.years) {
+          const strand = data.strands[year];
+          for (let i = 0; i < strand.length; i++) {
+            const v = strand[i], b = baseline[i];
+            if (v !== null && b !== null && b !== undefined) deviations.push(v - b);
+          }
         }
+        maxAbsDev = robustMaxAbs(deviations);
       }
-      const maxAbsDev = robustMaxAbs(deviations);
       devColorScale = d3
         .scaleLinear()
         .domain([-maxAbsDev, 0, maxAbsDev])

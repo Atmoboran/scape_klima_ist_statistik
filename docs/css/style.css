@@ -384,30 +384,38 @@ html, body {
   background: var(--sand-pale);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 0.7rem 1.1rem;
+  padding: 0.6rem 1rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  text-align: center;
-  gap: 0.35rem;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
 }
 
+/* Fixed-width numeric slots so the badge never resizes as the slider moves
+   through years/stations with differing digit counts or +/- signs. */
 .deviation-year {
+  flex: none;
+  min-width: 2.6rem;
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  text-align: left;
 }
 
 .deviation-stats {
   display: flex;
-  gap: 1.4rem;
+  gap: 1.2rem;
+  justify-content: flex-end;
 }
 
 .stat-block {
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
 }
 
 .stat-label {
@@ -419,7 +427,9 @@ html, body {
 }
 
 .deviation-mean {
-  font-size: clamp(1.3rem, 6vw, 1.6rem);
+  display: inline-block;
+  min-width: 7.5ch;
+  font-size: clamp(1.15rem, 5.5vw, 1.5rem);
   font-weight: 700;
   color: var(--ink);
   line-height: 1.15;
@@ -427,7 +437,9 @@ html, body {
 }
 
 .deviation-value {
-  font-size: clamp(1.3rem, 6vw, 1.6rem);
+  display: inline-block;
+  min-width: 7.5ch;
+  font-size: clamp(1.15rem, 5.5vw, 1.5rem);
   font-weight: 700;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
@@ -759,6 +771,7 @@ html, body {
 
 :root[data-view="desktop"] .deviation-badge {
   flex: 0 0 auto;
+  width: 26rem;
   padding: 0.7rem 1.3rem;
 }
 

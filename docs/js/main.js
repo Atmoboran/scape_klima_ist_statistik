@@ -77,6 +77,11 @@
       axisSuffix: "°",
       axisUnit: "°C",
       yMin: null,
+      // Fixed so the day-color scale (and its legend ticks) mean the same
+      // deviation magnitude at every station - an adaptive per-station
+      // domain would make the same color read as different values (and the
+      // ticks jump around) when switching stations.
+      maxAbsDev: 10,
       colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
       // High-contrast (WCAG AA) variants of colorStops[0]/[2] for use as
       // *text* color (legend labels, deviation figure) - the raw colorStops
@@ -112,6 +117,7 @@
       axisSuffix: " mm",
       axisUnit: "mm",
       yMin: 0,
+      maxAbsDev: 250,
       colorStops: ["#d35b22", "#f2e6c9", "#1ca3d6"],
       textCold: "#bc511e",
       textWarm: "#157aa0",
@@ -288,6 +294,7 @@
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
+      maxAbsDev: config.maxAbsDev,
       yMin: config.yMin,
       aboveColor: config.aboveColor,
       belowColor: config.belowColor,
@@ -430,6 +437,7 @@
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
+      maxAbsDev: config.maxAbsDev,
       yMin: config.yMin,
       aboveColor: config.aboveColor,
       belowColor: config.belowColor,
