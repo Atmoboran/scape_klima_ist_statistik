@@ -39,6 +39,7 @@
     statLabelMean: document.getElementById("stat-label-mean"),
     deviationValue: document.getElementById("deviation-value"),
     deviationPeriodLabel: document.getElementById("deviation-period-label"),
+    colorbarPeriodLabel: document.getElementById("colorbar-period-label"),
     colorbarRow: document.getElementById("colorbar-row"),
     chartBar: document.getElementById("chart-bar"),
     barLegendRow: document.getElementById("bar-legend-row"),
@@ -59,14 +60,31 @@
     viewToggle: document.getElementById("view-toggle"),
   };
 
+  // Sums a 365-entry daily series into 12 monthly totals (null when a month
+  // has no valid days at all) - used by the Klimavergleich bar comparison
+  // for variables (sunshine) whose main chart is monthly bars, not lines.
+  const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  function monthlySumsFromDaily(series) {
+    const sums = [];
+    let dayIdx = 0;
+    for (let m = 0; m < 12; m++) {
+      let sum = 0;
+      let any = false;
+      for (let d = 0; d < MONTH_LENGTHS[m]; d++, dayIdx++) {
+        const v = series[dayIdx];
+        if (v !== null && v !== undefined) {
+          sum += v;
+          any = true;
+        }
+      }
+      sums.push(any ? sum : null);
+    }
+    return sums;
+  }
+
   const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
   const VIEW_STORAGE_KEY = "scapeViewMode";
   const MOBILE_QUERY = "(max-width: 699px)";
-
-  const HINT_TEXT = {
-    line: "Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
-    bar: "Fahre über einen Monat, um das ausgewählte Jahr mit der Referenzperiode zu vergleichen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
-  };
 
   // All variable-specific presentation lives here so the render functions
   // below stay generic. Add a new variable by adding an entry here plus a
@@ -87,6 +105,8 @@
       legendWarm: "wärmer",
       generalInfo:
         "Die Lufttemperatur beschreibt, wie warm oder kalt die Luft in Bodennähe ist. Sie wird in Grad Celsius (°C) gemessen und ist einer der wichtigsten Klimaindikatoren: Ihr langfristiger Verlauf zeigt, ob sich ein Ort über Jahrzehnte erwärmt oder abkühlt.",
+      chartExplanation:
+        "Jede dünne Linie zeigt den Tagesverlauf der Tagesmitteltemperatur eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe jedes Punkts zeigt, ob dieser Tag im Vergleich zum selben Tag der Referenzperiode wärmer (orange) oder kälter (blau) war. Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
       valueLabel: "Jahresmittel",
       aboveColor: "#dd2a26",
       belowColor: "#2b3990",
@@ -120,6 +140,8 @@
       legendWarm: "nasser",
       generalInfo:
         "Niederschlag umfasst alles Wasser, das als Regen, Schnee, Hagel oder Nieselregen auf den Boden fällt. Er wird in Millimetern (mm) gemessen — 1 mm entspricht 1 Liter Wasser pro Quadratmeter. Niederschlag ist entscheidend für Wasserversorgung, Landwirtschaft und das Risiko von Dürren oder Überschwemmungen.",
+      chartExplanation:
+        "Jede Linie zeigt den im Jahresverlauf aufsummierten (kumulierten) Niederschlag eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe zeigt, ob an diesem Tag bislang mehr (blau, nasser) oder weniger (orange, trockener) Niederschlag gefallen ist als in der Referenzperiode. Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
       valueLabel: "Jahressumme",
       aboveColor: "#1ca3d6",
       belowColor: "#d35b22",
@@ -153,6 +175,8 @@
       legendWarm: "sonniger",
       generalInfo:
         "Die Sonnenscheindauer gibt an, wie viele Stunden am Tag die Sonne direkt und ungehindert scheint — bewölkter oder diesiger Himmel zählt nicht mit. Sie wird in Stunden (h) gemessen und beeinflusst unter anderem Temperatur, Verdunstung und das Wohlbefinden von Menschen und Ökosystemen.",
+      chartExplanation:
+        "Für jeden Monat zeigt der graue Balken die durchschnittliche Sonnenscheindauer der aktuell ausgewählten Referenzperiode, der farbige Balken die Sonnenscheindauer im ausgewählten Jahr. Fahre über einen Monat, um die genauen Werte zu vergleichen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
       valueLabel: "Jahressumme",
       aboveColor: "#f0b429",
       belowColor: "#6b7280",
@@ -342,7 +366,7 @@
       case "period":
         return { title: "Referenzperiode", bodyHTML: `<p>${REFERENZPERIODE_EXPLANATION}</p>` };
       case "hint":
-        return { title: "Bedienung", bodyHTML: `<p>${HINT_TEXT[state.plotMode]}</p>` };
+        return { title: "Was sehe ich auf dem Diagramm?", bodyHTML: `<p>${config.chartExplanation}</p>` };
       case "calc":
         return {
           title: "Wie werden diese Werte berechnet?",
@@ -470,6 +494,7 @@
     }
     const active = data[state.activePeriod];
     el.deviationPeriodLabel.textContent = `(vs. ${active.start}–${active.end})`;
+    el.colorbarPeriodLabel.textContent = `${active.start}–${active.end}`;
   }
 
   function setActivePeriod(key) {
@@ -620,6 +645,7 @@
     const diff = pb.mean_annual_metric - pa.mean_annual_metric;
     el.compareHeadline.innerHTML = config.formatCompareHeadline(pa, pb, diff);
 
+    const isBar = config.chartType === "bar";
     el.compareLegend.innerHTML = "";
     for (const item of [
       { cls: "period-a", label: `${pa.start}–${pa.end}` },
@@ -627,10 +653,20 @@
     ]) {
       const span = document.createElement("span");
       span.className = `compare-legend-item ${item.cls}`;
-      span.innerHTML = `<span class="swatch-line"></span>${item.label}`;
+      span.innerHTML = isBar
+        ? `<span class="swatch-box"></span>${item.label}`
+        : `<span class="swatch-line"></span>${item.label}`;
       el.compareLegend.appendChild(span);
     }
 
+    if (isBar) renderCompareBars(svg, pa, pb, config);
+    else renderCompareLines(svg, pa, pb, config);
+  }
+
+  // Klimavergleich chart for variables whose main chart is a daily line
+  // (temperature, precipitation): period_a vs period_b as two lines over the
+  // day of year, with the warmer/cooler gap between them shaded.
+  function renderCompareLines(svg, pa, pb, config) {
     const W = 800, H = 320, M = { top: 16, right: 20, bottom: 34, left: 44 };
     const innerW = W - M.left - M.right;
     const innerH = H - M.top - M.bottom;
@@ -684,6 +720,61 @@
       .attr("fill", "none")
       .attr("stroke", "#dd2a26")
       .attr("stroke-width", 2.5);
+  }
+
+  // Klimavergleich chart for variables whose main chart is monthly bars
+  // (sunshine): period_a vs period_b as a grouped bar pair per month,
+  // mirroring the main chart's own year-vs-period bar layout.
+  function renderCompareBars(svg, pa, pb, config) {
+    const W = 800, H = 320, M = { top: 16, right: 24, bottom: 34, left: 48 };
+    const innerW = W - M.left - M.right;
+    const innerH = H - M.top - M.bottom;
+
+    const monthLabels = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+    const sumsA = monthlySumsFromDaily(pa.daily_series);
+    const sumsB = monthlySumsFromDaily(pb.daily_series);
+
+    const x = d3.scaleBand().domain(monthLabels).range([0, innerW]).paddingInner(0.35).paddingOuter(0.1);
+    const xSub = d3.scaleBand().domain(["a", "b"]).range([0, x.bandwidth()]).padding(0.12);
+
+    const allVals = sumsA.concat(sumsB).filter((v) => v !== null);
+    const maxV = allVals.length ? Math.max(...allVals) : 1;
+    const yMin = config.yMin !== null ? config.yMin : 0;
+    const y = d3.scaleLinear().domain([yMin, maxV || 1]).nice().range([innerH, 0]);
+
+    const g = svg.append("g").attr("transform", `translate(${M.left},${M.top})`);
+
+    g.append("g").attr("transform", `translate(0,${innerH})`)
+      .call(d3.axisBottom(x))
+      .call((sel) => sel.selectAll("text").attr("fill", "#6b6558").attr("font-family", "Jost, sans-serif"))
+      .call((sel) => sel.selectAll("path,line").attr("stroke", "#e7ddc8"));
+    g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat((d) => d + config.axisSuffix))
+      .call((sel) => sel.selectAll("text").attr("fill", "#6b6558").attr("font-family", "Jost, sans-serif"))
+      .call((sel) => sel.selectAll("path,line").attr("stroke", "#e7ddc8"));
+
+    const rows = monthLabels.map((month, i) => ({ month, a: sumsA[i], b: sumsB[i] }));
+    const groups = g
+      .selectAll("g.compare-month-group")
+      .data(rows, (d) => d.month)
+      .join("g")
+      .attr("class", "compare-month-group")
+      .attr("transform", (d) => `translate(${x(d.month)},0)`);
+
+    groups.each(function (d) {
+      const bars = [
+        { key: "a", val: d.a, color: "#2b3990" },
+        { key: "b", val: d.b, color: "#dd2a26" },
+      ].filter((b) => b.val !== null);
+      d3.select(this)
+        .selectAll("rect")
+        .data(bars, (b) => b.key)
+        .join("rect")
+        .attr("x", (b) => xSub(b.key))
+        .attr("width", xSub.bandwidth())
+        .attr("y", (b) => y(b.val))
+        .attr("height", (b) => innerH - y(b.val))
+        .attr("fill", (b) => b.color);
+    });
   }
 
   main();
