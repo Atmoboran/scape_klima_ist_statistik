@@ -1,10 +1,13 @@
 // The "classic global warming plot": one bar per year showing that year's
 // deviation from the active climate reference period, coloured on the same
-// diverging scale as the rest of the site, plus a solid linear trend line
-// fitted through the whole record. Unlike spaghetti-plot.js/monthly-bar-
-// plot.js there is no per-year "highlight" state here - the whole record is
-// shown at once, which is the point of this chart. Built with vendored D3
-// v7, no build step.
+// diverging scale as the rest of the site, plus a solid 10-year centered
+// moving-average line smoothing out year-to-year noise. The summary badge
+// (per decade / since the record's start) is still driven by a separate
+// linear regression over the same data - the moving average is for reading
+// the shape of the curve, the regression is for a single trend number.
+// Unlike spaghetti-plot.js/monthly-bar-plot.js there is no per-year
+// "highlight" state here - the whole record is shown at once, which is the
+// point of this chart. Built with vendored D3 v7, no build step.
 (function () {
   "use strict";
 
@@ -35,6 +38,27 @@
     const slope = (n * sumXY - sumX * sumY) / denom;
     const intercept = (sumY - slope * sumX) / n;
     return { slope, intercept };
+  }
+
+  // Centered moving average over calendar years (not array indices), so a
+  // missing/incomplete year doesn't silently shrink the window's time span.
+  // A point is only drawn where at least minCount of the windowYears
+  // candidate years actually have data - sparse windows are left as a gap
+  // rather than averaged over too few points to mean much.
+  function centeredMovingAverage(rows, windowYears, minCount) {
+    const byYear = new Map(rows.map((r) => [r.year, r.diff]));
+    const half = Math.floor(windowYears / 2);
+    const out = [];
+    for (const r of rows) {
+      const vals = [];
+      for (let yy = r.year - half + 1; yy <= r.year + half; yy++) {
+        if (byYear.has(yy)) vals.push(byYear.get(yy));
+      }
+      if (vals.length >= minCount) {
+        out.push({ year: r.year, value: vals.reduce((a, b) => a + b, 0) / vals.length });
+      }
+    }
+    return out;
   }
 
   function robustMaxAbs(values) {
@@ -128,7 +152,7 @@
       drawAxes(x, y, innerW, innerH, years);
       drawZeroLine(y, innerW);
       drawBars(rows, x, y, colorScale, innerH);
-      const trend = drawTrend(rows, x, y, innerW);
+      const trend = drawTrend(rows, x, y);
       wireOverlay(rows, x, y);
 
       opts.onTrendReady && opts.onTrendReady(trend);
@@ -187,27 +211,26 @@
         .attr("fill", (d) => colorScale(d.diff));
     }
 
-    function drawTrend(rows, x, y, innerW) {
+    function drawTrend(rows, x, y) {
       gTrend.selectAll("*").remove();
+
+      const ma = centeredMovingAverage(rows, 10, 7);
+      if (ma.length >= 2) {
+        const bandOffset = x.bandwidth() / 2;
+        const line = d3
+          .line()
+          .x((d) => x(String(d.year)) + bandOffset)
+          .y((d) => y(d.value));
+        gTrend.append("path").datum(ma).attr("class", "trend-line").attr("fill", "none").attr("d", line);
+      }
+
+      // The drawn line is the moving average (for reading the curve's
+      // shape); the badge's single trend number still comes from an OLS fit
+      // over the same underlying yearly deviations.
       const fit = linearRegression(rows.map((r) => [r.year, r.diff]));
       if (!fit || rows.length < 2) return null;
-
       const firstYear = rows[0].year;
       const lastYear = rows[rows.length - 1].year;
-      const bandOffset = x.bandwidth() / 2;
-      const points = [
-        [x(String(firstYear)) + bandOffset, y(fit.slope * firstYear + fit.intercept)],
-        [x(String(lastYear)) + bandOffset, y(fit.slope * lastYear + fit.intercept)],
-      ];
-
-      gTrend
-        .append("line")
-        .attr("class", "trend-line")
-        .attr("x1", points[0][0])
-        .attr("y1", points[0][1])
-        .attr("x2", points[1][0])
-        .attr("y2", points[1][1]);
-
       return {
         slopePerYear: fit.slope,
         firstYear,
