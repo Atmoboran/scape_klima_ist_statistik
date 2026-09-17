@@ -142,6 +142,28 @@ html, body {
 }
 .view-toggle:active { transform: scale(0.97); }
 
+.page-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem 0;
+}
+
+.page-nav-link {
+  appearance: none;
+  text-decoration: none;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+.page-nav-link.active { color: var(--paper); background: var(--ink); border-color: var(--ink); }
+
 .app-header {
   position: relative;
   padding: 0.6rem 1rem 0.15rem;
@@ -432,6 +454,11 @@ html, body {
   justify-content: flex-end;
 }
 
+/* The trend page's badge has no "current year" slot, so its stats should
+   center rather than hug the right edge as if there were one. */
+#trend-summary-badge { justify-content: center; }
+#trend-summary-badge .deviation-stats { justify-content: center; width: 100%; }
+
 .stat-block {
   display: flex;
   flex-direction: column;
@@ -475,7 +502,8 @@ html, body {
 }
 
 #chart,
-#chart-bar {
+#chart-bar,
+#trend-chart {
   width: 100%;
   height: clamp(300px, 46vh, 420px);
   display: block;
@@ -527,6 +555,20 @@ html, body {
   fill: none;
   stroke-width: 2.75;
   stroke: var(--ink);
+}
+
+.zero-line {
+  stroke: var(--ink-dim);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
+}
+
+.trend-bar-overlay { fill: transparent; cursor: pointer; }
+
+.trend-line {
+  stroke: var(--ink);
+  stroke-width: 2.5;
 }
 
 .axis text { fill: var(--ink); font-family: var(--font); font-size: 12px; font-weight: 500; }

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Klimatrend — Klima ist Statistik</title>
+<link rel="stylesheet" href="css/style.css" />
+<script>
+  (function () {
+    var mode;
+    try {
+      var stored = localStorage.getItem("scapeViewMode");
+      mode = (stored === "mobile" || stored === "desktop") ? stored : null;
+    } catch (e) {}
+    if (!mode) {
+      mode = window.matchMedia("(max-width: 699px)").matches ? "mobile" : "desktop";
+    }
+    document.documentElement.setAttribute("data-view", mode);
+  })();
+</script>
+</head>
+<body>
+
+<div class="brand-bar">
+  <div class="brand-identity">
+    <div class="brand-quad" aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+      <svg class="brand-arc" viewBox="0 0 100 100"><path d="M 15 85 A 35 35 0 0 1 85 85" /></svg>
+    </div>
+    <div class="brand-word">
+      <span class="brand-logo">SCAPE<sup>°</sup></span>
+      <span class="brand-sub">WETTER · KLIMA · MENSCH</span>
+    </div>
+  </div>
+  <button id="view-toggle" class="view-toggle" type="button"></button>
+</div>
+
+<nav class="page-nav" aria-label="Ansicht wählen">
+  <a href="index.html" class="page-nav-link">Tagesverlauf</a>
+  <a href="trend.html" class="page-nav-link active" aria-current="page">Klimatrend</a>
+</nav>
+
+<header class="app-header">
+  <h1>Klimatrend</h1>
+  <p class="subtitle">Ein Balken pro Jahr, verglichen mit der Referenzperiode — und der lineare Trend über die gesamte Messreihe.</p>
+</header>
+
+<div class="picker-row">
+  <div class="field-group">
+    <label for="trend-variable-select" class="field-label">Messgröße</label>
+    <select id="trend-variable-select" class="station-select">
+      <option value="temperature">Temperatur</option>
+      <option value="precipitation">Niederschlag</option>
+      <option value="sunshine">Sonnenscheindauer</option>
+    </select>
+  </div>
+  <div class="field-group">
+    <label for="trend-station-select" class="field-label">Messstation</label>
+    <select id="trend-station-select" class="station-select"></select>
+  </div>
+</div>
+
+<main class="plot-shell">
+  <div class="plot-toolbar">
+    <div class="deviation-badge" id="trend-summary-badge">
+      <div class="deviation-stats">
+        <div class="stat-block">
+          <span class="stat-label">Pro Jahrzehnt</span>
+          <span class="deviation-mean" id="trend-per-decade">–</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-label" id="trend-total-label">Seit Beginn</span>
+          <span class="deviation-value" id="trend-total-change">–</span>
+        </div>
+      </div>
+    </div>
+    <div class="period-toggle-group">
+      <span class="ref-period-label">Referenzperiode:</span>
+      <div class="period-toggle-row" id="trend-period-toggle"></div>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <svg id="trend-chart" role="img" aria-label="Abweichung der Jahresmitteltemperatur von der Referenzperiode, Jahr für Jahr"></svg>
+    <div id="trend-tooltip" class="tooltip" hidden></div>
+  </div>
+  <p class="compare-headline" id="trend-caption">
+    Jeder Balken zeigt, wie weit das Jahr über (rot/orange) oder unter (blau) dem Mittel der Referenzperiode lag.
+    Die schwarze Linie ist der lineare Trend über die gesamte Messreihe.
+  </p>
+</main>
+
+<footer class="app-footer">
+  <p>Daten: Deutscher Wetterdienst (DWD) Climate Data Center, Tageswerte, CC BY 4.0.</p>
+  <p class="footer-scape">Ein Exponat von SCAPE° — Frankfurter Str. 39, 63065 Offenbach am Main</p>
+</footer>
+
+<script src="js/vendor/d3.v7.min.js"></script>
+<script src="js/variable-config.js"></script>
+<script src="js/annual-trend-plot.js"></script>
+<script src="js/trend.js"></script>
+</body>
+</html>

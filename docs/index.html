@@ -35,6 +35,11 @@
   <button id="view-toggle" class="view-toggle" type="button"></button>
 </div>
 
+<nav class="page-nav" aria-label="Ansicht wählen">
+  <a href="index.html" class="page-nav-link active" aria-current="page">Tagesverlauf</a>
+  <a href="trend.html" class="page-nav-link">Klimatrend</a>
+</nav>
+
 <header class="app-header">
   <h1>Klima ist Statistik</h1>
   <p class="subtitle">Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster — und die Abweichung vom Mittelwert.</p>
@@ -181,6 +186,7 @@
 </footer>
 
 <script src="js/vendor/d3.v7.min.js"></script>
+<script src="js/variable-config.js"></script>
 <script src="js/spaghetti-plot.js"></script>
 <script src="js/monthly-bar-plot.js"></script>
 <script src="js/main.js"></script>
