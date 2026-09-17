@@ -82,6 +82,7 @@
     const gZero = svg.append("g").attr("class", "zero-layer");
     const gBars = svg.append("g").attr("class", "bars-layer");
     const gTrend = svg.append("g").attr("class", "trend-layer");
+    const gGuide = svg.append("g").attr("class", "guide-layer");
     const gOverlay = svg.append("g").attr("class", "overlay-layer");
 
     function measure() {
@@ -98,6 +99,7 @@
 
     function hideTooltip() {
       tooltipEl.hidden = true;
+      gGuide.selectAll("*").remove();
     }
 
     function render(stationData, renderConfig) {
@@ -113,6 +115,7 @@
       gZero.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gBars.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gTrend.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+      gGuide.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gOverlay.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
 
       if (baseline === null || baseline === undefined) {
@@ -120,6 +123,7 @@
         gZero.selectAll("*").remove();
         gBars.selectAll("*").remove();
         gTrend.selectAll("*").remove();
+        gGuide.selectAll("*").remove();
         gOverlay.selectAll("*").remove();
         opts.onTrendReady && opts.onTrendReady(null);
         return;
@@ -153,7 +157,7 @@
       drawZeroLine(y, innerW);
       drawBars(rows, x, y, colorScale, innerH);
       const trend = drawTrend(rows, x, y);
-      wireOverlay(rows, x, y);
+      wireOverlay(rows, x, y, innerW, innerH);
 
       opts.onTrendReady && opts.onTrendReady(trend);
     }
@@ -239,28 +243,49 @@
       };
     }
 
-    function wireOverlay(rows, x, y) {
+    // A touch pointer is implicitly captured by whatever element it went
+    // down on, so per-year overlay rects (the previous approach) never see
+    // pointermove events once the finger drifts onto a neighbouring bar -
+    // that's what forced a lift-and-tap-again for every year. A single
+    // full-width overlay (same trick as spaghetti-plot.js's day scrubbing)
+    // fixes that: one element receives the whole drag, and the year is
+    // computed from the pointer's x position on every move.
+    function wireOverlay(rows, x, y, innerW, innerH) {
       gOverlay.selectAll("*").remove();
       const byYear = new Map(rows.map((r) => [String(r.year), r]));
+      const domain = x.domain();
+      const step = x.step();
+      const rangeStart = x.range()[0];
+
+      function yearAt(mx) {
+        const idx = Math.min(domain.length - 1, Math.max(0, Math.floor((mx - rangeStart) / step)));
+        return domain[idx];
+      }
+
+      function drawGuide(yr) {
+        gGuide.selectAll("*").remove();
+        const cx = x(yr) + x.bandwidth() / 2;
+        gGuide.append("line").attr("class", "day-guide").attr("x1", cx).attr("x2", cx).attr("y1", 0).attr("y2", innerH);
+      }
+
+      function handlePointer(event) {
+        resetIdleTimer();
+        const [mx] = d3.pointer(event, gOverlay.node());
+        const yr = yearAt(mx);
+        drawGuide(yr);
+        showTooltip(yr, byYear.get(yr), event.clientX, event.clientY);
+      }
+
       gOverlay
-        .selectAll("rect.trend-bar-overlay")
-        .data(x.domain())
-        .join("rect")
+        .append("rect")
         .attr("class", "trend-bar-overlay")
-        .attr("x", (yr) => x(yr))
-        .attr("width", x.bandwidth())
+        .attr("x", 0)
+        .attr("width", innerW)
         .attr("y", 0)
-        .attr("height", y.range()[0])
-        .on("pointerenter pointermove", (event, yr) => {
-          resetIdleTimer();
-          const row = byYear.get(yr);
-          showTooltip(yr, row, event.clientX, event.clientY);
-        })
-        .on("pointerdown", (event, yr) => {
-          resetIdleTimer();
-          const row = byYear.get(yr);
-          showTooltip(yr, row, event.clientX, event.clientY);
-        })
+        .attr("height", innerH)
+        .style("cursor", "crosshair")
+        .on("pointermove", handlePointer)
+        .on("pointerdown", handlePointer)
         .on("pointerleave", hideTooltip);
     }
 
