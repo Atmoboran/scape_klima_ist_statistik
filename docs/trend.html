@@ -62,17 +62,9 @@
 
 <main class="plot-shell">
   <div class="plot-toolbar">
-    <div class="deviation-badge" id="trend-summary-badge">
-      <div class="deviation-stats">
-        <div class="stat-block">
-          <span class="stat-label">Pro Jahrzehnt</span>
-          <span class="deviation-mean" id="trend-per-decade">–</span>
-        </div>
-        <div class="stat-block">
-          <span class="stat-label" id="trend-total-label">Seit Beginn</span>
-          <span class="deviation-value" id="trend-total-change">–</span>
-        </div>
-      </div>
+    <div class="period-toggle-group">
+      <span class="ref-period-label">Ansicht:</span>
+      <div class="period-toggle-row" id="trend-mode-toggle"></div>
     </div>
     <div class="period-toggle-group">
       <span class="ref-period-label">Referenzperiode:</span>
@@ -86,7 +78,7 @@
   </div>
   <p class="compare-headline" id="trend-caption">
     Jeder Balken zeigt, wie weit das Jahr über (rot/orange) oder unter (blau) dem Mittel der Referenzperiode lag.
-    Die schwarze Linie ist der lineare Trend über die gesamte Messreihe.
+    Die schwarze Linie zeigt den gleitenden 10-Jahres-Durchschnitt.
   </p>
 </main>
 

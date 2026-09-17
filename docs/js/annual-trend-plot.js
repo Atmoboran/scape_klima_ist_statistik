@@ -1,13 +1,15 @@
-// The "classic global warming plot": one bar per year showing that year's
-// deviation from the active climate reference period, coloured on the same
-// diverging scale as the rest of the site, plus a solid 10-year centered
-// moving-average line smoothing out year-to-year noise. The summary badge
-// (per decade / since the record's start) is still driven by a separate
-// linear regression over the same data - the moving average is for reading
-// the shape of the curve, the regression is for a single trend number.
-// Unlike spaghetti-plot.js/monthly-bar-plot.js there is no per-year
-// "highlight" state here - the whole record is shown at once, which is the
-// point of this chart. Built with vendored D3 v7, no build step.
+// The "classic global warming plot": one bar per year, plus a solid 10-year
+// centered moving-average line smoothing out year-to-year noise. Two view
+// modes (config.mode, set by trend.js's toggle):
+//   - "relative" (default): bar height is the year's deviation from the
+//     active climate reference period, diverging from a zero baseline.
+//   - "absolute": bar height is the year's actual value, and the reference
+//     period's mean is drawn as a horizontal line instead of the zero line.
+// Either way every bar is coloured by its deviation from the reference
+// period, so the warming signal reads the same regardless of mode. Unlike
+// spaghetti-plot.js/monthly-bar-plot.js there is no per-year "highlight"
+// state here - the whole record is shown at once, which is the point of
+// this chart. Built with vendored D3 v7, no build step.
 (function () {
   "use strict";
 
@@ -18,44 +20,28 @@
     colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
     axisSuffix: "°",
     activePeriod: "period_a",
+    mode: "relative", // "relative" (deviation from reference period) or "absolute" (actual value)
     formatValue: (v) => `${v.toFixed(1)}`,
     formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)}`,
   };
-
-  // Ordinary least squares over [[x, y], ...] pairs.
-  function linearRegression(points) {
-    const n = points.length;
-    if (n < 2) return null;
-    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-    for (const [x, y] of points) {
-      sumX += x;
-      sumY += y;
-      sumXY += x * y;
-      sumXX += x * x;
-    }
-    const denom = n * sumXX - sumX * sumX;
-    if (denom === 0) return null;
-    const slope = (n * sumXY - sumX * sumY) / denom;
-    const intercept = (sumY - slope * sumX) / n;
-    return { slope, intercept };
-  }
 
   // Centered moving average over calendar years (not array indices), so a
   // missing/incomplete year doesn't silently shrink the window's time span.
   // A point is only drawn where at least minCount of the windowYears
   // candidate years actually have data - sparse windows are left as a gap
-  // rather than averaged over too few points to mean much.
-  function centeredMovingAverage(rows, windowYears, minCount) {
-    const byYear = new Map(rows.map((r) => [r.year, r.diff]));
+  // rather than averaged over too few points to mean much. `pairs` is
+  // [{year, value}], already picked to whatever the active display mode is.
+  function centeredMovingAverage(pairs, windowYears, minCount) {
+    const byYear = new Map(pairs.map((p) => [p.year, p.value]));
     const half = Math.floor(windowYears / 2);
     const out = [];
-    for (const r of rows) {
+    for (const p of pairs) {
       const vals = [];
-      for (let yy = r.year - half + 1; yy <= r.year + half; yy++) {
+      for (let yy = p.year - half + 1; yy <= p.year + half; yy++) {
         if (byYear.has(yy)) vals.push(byYear.get(yy));
       }
       if (vals.length >= minCount) {
-        out.push({ year: r.year, value: vals.reduce((a, b) => a + b, 0) / vals.length });
+        out.push({ year: p.year, value: vals.reduce((a, b) => a + b, 0) / vals.length });
       }
     }
     return out;
@@ -125,7 +111,6 @@
         gTrend.selectAll("*").remove();
         gGuide.selectAll("*").remove();
         gOverlay.selectAll("*").remove();
-        opts.onTrendReady && opts.onTrendReady(null);
         return;
       }
 
@@ -143,9 +128,10 @@
 
       const x = d3.scaleBand().domain(years.map(String)).range([0, innerW]).paddingInner(0.25).paddingOuter(0.08);
 
+      // The colour scale always encodes deviation from the reference period,
+      // regardless of display mode, so the warming signal reads the same way
+      // whether you're looking at absolute values or the deviation itself.
       const maxAbsDiff = robustMaxAbs(rows.map((r) => r.diff)) * 1.08;
-      const y = d3.scaleLinear().domain([-maxAbsDiff, maxAbsDiff]).nice().range([innerH, 0]).clamp(true);
-
       const colorScale = d3
         .scaleLinear()
         .domain([-maxAbsDiff, 0, maxAbsDiff])
@@ -153,13 +139,24 @@
         .interpolate(d3.interpolateRgb)
         .clamp(true);
 
-      drawAxes(x, y, innerW, innerH, years);
-      drawZeroLine(y, innerW);
-      drawBars(rows, x, y, colorScale, innerH);
-      const trend = drawTrend(rows, x, y);
-      wireOverlay(rows, x, y, innerW, innerH);
+      let yDomain;
+      if (config.mode === "absolute") {
+        const amts = rows.map((r) => r.amt);
+        const minA = Math.min(...amts);
+        const maxA = Math.max(...amts);
+        const pad = (maxA - minA) * 0.08 || 1;
+        const floor = config.yMin !== null && config.yMin !== undefined ? config.yMin : minA - pad;
+        yDomain = [floor, maxA + pad];
+      } else {
+        yDomain = [-maxAbsDiff, maxAbsDiff];
+      }
+      const y = d3.scaleLinear().domain(yDomain).nice().range([innerH, 0]).clamp(true);
 
-      opts.onTrendReady && opts.onTrendReady(trend);
+      drawAxes(x, y, innerW, innerH, years);
+      drawBaselineLine(y, innerW, baseline);
+      drawBars(rows, x, y, colorScale, baseline);
+      drawTrend(rows, x, y);
+      wireOverlay(rows, x, y, innerW, innerH);
     }
 
     function drawAxes(x, y, innerW, innerH, years) {
@@ -176,7 +173,8 @@
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const yAxis = d3.axisLeft(y).ticks(6).tickFormat((d) => (d > 0 ? "+" : "") + d + config.axisSuffix);
+      const signPrefix = config.mode === "absolute" ? (d) => "" : (d) => (d > 0 ? "+" : "");
+      const yAxis = d3.axisLeft(y).ticks(6).tickFormat((d) => signPrefix(d) + d + config.axisSuffix);
       gAxes.append("g").attr("class", "axis").call(yAxis);
 
       if (config.axisUnit) {
@@ -190,19 +188,25 @@
       }
     }
 
-    function drawZeroLine(y, innerW) {
+    // In relative mode this is the zero line the bars diverge from; in
+    // absolute mode it's the reference period's own mean, so "above/below
+    // normal" is still visible even though the bars show actual values.
+    function drawBaselineLine(y, innerW, baseline) {
       gZero.selectAll("*").remove();
+      const refValue = config.mode === "absolute" ? baseline : 0;
       gZero
         .append("line")
         .attr("class", "zero-line")
         .attr("x1", 0)
         .attr("x2", innerW)
-        .attr("y1", y(0))
-        .attr("y2", y(0));
+        .attr("y1", y(refValue))
+        .attr("y2", y(refValue));
     }
 
-    function drawBars(rows, x, y, colorScale, innerH) {
+    function drawBars(rows, x, y, colorScale, baseline) {
       gBars.selectAll("*").remove();
+      const anchor = config.mode === "absolute" ? baseline : 0;
+      const val = (d) => (config.mode === "absolute" ? d.amt : d.diff);
       gBars
         .selectAll("rect.trend-bar")
         .data(rows, (d) => d.year)
@@ -210,15 +214,16 @@
         .attr("class", "trend-bar")
         .attr("x", (d) => x(String(d.year)))
         .attr("width", x.bandwidth())
-        .attr("y", (d) => Math.min(y(d.diff), y(0)))
-        .attr("height", (d) => Math.abs(y(d.diff) - y(0)))
+        .attr("y", (d) => Math.min(y(val(d)), y(anchor)))
+        .attr("height", (d) => Math.abs(y(val(d)) - y(anchor)))
         .attr("fill", (d) => colorScale(d.diff));
     }
 
     function drawTrend(rows, x, y) {
       gTrend.selectAll("*").remove();
 
-      const ma = centeredMovingAverage(rows, 10, 7);
+      const pairs = rows.map((r) => ({ year: r.year, value: config.mode === "absolute" ? r.amt : r.diff }));
+      const ma = centeredMovingAverage(pairs, 10, 7);
       if (ma.length >= 2) {
         const bandOffset = x.bandwidth() / 2;
         const line = d3
@@ -227,20 +232,6 @@
           .y((d) => y(d.value));
         gTrend.append("path").datum(ma).attr("class", "trend-line").attr("fill", "none").attr("d", line);
       }
-
-      // The drawn line is the moving average (for reading the curve's
-      // shape); the badge's single trend number still comes from an OLS fit
-      // over the same underlying yearly deviations.
-      const fit = linearRegression(rows.map((r) => [r.year, r.diff]));
-      if (!fit || rows.length < 2) return null;
-      const firstYear = rows[0].year;
-      const lastYear = rows[rows.length - 1].year;
-      return {
-        slopePerYear: fit.slope,
-        firstYear,
-        lastYear,
-        totalChange: fit.slope * (lastYear - firstYear),
-      };
     }
 
     // A touch pointer is implicitly captured by whatever element it went

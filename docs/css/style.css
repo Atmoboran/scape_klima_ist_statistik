@@ -454,11 +454,6 @@ html, body {
   justify-content: flex-end;
 }
 
-/* The trend page's badge has no "current year" slot, so its stats should
-   center rather than hug the right edge as if there were one. */
-#trend-summary-badge { justify-content: center; }
-#trend-summary-badge .deviation-stats { justify-content: center; width: 100%; }
-
 .stat-block {
   display: flex;
   flex-direction: column;

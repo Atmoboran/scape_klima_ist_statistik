@@ -7,6 +7,7 @@
     currentVariable: "temperature",
     currentData: null,
     activePeriod: "period_a",
+    displayMode: "relative", // "relative" (deviation from reference period) or "absolute" (actual value)
     plot: null,
   };
 
@@ -15,10 +16,8 @@
     select: document.getElementById("trend-station-select"),
     chart: document.getElementById("trend-chart"),
     tooltip: document.getElementById("trend-tooltip"),
+    modeToggle: document.getElementById("trend-mode-toggle"),
     periodToggle: document.getElementById("trend-period-toggle"),
-    perDecade: document.getElementById("trend-per-decade"),
-    totalLabel: document.getElementById("trend-total-label"),
-    totalChange: document.getElementById("trend-total-change"),
     caption: document.getElementById("trend-caption"),
     viewToggle: document.getElementById("view-toggle"),
   };
@@ -69,8 +68,8 @@
     state.plot = window.AnnualTrendPlot.create({
       svgEl: el.chart,
       tooltipEl: el.tooltip,
-      onTrendReady: renderTrendSummary,
     });
+    renderModeToggle();
 
     el.select.addEventListener("change", () => loadAndRender(el.select.value, state.currentVariable));
     el.variableSelect.addEventListener("change", () => loadAndRender(state.currentStationId, el.variableSelect.value));
@@ -102,21 +101,37 @@
 
     el.chart.setAttribute(
       "aria-label",
-      `Abweichung des ${config.valueLabel === "Jahresmittel" ? "Jahresmittels" : "Jahreswerts"} von ${config.label} von der Referenzperiode, Jahr für Jahr`
+      `${config.label} je Jahr im Vergleich zur Referenzperiode, ${data.years[0]}–${data.years[data.years.length - 1]}`
     );
-    el.totalLabel.textContent = `Seit ${data.years[0]}`;
 
+    renderModeToggle();
     renderPeriodToggle(data);
+    rerenderPlot();
+  }
 
-    state.plot.render(data, {
-      colorStops: config.colorStops,
-      axisSuffix: config.axisSuffix,
-      axisUnit: config.axisUnit,
-      activePeriod: state.activePeriod,
-      formatValue: config.formatValue,
-      formatDiff: config.formatDiff,
-      incompleteLabel: config.incompleteLabel,
-    });
+  function renderModeToggle() {
+    el.modeToggle.innerHTML = "";
+    const items = [
+      { key: "relative", label: "Abweichung" },
+      { key: "absolute", label: "Absolut" },
+    ];
+    for (const item of items) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      const active = state.displayMode === item.key;
+      btn.className = `period-toggle-btn${active ? " active" : ""}`;
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+      btn.textContent = item.label;
+      btn.addEventListener("click", () => setDisplayMode(item.key));
+      el.modeToggle.appendChild(btn);
+    }
+  }
+
+  function setDisplayMode(mode) {
+    if (state.displayMode === mode) return;
+    state.displayMode = mode;
+    renderModeToggle();
+    rerenderPlot();
   }
 
   function renderPeriodToggle(data) {
@@ -140,36 +155,41 @@
   function setActivePeriod(key) {
     if (state.activePeriod === key) return;
     state.activePeriod = key;
+    renderPeriodToggle(state.currentData);
+    rerenderPlot();
+  }
+
+  function rerenderPlot() {
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
-
-    renderPeriodToggle(data);
     state.plot.render(data, {
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
+      yMin: config.yMin,
       activePeriod: state.activePeriod,
+      mode: state.displayMode,
       formatValue: config.formatValue,
       formatDiff: config.formatDiff,
       incompleteLabel: config.incompleteLabel,
     });
+    updateCaption(data);
   }
 
-  function renderTrendSummary(trend) {
-    const config = VARIABLE_CONFIG[state.currentVariable];
-    if (!trend) {
-      el.perDecade.textContent = "–";
-      el.totalChange.textContent = "–";
+  function updateCaption(data) {
+    const period = data[state.activePeriod];
+    if (period.mean_annual_metric === null || period.mean_annual_metric === undefined) {
       el.caption.innerHTML =
         "Für die aktuell ausgewählte Referenzperiode liegen bei dieser Station zu wenige vollständige Jahre vor, " +
-        "um einen Trend zu berechnen.";
+        "um einen verlässlichen Vergleich zu berechnen.";
       return;
     }
-    el.perDecade.textContent = config.formatDiff(trend.slopePerYear * 10);
-    el.totalChange.textContent = config.formatDiff(trend.totalChange);
     el.caption.innerHTML =
-      "Jeder Balken zeigt, wie weit das Jahr über (rot/orange) oder unter (blau) dem Mittel der Referenzperiode lag. " +
-      "Die schwarze Linie ist der lineare Trend über die gesamte Messreihe.";
+      state.displayMode === "absolute"
+        ? "Jeder Balken zeigt den tatsächlichen Jahreswert. Die gestrichelte Linie markiert das Mittel der Referenzperiode, " +
+          "die Farbe zeigt die Abweichung davon. Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt."
+        : "Jeder Balken zeigt, wie weit das Jahr über (rot/orange) oder unter (blau) dem Mittel der Referenzperiode lag. " +
+          "Die schwarze Linie zeigt den gleitenden 10-Jahres-Durchschnitt.";
   }
 
   main();
