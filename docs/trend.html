@@ -42,7 +42,7 @@
 
 <header class="app-header">
   <h1>Klimatrend</h1>
-  <p class="subtitle">Ein Balken pro Jahr, verglichen mit der Referenzperiode — und der lineare Trend über die gesamte Messreihe.</p>
+  <p class="subtitle">Jahreswerte im Vergleich zur Referenzperiode — und wie sich die ganze Verteilung der Tageswerte über die Zeit verschoben hat.</p>
 </header>
 
 <div class="picker-row">
@@ -72,14 +72,36 @@
     </div>
   </div>
 
-  <div class="chart-wrap">
-    <svg id="trend-chart" role="img" aria-label="Abweichung der Jahresmitteltemperatur von der Referenzperiode, Jahr für Jahr"></svg>
+  <div class="chart-wrap" id="trend-annual-wrap">
+    <svg id="trend-chart" role="img" aria-label="Jahresmitteltemperatur im Vergleich zur Referenzperiode, Jahr für Jahr"></svg>
     <div id="trend-tooltip" class="tooltip" hidden></div>
   </div>
   <p class="compare-headline" id="trend-caption">
-    Jeder Balken zeigt, wie weit das Jahr über (rot/orange) oder unter (blau) dem Mittel der Referenzperiode lag.
-    Die schwarze Linie zeigt den gleitenden 10-Jahres-Durchschnitt.
+    Jeder Balken zeigt den tatsächlichen Jahreswert. Die gestrichelte Linie markiert das Mittel der Referenzperiode,
+    die Farbe die Abweichung davon. Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt.
   </p>
+
+  <div class="timeline-wrap" id="dist-timeline-wrap" style="display: none;">
+    <div class="timeline-track-row">
+      <span class="timeline-year-bound" id="dist-year-start">–</span>
+      <input type="range" id="dist-year-slider" class="year-slider" min="0" max="0" value="0" step="1" aria-label="Jahr auswählen" />
+      <span class="timeline-year-bound" id="dist-year-end">–</span>
+    </div>
+    <div class="transport-controls">
+      <button id="dist-prev-btn" class="step-btn" aria-label="Ein Jahr zurück">&#9664;</button>
+      <button id="dist-play-btn" class="play-btn" aria-label="Durch die Jahre abspielen">&#9654;</button>
+      <button id="dist-next-btn" class="step-btn" aria-label="Ein Jahr vor">&#9654;</button>
+    </div>
+  </div>
+
+  <div class="chart-wrap" id="trend-distribution-wrap" style="display: none;">
+    <div class="distribution-year-badge">
+      <span class="num" id="distribution-year">–</span>
+      <span class="sub" id="distribution-station-label"></span>
+    </div>
+    <svg id="distribution-chart" role="img" aria-label="Verteilung der Tageswerte im Vergleich zur Referenzperiode"></svg>
+  </div>
+  <p class="compare-headline" id="dist-caption" style="display: none;"></p>
 </main>
 
 <footer class="app-footer">
@@ -90,6 +112,7 @@
 <script src="js/vendor/d3.v7.min.js"></script>
 <script src="js/variable-config.js"></script>
 <script src="js/annual-trend-plot.js"></script>
+<script src="js/distribution-plot.js"></script>
 <script src="js/trend.js"></script>
 </body>
 </html>

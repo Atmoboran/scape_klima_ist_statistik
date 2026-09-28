@@ -7,8 +7,10 @@
     currentVariable: "temperature",
     currentData: null,
     activePeriod: "period_a",
-    displayMode: "relative", // "relative" (deviation from reference period) or "absolute" (actual value)
-    plot: null,
+    chartType: "annual", // "annual" (per-year bar chart) or "distribution" (bell-curve shift)
+    annualPlot: null,
+    distPlot: null,
+    distPlayTimer: null,
   };
 
   const el = {
@@ -19,6 +21,19 @@
     modeToggle: document.getElementById("trend-mode-toggle"),
     periodToggle: document.getElementById("trend-period-toggle"),
     caption: document.getElementById("trend-caption"),
+    annualWrap: document.getElementById("trend-annual-wrap"),
+    distWrap: document.getElementById("trend-distribution-wrap"),
+    distTimelineWrap: document.getElementById("dist-timeline-wrap"),
+    distCaption: document.getElementById("dist-caption"),
+    distChart: document.getElementById("distribution-chart"),
+    distributionYear: document.getElementById("distribution-year"),
+    distributionStationLabel: document.getElementById("distribution-station-label"),
+    distSlider: document.getElementById("dist-year-slider"),
+    distYearStart: document.getElementById("dist-year-start"),
+    distYearEnd: document.getElementById("dist-year-end"),
+    distPlayBtn: document.getElementById("dist-play-btn"),
+    distPrevBtn: document.getElementById("dist-prev-btn"),
+    distNextBtn: document.getElementById("dist-next-btn"),
     viewToggle: document.getElementById("view-toggle"),
   };
 
@@ -65,11 +80,15 @@
     state.stations.sort((a, b) => a.name.localeCompare(b.name, "de"));
     buildStationOptions();
 
-    state.plot = window.AnnualTrendPlot.create({
+    state.annualPlot = window.AnnualTrendPlot.create({
       svgEl: el.chart,
       tooltipEl: el.tooltip,
     });
+    state.distPlot = window.DistributionPlot.create({
+      svgEl: el.distChart,
+    });
     renderModeToggle();
+    setupDistTimeline();
 
     el.select.addEventListener("change", () => loadAndRender(el.select.value, state.currentVariable));
     el.variableSelect.addEventListener("change", () => loadAndRender(state.currentStationId, el.variableSelect.value));
@@ -89,6 +108,7 @@
   }
 
   async function loadAndRender(stationId, variableKey) {
+    stopDistPlaying();
     state.currentStationId = stationId;
     state.currentVariable = variableKey;
     el.select.value = stationId;
@@ -103,35 +123,50 @@
       "aria-label",
       `${config.label} je Jahr im Vergleich zur Referenzperiode, ${data.years[0]}–${data.years[data.years.length - 1]}`
     );
+    el.distChart.setAttribute(
+      "aria-label",
+      `Verteilung der Tageswerte (${config.label}) im Vergleich zur Referenzperiode`
+    );
 
-    renderModeToggle();
     renderPeriodToggle(data);
-    rerenderPlot();
+    setupDistYearBounds(data);
+    renderAnnual();
+    renderDistribution();
   }
 
   function renderModeToggle() {
     el.modeToggle.innerHTML = "";
     const items = [
-      { key: "relative", label: "Abweichung" },
-      { key: "absolute", label: "Absolut" },
+      { key: "annual", label: "Jahresbalken" },
+      { key: "distribution", label: "Verteilung" },
     ];
     for (const item of items) {
       const btn = document.createElement("button");
       btn.type = "button";
-      const active = state.displayMode === item.key;
+      const active = state.chartType === item.key;
       btn.className = `period-toggle-btn${active ? " active" : ""}`;
       btn.setAttribute("aria-pressed", active ? "true" : "false");
       btn.textContent = item.label;
-      btn.addEventListener("click", () => setDisplayMode(item.key));
+      btn.addEventListener("click", () => setChartType(item.key));
       el.modeToggle.appendChild(btn);
     }
   }
 
-  function setDisplayMode(mode) {
-    if (state.displayMode === mode) return;
-    state.displayMode = mode;
+  function setChartType(type) {
+    if (state.chartType === type) return;
+    if (type !== "distribution") stopDistPlaying();
+    state.chartType = type;
     renderModeToggle();
-    rerenderPlot();
+    updateChartVisibility();
+  }
+
+  function updateChartVisibility() {
+    const isDist = state.chartType === "distribution";
+    el.annualWrap.style.display = isDist ? "none" : "";
+    el.caption.style.display = isDist ? "none" : "";
+    el.distTimelineWrap.style.display = isDist ? "" : "none";
+    el.distWrap.style.display = isDist ? "" : "none";
+    el.distCaption.style.display = isDist ? "" : "none";
   }
 
   function renderPeriodToggle(data) {
@@ -156,19 +191,19 @@
     if (state.activePeriod === key) return;
     state.activePeriod = key;
     renderPeriodToggle(state.currentData);
-    rerenderPlot();
+    renderAnnual();
+    renderDistribution(true);
   }
 
-  function rerenderPlot() {
+  function renderAnnual() {
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
-    state.plot.render(data, {
+    state.annualPlot.render(data, {
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
       yMin: config.yMin,
       activePeriod: state.activePeriod,
-      mode: state.displayMode,
       formatValue: config.formatValue,
       formatDiff: config.formatDiff,
       incompleteLabel: config.incompleteLabel,
@@ -185,12 +220,111 @@
       return;
     }
     el.caption.innerHTML =
-      state.displayMode === "absolute"
-        ? "Jeder Balken zeigt den tatsächlichen Jahreswert. Die gestrichelte Linie markiert das Mittel der Referenzperiode, " +
-          "die Farbe zeigt die Abweichung davon. Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt."
-        : "Jeder Balken zeigt, wie weit das Jahr über (rot/orange) oder unter (blau) dem Mittel der Referenzperiode lag. " +
-          "Die schwarze Linie zeigt den gleitenden 10-Jahres-Durchschnitt.";
+      "Jeder Balken zeigt den tatsächlichen Jahreswert. Die gestrichelte Linie markiert das Mittel der Referenzperiode, " +
+      "die Farbe die Abweichung davon. Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt.";
   }
 
+  // preserveYear: keep whichever year the distribution timeline is
+  // currently scrubbed to (used when only the reference period changes),
+  // rather than jumping back to the most recent year.
+  function renderDistribution(preserveYear) {
+    const data = state.currentData;
+    const config = VARIABLE_CONFIG[state.currentVariable];
+    state.distPlot.render(data, {
+      colorStops: config.colorStops,
+      axisSuffix: config.axisSuffix,
+      axisUnit: config.axisUnit,
+      dailyIsCumulative: !!config.dailyIsCumulative,
+      activePeriod: state.activePeriod,
+      preserveYear: !!preserveYear,
+    });
+    const years = data.years;
+    const idx = preserveYear ? Math.min(+el.distSlider.value, years.length - 1) : years.length - 1;
+    el.distSlider.value = idx;
+    updateDistYearBadge(years[idx]);
+    updateDistCaption(data);
+  }
+
+  function updateDistYearBadge(year) {
+    const data = state.currentData;
+    el.distributionYear.textContent = year || "–";
+    el.distributionStationLabel.textContent = data.meta.name;
+  }
+
+  function updateDistCaption(data) {
+    const period = data[state.activePeriod];
+    if (period.mean_annual_metric === null || period.mean_annual_metric === undefined) {
+      el.distCaption.innerHTML =
+        "Für die aktuell ausgewählte Referenzperiode liegen bei dieser Station zu wenige vollständige Jahre vor, " +
+        "um einen verlässlichen Vergleich zu berechnen.";
+      return;
+    }
+    el.distCaption.innerHTML =
+      `Die farbige Fläche zeigt, wie die Tageswerte im ausgewählten Jahr verteilt sind. Die gestrichelte Linie ist ` +
+      `dieselbe Verteilung für die Referenzperiode <strong>${period.start}–${period.end}</strong>. ` +
+      `Nutze den Regler, um durch die einzelnen Jahre zu blättern.`;
+  }
+
+  function setupDistYearBounds(data) {
+    const years = data.years;
+    el.distYearStart.textContent = years[0];
+    el.distYearEnd.textContent = years[years.length - 1];
+    el.distSlider.min = 0;
+    el.distSlider.max = years.length - 1;
+    el.distSlider.value = years.length - 1;
+  }
+
+  function setupDistTimeline() {
+    el.distSlider.oninput = () => {
+      stopDistPlaying();
+      const years = state.currentData.years;
+      const year = years[+el.distSlider.value];
+      state.distPlot.setYear(year);
+      updateDistYearBadge(year);
+    };
+
+    el.distPlayBtn.onclick = () => {
+      if (state.distPlayTimer) stopDistPlaying();
+      else startDistPlaying();
+    };
+
+    el.distPrevBtn.onclick = () => stepDistYear(-1);
+    el.distNextBtn.onclick = () => stepDistYear(1);
+  }
+
+  function stepDistYear(delta) {
+    stopDistPlaying();
+    const years = state.currentData.years;
+    const idx = Math.min(years.length - 1, Math.max(0, +el.distSlider.value + delta));
+    el.distSlider.value = idx;
+    const year = years[idx];
+    state.distPlot.setYear(year);
+    updateDistYearBadge(year);
+  }
+
+  function startDistPlaying() {
+    const years = state.currentData.years;
+    el.distPlayBtn.classList.add("playing");
+    el.distPlayBtn.innerHTML = "&#9724;";
+    let idx = +el.distSlider.value;
+    state.distPlayTimer = setInterval(() => {
+      idx = (idx + 1) % years.length;
+      el.distSlider.value = idx;
+      const year = years[idx];
+      state.distPlot.setYear(year);
+      updateDistYearBadge(year);
+    }, 550);
+  }
+
+  function stopDistPlaying() {
+    if (state.distPlayTimer) {
+      clearInterval(state.distPlayTimer);
+      state.distPlayTimer = null;
+    }
+    el.distPlayBtn.classList.remove("playing");
+    el.distPlayBtn.innerHTML = "&#9654;";
+  }
+
+  updateChartVisibility();
   main();
 })();

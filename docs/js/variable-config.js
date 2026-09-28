@@ -47,6 +47,10 @@ window.VARIABLE_CONFIG = {
     axisUnit: "mm",
     yMin: 0,
     maxAbsDev: 250,
+    // strands are a *cumulative* running total by day-of-year (see
+    // build_data.py), not the raw daily amount - anything that needs the
+    // actual per-day value (e.g. distribution-plot.js) must diff it first.
+    dailyIsCumulative: true,
     colorStops: ["#d35b22", "#f2e6c9", "#1ca3d6"],
     legendCold: "trockener",
     legendWarm: "nasser",

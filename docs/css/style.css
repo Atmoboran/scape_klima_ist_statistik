@@ -498,7 +498,8 @@ html, body {
 
 #chart,
 #chart-bar,
-#trend-chart {
+#trend-chart,
+#distribution-chart {
   width: 100%;
   height: clamp(300px, 46vh, 420px);
   display: block;
@@ -564,6 +565,54 @@ html, body {
 .trend-line {
   stroke: var(--ink);
   stroke-width: 2.5;
+}
+
+.dist-ref-area {
+  fill: var(--ink-dim);
+  opacity: 0.07;
+  stroke: none;
+}
+
+.dist-ref-line {
+  fill: none;
+  stroke: var(--ink-dim);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.dist-year-area { opacity: 0.85; }
+
+.dist-year-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.distribution-year-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.7rem;
+  text-align: right;
+  pointer-events: none;
+}
+
+.distribution-year-badge .num {
+  display: block;
+  font-size: clamp(1.6rem, 8vw, 2.2rem);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.distribution-year-badge .sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
 }
 
 .axis text { fill: var(--ink); font-family: var(--font); font-size: 12px; font-weight: 500; }

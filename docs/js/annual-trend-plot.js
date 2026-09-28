@@ -1,15 +1,12 @@
-// The "classic global warming plot": one bar per year, plus a solid 10-year
-// centered moving-average line smoothing out year-to-year noise. Two view
-// modes (config.mode, set by trend.js's toggle):
-//   - "relative" (default): bar height is the year's deviation from the
-//     active climate reference period, diverging from a zero baseline.
-//   - "absolute": bar height is the year's actual value, and the reference
-//     period's mean is drawn as a horizontal line instead of the zero line.
-// Either way every bar is coloured by its deviation from the reference
-// period, so the warming signal reads the same regardless of mode. Unlike
-// spaghetti-plot.js/monthly-bar-plot.js there is no per-year "highlight"
-// state here - the whole record is shown at once, which is the point of
-// this chart. Built with vendored D3 v7, no build step.
+// The "classic global warming plot": one bar per year (its actual value,
+// with the reference period's own mean drawn as a horizontal line), plus a
+// solid 10-year centered moving-average line smoothing out year-to-year
+// noise. Every bar is coloured by its deviation from the reference period,
+// so the warming signal still reads clearly even though the bars themselves
+// show absolute values. Unlike spaghetti-plot.js/monthly-bar-plot.js there
+// is no per-year "highlight" state here - the whole record is shown at
+// once, which is the point of this chart. Built with vendored D3 v7, no
+// build step.
 (function () {
   "use strict";
 
@@ -20,7 +17,6 @@
     colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
     axisSuffix: "°",
     activePeriod: "period_a",
-    mode: "relative", // "relative" (deviation from reference period) or "absolute" (actual value)
     formatValue: (v) => `${v.toFixed(1)}`,
     formatDiff: (diff) => `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)}`,
   };
@@ -139,17 +135,12 @@
         .interpolate(d3.interpolateRgb)
         .clamp(true);
 
-      let yDomain;
-      if (config.mode === "absolute") {
-        const amts = rows.map((r) => r.amt);
-        const minA = Math.min(...amts);
-        const maxA = Math.max(...amts);
-        const pad = (maxA - minA) * 0.08 || 1;
-        const floor = config.yMin !== null && config.yMin !== undefined ? config.yMin : minA - pad;
-        yDomain = [floor, maxA + pad];
-      } else {
-        yDomain = [-maxAbsDiff, maxAbsDiff];
-      }
+      const amts = rows.map((r) => r.amt);
+      const minA = Math.min(...amts);
+      const maxA = Math.max(...amts);
+      const pad = (maxA - minA) * 0.08 || 1;
+      const floor = config.yMin !== null && config.yMin !== undefined ? config.yMin : minA - pad;
+      const yDomain = [floor, maxA + pad];
       const y = d3.scaleLinear().domain(yDomain).nice().range([innerH, 0]).clamp(true);
 
       drawAxes(x, y, innerW, innerH, years);
@@ -173,8 +164,7 @@
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const signPrefix = config.mode === "absolute" ? (d) => "" : (d) => (d > 0 ? "+" : "");
-      const yAxis = d3.axisLeft(y).ticks(6).tickFormat((d) => signPrefix(d) + d + config.axisSuffix);
+      const yAxis = d3.axisLeft(y).ticks(6).tickFormat((d) => d + config.axisSuffix);
       gAxes.append("g").attr("class", "axis").call(yAxis);
 
       if (config.axisUnit) {
@@ -188,25 +178,21 @@
       }
     }
 
-    // In relative mode this is the zero line the bars diverge from; in
-    // absolute mode it's the reference period's own mean, so "above/below
-    // normal" is still visible even though the bars show actual values.
+    // The reference period's own mean, so "above/below normal" is visible
+    // even though the bars themselves show absolute values.
     function drawBaselineLine(y, innerW, baseline) {
       gZero.selectAll("*").remove();
-      const refValue = config.mode === "absolute" ? baseline : 0;
       gZero
         .append("line")
         .attr("class", "zero-line")
         .attr("x1", 0)
         .attr("x2", innerW)
-        .attr("y1", y(refValue))
-        .attr("y2", y(refValue));
+        .attr("y1", y(baseline))
+        .attr("y2", y(baseline));
     }
 
     function drawBars(rows, x, y, colorScale, baseline) {
       gBars.selectAll("*").remove();
-      const anchor = config.mode === "absolute" ? baseline : 0;
-      const val = (d) => (config.mode === "absolute" ? d.amt : d.diff);
       gBars
         .selectAll("rect.trend-bar")
         .data(rows, (d) => d.year)
@@ -214,15 +200,15 @@
         .attr("class", "trend-bar")
         .attr("x", (d) => x(String(d.year)))
         .attr("width", x.bandwidth())
-        .attr("y", (d) => Math.min(y(val(d)), y(anchor)))
-        .attr("height", (d) => Math.abs(y(val(d)) - y(anchor)))
+        .attr("y", (d) => Math.min(y(d.amt), y(baseline)))
+        .attr("height", (d) => Math.abs(y(d.amt) - y(baseline)))
         .attr("fill", (d) => colorScale(d.diff));
     }
 
     function drawTrend(rows, x, y) {
       gTrend.selectAll("*").remove();
 
-      const pairs = rows.map((r) => ({ year: r.year, value: config.mode === "absolute" ? r.amt : r.diff }));
+      const pairs = rows.map((r) => ({ year: r.year, value: r.amt }));
       const ma = centeredMovingAverage(pairs, 10, 7);
       if (ma.length >= 2) {
         const bandOffset = x.bandwidth() / 2;
