@@ -272,6 +272,7 @@
       dailyIsCumulative: !!config.dailyIsCumulative,
       activePeriod: state.activePeriod,
       season: state.season,
+      formatValue: config.formatValue,
       preserveYear: !!preserveYear,
     });
     const years = data.years;
@@ -298,10 +299,17 @@
     }
     const seasonLabel = state.season === "full" ? null : SEASON_LABEL_BY_KEY[state.season];
     const subject = seasonLabel ? `${seasonLabel}-Tageswerte` : "Tageswerte";
-    el.distCaption.innerHTML =
+    let html =
       `Die farbige Fläche zeigt, wie die ${subject} im ausgewählten Jahr verteilt sind. Die gestrichelte Linie ist ` +
       `dieselbe Verteilung für die Referenzperiode <strong>${period.start}–${period.end}</strong>. ` +
       `Nutze den Regler, um durch die einzelnen Jahre zu blättern.`;
+    if (state.season === "full" && state.currentVariable === "temperature") {
+      html +=
+        " Bei der Ganzjahresansicht ist die Verteilung oft zweigipflig: Die Temperatur ändert sich um die kältesten " +
+        "Wintertage und die wärmsten Sommertage herum am langsamsten, weshalb sich die Tageswerte dort häufen — " +
+        "probiere Winter oder Sommer aus, um die einzelnen Jahreszeiten für sich zu sehen.";
+    }
+    el.distCaption.innerHTML = html;
   }
 
   function setupDistYearBounds(data) {

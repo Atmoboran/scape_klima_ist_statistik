@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  const MARGIN = { top: 20, right: 20, bottom: 34, left: 12 };
+  const MARGIN = { top: 28, right: 20, bottom: 34, left: 34 };
   const SAMPLE_COUNT = 160;
 
   const DEFAULT_CONFIG = {
@@ -21,6 +21,7 @@
     activePeriod: "period_a",
     dailyIsCumulative: false,
     season: "full", // "full" | "winter" | "spring" | "summer" | "autumn"
+    formatValue: (v) => `${v.toFixed(1)}`,
   };
 
   // Day-of-year ranges (1-365, Feb 29 already dropped - see build_data.py's
@@ -121,6 +122,13 @@
     return abs[idx] || 1;
   }
 
+  // arr must already be sorted ascending.
+  function percentile(arr, p) {
+    if (!arr.length) return 0;
+    const idx = Math.min(arr.length - 1, Math.max(0, Math.round(p * (arr.length - 1))));
+    return arr[idx];
+  }
+
   function createDistributionPlot(opts) {
     const svg = d3.select(opts.svgEl);
 
@@ -135,6 +143,9 @@
     const gDefs = svg.append("defs");
     const gRef = svg.append("g").attr("class", "dist-ref-layer");
     const gYear = svg.append("g").attr("class", "dist-year-layer");
+    // Drawn last (on top of both curves and their fills) so it stays visible
+    // wherever it falls, like a crosshair.
+    const gMean = svg.append("g").attr("class", "dist-mean-layer");
 
     function measure() {
       const box = opts.svgEl.getBoundingClientRect();
@@ -155,6 +166,7 @@
       gAxes.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gRef.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gYear.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+      gMean.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
 
       // Pool every day of every *complete* year within the active reference
       // period into one big sample - a proper distribution, not just the
@@ -181,9 +193,15 @@
         return;
       }
 
-      const [minAll, maxAll] = d3.extent(allValues);
-      const pad = (maxAll - minAll) * 0.06 || 1;
-      const xDomain = [minAll - pad, maxAll + pad];
+      // A robust (2nd-98th percentile) range rather than the true min/max:
+      // precipitation in particular is so right-skewed (mostly ~0mm, a
+      // handful of storm days past 100mm) that the true max would squeeze
+      // the entire meaningful shape into a sliver near the left edge.
+      const sortedAll = allValues.slice().sort((a, b) => a - b);
+      const loAll = percentile(sortedAll, 0.02);
+      const hiAll = percentile(sortedAll, 0.98);
+      const pad = (hiAll - loAll) * 0.08 || 1;
+      const xDomain = [loAll - pad, hiAll + pad];
       xScale = d3.scaleLinear().domain(xDomain).range([0, innerW]);
 
       bandwidth = silvermanBandwidth(refValues);
@@ -208,6 +226,7 @@
 
       drawAxes(innerW, innerH);
       drawReferenceCurve(refDensity, innerH);
+      drawMeanLine(refMean, innerW, innerH);
       buildGradient();
 
       if (data.years.length) {
@@ -234,6 +253,45 @@
           .attr("text-anchor", "end")
           .text(config.axisUnit);
       }
+
+      // No numeric density ticks - a raw KDE value ("0.034") means nothing
+      // to a lay reader - just a vertical rule and a rotated title so the
+      // axis still reads as "this dimension is how often, not how much".
+      gAxes.append("g").attr("class", "axis").call(d3.axisLeft(yScale).ticks(0).tickSize(0));
+      gAxes
+        .append("text")
+        .attr("class", "axis-unit-label dist-y-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -innerH / 2)
+        .attr("y", -22)
+        .attr("text-anchor", "middle")
+        .text("Häufigkeit der Tage");
+    }
+
+    // A dotted vertical guide at the reference period's own mean, since the
+    // colour scale's pale midpoint alone is too subtle to read as "this is
+    // the average" - especially where the curve is low or thin. Drawn on
+    // top of both curves (gMean is the topmost layer) so it stays visible
+    // wherever it falls, and labelled at the bottom (not the top) so it
+    // never collides with the year/station badge over the top-right corner.
+    function drawMeanLine(refMean, innerW, innerH) {
+      gMean.selectAll("*").remove();
+      const x = xScale(refMean);
+      const clampedLabelX = Math.max(30, Math.min(innerW - 30, x));
+      gMean
+        .append("line")
+        .attr("class", "dist-mean-line")
+        .attr("x1", x)
+        .attr("x2", x)
+        .attr("y1", 0)
+        .attr("y2", innerH);
+      gMean
+        .append("text")
+        .attr("class", "dist-mean-label")
+        .attr("x", clampedLabelX)
+        .attr("y", innerH - 8)
+        .attr("text-anchor", "middle")
+        .text(`Ø ${config.formatValue(refMean)}`);
     }
 
     function drawReferenceCurve(refDensity, innerH) {
