@@ -407,6 +407,13 @@ html, body {
 }
 
 .period-toggle-row { display: flex; gap: 0.5rem; flex-wrap: nowrap; }
+
+/* Five options (Jahr/Winter/Frühling/Sommer/Herbst) don't fit in one row on
+   narrow screens the way the two-option period/mode toggles do. */
+.period-toggle-row.season-toggle-row {
+  flex-wrap: wrap;
+  justify-content: center;
+}
 .period-toggle-btn {
   appearance: none;
   font-family: var(--font);

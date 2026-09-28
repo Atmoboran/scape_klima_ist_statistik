@@ -8,6 +8,7 @@
     currentData: null,
     activePeriod: "period_a",
     chartType: "annual", // "annual" (per-year bar chart) or "distribution" (bell-curve shift)
+    season: "full", // "full" | "winter" | "spring" | "summer" | "autumn" - distribution mode only
     annualPlot: null,
     distPlot: null,
     distPlayTimer: null,
@@ -21,6 +22,8 @@
     modeToggle: document.getElementById("trend-mode-toggle"),
     periodToggle: document.getElementById("trend-period-toggle"),
     caption: document.getElementById("trend-caption"),
+    seasonGroup: document.getElementById("dist-season-group"),
+    seasonToggle: document.getElementById("dist-season-toggle"),
     annualWrap: document.getElementById("trend-annual-wrap"),
     distWrap: document.getElementById("trend-distribution-wrap"),
     distTimelineWrap: document.getElementById("dist-timeline-wrap"),
@@ -41,6 +44,15 @@
   const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
   const VIEW_STORAGE_KEY = "scapeViewMode";
   const MOBILE_QUERY = "(max-width: 699px)";
+
+  const SEASON_ITEMS = [
+    { key: "full", label: "Jahr" },
+    { key: "winter", label: "Winter" },
+    { key: "spring", label: "Frühling" },
+    { key: "summer", label: "Sommer" },
+    { key: "autumn", label: "Herbst" },
+  ];
+  const SEASON_LABEL_BY_KEY = Object.fromEntries(SEASON_ITEMS.map((s) => [s.key, s.label]));
 
   function setViewMode(mode) {
     document.documentElement.setAttribute("data-view", mode);
@@ -88,6 +100,7 @@
       svgEl: el.distChart,
     });
     renderModeToggle();
+    renderSeasonToggle();
     setupDistTimeline();
 
     el.select.addEventListener("change", () => loadAndRender(el.select.value, state.currentVariable));
@@ -164,9 +177,31 @@
     const isDist = state.chartType === "distribution";
     el.annualWrap.style.display = isDist ? "none" : "";
     el.caption.style.display = isDist ? "none" : "";
+    el.seasonGroup.style.display = isDist ? "" : "none";
     el.distTimelineWrap.style.display = isDist ? "" : "none";
     el.distWrap.style.display = isDist ? "" : "none";
     el.distCaption.style.display = isDist ? "" : "none";
+  }
+
+  function renderSeasonToggle() {
+    el.seasonToggle.innerHTML = "";
+    for (const item of SEASON_ITEMS) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      const active = state.season === item.key;
+      btn.className = `period-toggle-btn${active ? " active" : ""}`;
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+      btn.textContent = item.label;
+      btn.addEventListener("click", () => setSeason(item.key));
+      el.seasonToggle.appendChild(btn);
+    }
+  }
+
+  function setSeason(key) {
+    if (state.season === key) return;
+    state.season = key;
+    renderSeasonToggle();
+    renderDistribution(true);
   }
 
   function renderPeriodToggle(data) {
@@ -236,6 +271,7 @@
       axisUnit: config.axisUnit,
       dailyIsCumulative: !!config.dailyIsCumulative,
       activePeriod: state.activePeriod,
+      season: state.season,
       preserveYear: !!preserveYear,
     });
     const years = data.years;
@@ -248,7 +284,8 @@
   function updateDistYearBadge(year) {
     const data = state.currentData;
     el.distributionYear.textContent = year || "–";
-    el.distributionStationLabel.textContent = data.meta.name;
+    const seasonLabel = state.season === "full" ? null : SEASON_LABEL_BY_KEY[state.season];
+    el.distributionStationLabel.textContent = seasonLabel ? `${seasonLabel} · ${data.meta.name}` : data.meta.name;
   }
 
   function updateDistCaption(data) {
@@ -259,8 +296,10 @@
         "um einen verlässlichen Vergleich zu berechnen.";
       return;
     }
+    const seasonLabel = state.season === "full" ? null : SEASON_LABEL_BY_KEY[state.season];
+    const subject = seasonLabel ? `${seasonLabel}-Tageswerte` : "Tageswerte";
     el.distCaption.innerHTML =
-      `Die farbige Fläche zeigt, wie die Tageswerte im ausgewählten Jahr verteilt sind. Die gestrichelte Linie ist ` +
+      `Die farbige Fläche zeigt, wie die ${subject} im ausgewählten Jahr verteilt sind. Die gestrichelte Linie ist ` +
       `dieselbe Verteilung für die Referenzperiode <strong>${period.start}–${period.end}</strong>. ` +
       `Nutze den Regler, um durch die einzelnen Jahre zu blättern.`;
   }

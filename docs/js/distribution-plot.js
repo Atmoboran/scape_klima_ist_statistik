@@ -20,6 +20,23 @@
     axisSuffix: "°",
     activePeriod: "period_a",
     dailyIsCumulative: false,
+    season: "full", // "full" | "winter" | "spring" | "summer" | "autumn"
+  };
+
+  // Day-of-year ranges (1-365, Feb 29 already dropped - see build_data.py's
+  // alignment) for the four meteorological seasons, each as [startDoy,
+  // endDoy, yearOffset]. Meteorological winter spans a calendar-year
+  // boundary and is conventionally labelled by the year its Jan/Feb fall
+  // in, so it's built from *last* year's December plus *this* year's
+  // Jan/Feb (yearOffset -1 and 0).
+  const SEASON_RANGES = {
+    winter: [
+      [335, 365, -1],
+      [1, 59, 0],
+    ],
+    spring: [[60, 151, 0]],
+    summer: [[152, 243, 0]],
+    autumn: [[244, 334, 0]],
   };
 
   function mean(arr) {
@@ -56,15 +73,40 @@
   }
 
   // strands are either the raw daily value (temperature/sunshine, nulls for
-  // missing days) or a cumulative running total (precipitation) - either way
-  // this returns the actual per-day values with no nulls.
-  function dailyValues(strand, isCumulative) {
-    if (!isCumulative) return strand.filter((v) => v !== null && v !== undefined);
-    const out = [];
+  // missing days) or a cumulative running total (precipitation, see
+  // build_data.py) - this returns the actual per-day value at every
+  // day-of-year, nulls preserved, so slicing by day-of-year range still
+  // lines up (unlike a null-filtered flat array).
+  function alignedDailyValues(strand, isCumulative) {
+    if (!isCumulative) return strand;
+    const out = new Array(strand.length);
     let prev = 0;
-    for (const v of strand) {
-      out.push(v - prev);
-      prev = v;
+    for (let i = 0; i < strand.length; i++) {
+      out[i] = strand[i] - prev;
+      prev = strand[i];
+    }
+    return out;
+  }
+
+  // Every valid day-of-year value for one "labelled year" of one season
+  // (or the whole year when season is "full"/unrecognised), pulling in the
+  // previous year's strand too when the season straddles New Year's (winter).
+  function seasonValues(data, year, season, isCumulative) {
+    const ranges = SEASON_RANGES[season];
+    if (!ranges) {
+      const strand = data.strands[String(year)];
+      if (!strand) return [];
+      return alignedDailyValues(strand, isCumulative).filter((v) => v !== null && v !== undefined);
+    }
+    const out = [];
+    for (const [startDoy, endDoy, yearOffset] of ranges) {
+      const strand = data.strands[String(year + yearOffset)];
+      if (!strand) continue;
+      const aligned = alignedDailyValues(strand, isCumulative);
+      for (let doy = startDoy; doy <= endDoy; doy++) {
+        const v = aligned[doy - 1];
+        if (v !== null && v !== undefined) out.push(v);
+      }
     }
     return out;
   }
@@ -123,19 +165,14 @@
         (y) => y >= period.start && y <= period.end && data.annual_metric[String(y)] !== undefined
       );
       const refValues = [];
-      for (const y of refYears) {
-        const strand = data.strands[String(y)];
-        if (strand) refValues.push(...dailyValues(strand, config.dailyIsCumulative));
-      }
+      for (const y of refYears) refValues.push(...seasonValues(data, y, config.season, config.dailyIsCumulative));
 
-      // The x-axis is fixed from *every* year's values (not just the
-      // reference period's) so switching which year is highlighted never
-      // rescales the axis - only loading a different station/variable does.
+      // The x-axis is fixed from *every* year's values for the active season
+      // (not just the reference period's) so switching which year is
+      // highlighted never rescales the axis - only loading a different
+      // station/variable/season does.
       const allValues = [];
-      for (const y of data.years) {
-        const strand = data.strands[String(y)];
-        if (strand) allValues.push(...dailyValues(strand, config.dailyIsCumulative));
-      }
+      for (const y of data.years) allValues.push(...seasonValues(data, y, config.season, config.dailyIsCumulative));
 
       if (!refValues.length || !allValues.length) {
         gAxes.selectAll("*").remove();
@@ -233,10 +270,9 @@
       currentYear = year;
       const innerH = height - MARGIN.top - MARGIN.bottom;
       gYear.selectAll("*").remove();
-      const strand = year !== null && year !== undefined ? data.strands[String(year)] : null;
-      if (!strand) return;
-      const values = dailyValues(strand, config.dailyIsCumulative);
-      if (values.length < 10) return; // too sparse a year to plot meaningfully
+      if (year === null || year === undefined) return;
+      const values = seasonValues(data, year, config.season, config.dailyIsCumulative);
+      if (values.length < 10) return; // too sparse a year/season to plot meaningfully
 
       const density = kde(values, bandwidth, xs);
       const points = xs.map((x, i) => [x, density[i]]);
