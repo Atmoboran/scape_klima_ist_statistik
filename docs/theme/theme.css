@@ -1,0 +1,54 @@
+/* Design tokens for both pages. css/style.css only references these
+   variables, so restyling means editing this file alone. Chart data colours
+   live in theme/theme.js, because the charts compute with them in JS. */
+
+@font-face {
+  font-family: "Jost";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/jost-latin.woff2") format("woff2");
+}
+
+:root {
+  /* Typeface ------------------------------------------------------------- */
+  --font: "Jost", "Futura", "Century Gothic", "Helvetica Neue", Arial, sans-serif;
+
+  /* Surfaces ------------------------------------------------------------- */
+  --surface: #ffffff;        /* page background, charts, cards */
+  --surface-muted: #f3f5f8;  /* quiet panels: readout strip, comparison section */
+
+  /* Ink (text) ----------------------------------------------------------- */
+  --ink: #0f1720;            /* primary text, reference line in charts */
+  --ink-muted: #4a5563;      /* secondary text, labels (7.6:1 on white) */
+  --ink-inverse: #ffffff;    /* text on accent/ink backgrounds */
+
+  /* Rules ---------------------------------------------------------------- */
+  --rule: #d5dae1;           /* borders of controls and panels */
+  --rule-soft: #e6e9ee;      /* chart gridlines and axis lines */
+
+  /* Interaction ---------------------------------------------------------- */
+  --accent: #2b3990;         /* active toggle, slider, play button, links */
+  --accent-hover: #1f2a6e;
+  --focus: #2b3990;          /* keyboard focus ring */
+
+  /* Overlays ------------------------------------------------------------- */
+  --backdrop: rgba(15, 23, 32, 0.45);
+  --shadow: 0 8px 24px rgba(15, 23, 32, 0.18);
+  --tooltip-bg: #0f1720;
+  --tooltip-ink: #ffffff;
+  --tooltip-cold: #9cc3f0;   /* "coldest/least" line in day tooltips */
+  --tooltip-warm: #f4a7a3;   /* "warmest/most" line in day tooltips */
+
+  /* Brand mark (the SCAPE° four-square logo) ----------------------------- */
+  --brand-1: #ee8c2b;
+  --brand-2: #f7e38a;
+  --brand-3: #f2e6c9;
+  --brand-4: #2b3990;
+  --brand-arc: #12984f;
+
+  /* Shape ---------------------------------------------------------------- */
+  --radius-sm: 4px;          /* buttons, inputs, segmented controls */
+  --radius: 6px;             /* panels, charts, dialogs */
+  --tap: 44px;               /* minimum comfortable touch target */
+}

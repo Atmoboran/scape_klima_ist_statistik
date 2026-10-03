@@ -14,7 +14,6 @@
   const TOOLTIP_IDLE_MS = 5000;
 
   const DEFAULT_CONFIG = {
-    colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
     axisSuffix: "°",
     activePeriod: "period_a",
     formatValue: (v) => `${v.toFixed(1)}`,
@@ -268,11 +267,11 @@
 
     function showTooltip(yr, row, clientX, clientY) {
       if (!row) {
-        tooltipEl.innerHTML = `<b>${yr}</b><br/>${config.incompleteLabel || "keine Daten"}`;
+        tooltipEl.innerHTML = `<b>${yr}</b><br/>${config.incompleteLabel || window.TEXTS.common.noData}`;
       } else {
         tooltipEl.innerHTML =
           `<b>${row.year}</b><br/>${config.formatValue(row.amt)}<br/>` +
-          `${config.formatDiff(row.diff)} ggü. Referenzperiode`;
+          `${config.formatDiff(row.diff)} ${window.TEXTS.charts.vsReference}`;
       }
       tooltipEl.hidden = false;
 

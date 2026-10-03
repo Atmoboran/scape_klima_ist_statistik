@@ -14,20 +14,15 @@
 
   const MARGIN = { top: 22, right: 24, bottom: 30, left: 52 };
   const MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-  const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+  const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
 
+  // Colours and tooltip wording always come from the caller's config
+  // (theme/theme.js and content/texts.de.js via js/variable-config.js).
   const DEFAULT_CONFIG = {
-    colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
     axisSuffix: "°",
     yMin: null, // null = auto-pad below the lowest value; set e.g. 0 to anchor a magnitude that can't go negative
-    aboveColor: "#dd2a26",
-    belowColor: "#2b3990",
     activePeriod: "period_a", // which climate reference period ("period_a"/"period_b") strands are colored against
-    formatDayTooltip: (stat, dateLabel) =>
-      `<b>${dateLabel}</b><br/>Durchschnitt: ${stat.mean}<br/>` +
-      `<span class="tt-cold">Minimum: ${stat.min} (${stat.minYear})</span><br/>` +
-      `<span class="tt-warm">Maximum: ${stat.max} (${stat.maxYear})</span>`,
   };
 
   function createSpaghettiPlot(opts) {
@@ -174,7 +169,7 @@
 
     function dayColor(strand, i) {
       const v = strand[i], b = baseline[i];
-      return v !== null && b !== null && b !== undefined ? devColorScale(v - b) : "#8a8a8a";
+      return v !== null && b !== null && b !== undefined ? devColorScale(v - b) : window.THEME.chart.missing;
     }
 
     function drawStrands() {
@@ -225,7 +220,7 @@
     function doyToDateLabel(doy) {
       const d = new Date(Date.UTC(2001, 0, 1));
       d.setUTCDate(d.getUTCDate() + (doy - 1));
-      return d.toLocaleDateString("de-DE", { month: "short", day: "numeric", timeZone: "UTC" });
+      return d.toLocaleDateString(window.TEXTS.locale, { month: "short", day: "numeric", timeZone: "UTC" });
     }
 
     function showDayTooltip(doy, clientX, clientY) {

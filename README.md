@@ -2,7 +2,7 @@
 
 Ein interaktives Exponat für SCAPE° (Bureau Mitte für SCAPE°, Offenbach):
 jedes verfügbare Jahr der Tagesmitteltemperatur einer DWD-Wetterstation als
-eine Linie, eingefärbt nach dem Jahresmittel — kältere Jahre in Indigo,
+eine Linie, eingefärbt nach dem Jahresmittel — kältere Jahre in Blau,
 wärmere Jahre in Rot. Zwei gestrichelte Linien für die offiziellen
 DWD/WMO-Klimareferenzperioden 1961–1990 und 1991–2020 machen den Unterschied
 direkt im Diagramm sichtbar; ein großes Zahlenfeld zeigt die Abweichung des
@@ -16,21 +16,34 @@ Zwei Stationen sind eingebunden: Frankfurt/Main (01420, Tiefland, 100 m) und
 Kleiner Feldberg/Taunus (02601, Mittelgebirge, 822 m).
 
 Daten: [DWD Climate Data Center](https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/), CC BY 4.0.
-Gestaltung angelehnt an die SCAPE° Corporate Identity (Farben, Formen,
-Schrift Founders Grotesk — im Web durch die freie Schrift „Jost“ angenähert).
+Gestaltung: SCAPE°-Logo und -Indigo als Akzentfarbe, Schrift Founders
+Grotesk (im Web durch die freie Schrift „Jost“ angenähert). Die Datenfarben
+folgen den in der Klimaforschung üblichen Skalen (Blau–Rot für Temperatur,
+Braun–Blaugrün für Niederschlag) mit neutralem Grau als Mittelpunkt.
 
 ## Projektstruktur
 
 ```
 docs/                     die eigentliche Website — unverändert eingecheckt, das ist es, was GitHub Pages ausliefert
-  index.html
+  index.html               Seite „Tagesverlauf“ (nur Struktur, alle Texte kommen aus content/)
+  trend.html               Seite „Klimatrend“
   .nojekyll                deaktiviert GitHubs Jekyll-Verarbeitung (reine statische Dateien)
-  css/style.css
-  js/main.js               Orchestrierung: Stationen, Zeitleiste, Vergleichsdiagramm
-  js/spaghetti-plot.js      das interaktive Hauptdiagramm (vendored D3, kein Framework)
-  js/vendor/d3.v7.min.js    lokal eingebunden, damit das Exponat auch ohne Internet läuft
-  fonts/jost-latin.woff2    Schrift Jost (variabel, 100–900), ebenfalls lokal eingebunden
-  data/processed/*.json     vorberechnete Stationsdaten, die die Seite zur Laufzeit lädt
+
+  theme/                   ── Gestaltung (zum Anpassen)
+    theme.css              Design-Tokens: Schrift, Flächen-, Text-, Akzentfarben, Radien, Schatten
+    theme.js               Datenfarben der Diagramme (Farbskalen je Messgröße, Vergleichsperioden)
+  content/                 ── Texte (zum Anpassen / Übersetzen)
+    texts.de.js            sämtliche sichtbaren Texte, Beschriftungen, Erklärungen, Tooltip-Formate
+
+  css/style.css            Layout und Komponenten — nutzt ausschließlich Variablen aus theme.css
+  js/texts.js              füllt die data-t-Platzhalter im HTML aus content/
+  js/variable-config.js    Verhalten je Messgröße (Achsen, Einheiten, Diagrammtyp) + Zusammenführung
+  js/main.js               Orchestrierung Tagesverlauf: Stationen, Zeitleiste, Vergleichsdiagramm
+  js/trend.js              Orchestrierung Klimatrend: Jahresbalken, Verteilung, Jahreszeiten
+  js/*-plot.js             die einzelnen Diagramme (vendored D3, kein Framework)
+  js/vendor/d3.v7.min.js   lokal eingebunden, damit das Exponat auch ohne Internet läuft
+  fonts/jost-latin.woff2   Schrift Jost (variabel, 100–900), ebenfalls lokal eingebunden
+  data/processed/*.json    vorberechnete Stationsdaten, die die Seite zur Laufzeit lädt
 
 data/raw/                 rohe DWD-Stationsdateien, für Nachvollziehbarkeit (liegen außerhalb von docs/, werden also nicht mit ausgeliefert)
 scripts/
@@ -44,6 +57,36 @@ gewählt (statt z. B. `public/`), weil GitHub Pages im Modus „Deploy from a
 branch“ nur `/` (Repo-Root) oder `/docs` als Quellordner erlaubt — alles
 außerhalb von `docs/` (Rohdaten, Build-Skripte) wird dadurch automatisch
 nicht mit veröffentlicht.
+
+## Eigene Version / Anpassen
+
+Gestaltung und Texte sind vom Code getrennt. Für eine eigene Version des
+Exponats (anderes Branding, andere Sprache, andere Formulierungen) genügt es
+in der Regel, diese drei Dateien zu bearbeiten — `css/` und `js/` bleiben
+unverändert:
+
+| Datei | Was darin steht |
+|---|---|
+| `docs/theme/theme.css` | Schrift (`--font`, `@font-face`), Hintergründe, Textfarben, Linien, Akzentfarbe für aktive Schalter/Regler/Play-Button, Tooltip-Farben, Logo-Farben, Eckenradien. |
+| `docs/theme/theme.js` | Farben in den Diagrammen: je Messgröße die Farbskala `colorStops` (kalt/trocken → neutral → warm/nass) sowie die Farben der beiden Referenzperioden im Vergleichsdiagramm. Als Hex-Werte, weil D3 damit rechnet. |
+| `docs/content/texts.de.js` | Alle sichtbaren Texte: Titel, Untertitel, Navigation, Beschriftungen, Pop-up-Erklärungen, Bildunterschriften, Monatsnamen, Zahlen-/Datumsformat (`locale`) sowie die Formatierungsfunktionen für Tooltips und Überschriften. |
+
+**Andere Sprache:** `content/texts.de.js` kopieren (z. B. `texts.en.js`),
+`lang`, `locale` und alle Einträge übersetzen und im `<script>`-Block von
+`index.html` und `trend.html` die eingebundene Datei austauschen. Im HTML
+selbst steht kein Text; die Elemente verweisen über `data-t="pfad.zum.text"`
+(Text), `data-t-html` (Text mit Auszeichnung) und `data-t-aria`
+(Screenreader-Beschriftung) auf Einträge in dieser Datei. Fehlt ein Eintrag,
+erscheint in der Browser-Konsole eine Warnung.
+
+**Farbskalen:** Für die Datenfarben sollte der Mittelpunkt neutral (grau)
+bleiben und beide Enden ähnlich dunkel sein, damit „mehr“ und „weniger“
+gleich stark wirken. In Texten, die Farben beschreiben (z. B.
+„wärmer (rot)“ in `content/texts.de.js`), die Farbnamen mit anpassen.
+
+**Eigenes Logo:** Die Logo-Marke ist im Kopf von `index.html`/`trend.html`
+als kleines HTML/SVG-Element (`.brand-quad`) eingebaut, der Name kommt aus
+`brand.nameHtml` in den Texten.
 
 ## Lokale Vorschau
 

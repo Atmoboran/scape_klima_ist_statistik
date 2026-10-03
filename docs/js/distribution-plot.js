@@ -16,7 +16,6 @@
   const SAMPLE_COUNT = 160;
 
   const DEFAULT_CONFIG = {
-    colorStops: ["#2b3990", "#f2e6c9", "#d35b22"],
     axisSuffix: "°",
     activePeriod: "period_a",
     dailyIsCumulative: false,
@@ -265,7 +264,7 @@
         .attr("x", -innerH / 2)
         .attr("y", -22)
         .attr("text-anchor", "middle")
-        .text("Häufigkeit der Tage");
+        .text(window.TEXTS.charts.frequencyAxis);
     }
 
     // A dotted vertical guide at the reference period's own mean, since the
@@ -291,7 +290,7 @@
         .attr("x", clampedLabelX)
         .attr("y", innerH - 8)
         .attr("text-anchor", "middle")
-        .text(`Ø ${config.formatValue(refMean)}`);
+        .text(`${window.TEXTS.charts.meanPrefix} ${config.formatValue(refMean)}`);
     }
 
     function drawReferenceCurve(refDensity, innerH) {

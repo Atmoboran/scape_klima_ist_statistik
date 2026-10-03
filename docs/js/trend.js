@@ -41,26 +41,22 @@
   };
 
   const VARIABLE_CONFIG = window.VARIABLE_CONFIG;
+  const TEXTS = window.TEXTS;
   const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
   const VIEW_STORAGE_KEY = "scapeViewMode";
   const MOBILE_QUERY = "(max-width: 699px)";
 
-  const SEASON_ITEMS = [
-    { key: "full", label: "Jahr" },
-    { key: "winter", label: "Winter" },
-    { key: "spring", label: "Frühling" },
-    { key: "summer", label: "Sommer" },
-    { key: "autumn", label: "Herbst" },
-  ];
-  const SEASON_LABEL_BY_KEY = Object.fromEntries(SEASON_ITEMS.map((s) => [s.key, s.label]));
+  const SEASON_KEYS = ["full", "winter", "spring", "summer", "autumn"];
+
+  function seasonLabel() {
+    return state.season === "full" ? null : TEXTS.trend.seasons[state.season];
+  }
 
   function setViewMode(mode) {
     document.documentElement.setAttribute("data-view", mode);
-    el.viewToggle.textContent = mode === "mobile" ? "Desktop-Ansicht" : "Mobile-Ansicht";
-    el.viewToggle.setAttribute(
-      "aria-label",
-      mode === "mobile" ? "Zur Desktop-Ansicht wechseln" : "Zur Mobile-Ansicht wechseln"
-    );
+    const vt = TEXTS.viewToggle;
+    el.viewToggle.textContent = mode === "mobile" ? vt.toDesktop : vt.toMobile;
+    el.viewToggle.setAttribute("aria-label", mode === "mobile" ? vt.toDesktopAria : vt.toMobileAria);
   }
 
   function setupViewToggle() {
@@ -89,7 +85,7 @@
     setupViewToggle();
     const res = await fetch("data/processed/stations_index.json");
     state.stations = await res.json();
-    state.stations.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    state.stations.sort((a, b) => a.name.localeCompare(b.name, TEXTS.lang));
     buildStationOptions();
 
     state.annualPlot = window.AnnualTrendPlot.create({
@@ -134,12 +130,9 @@
 
     el.chart.setAttribute(
       "aria-label",
-      `${config.label} je Jahr im Vergleich zur Referenzperiode, ${data.years[0]}–${data.years[data.years.length - 1]}`
+      TEXTS.trend.annualAria(config.label, data.years[0], data.years[data.years.length - 1])
     );
-    el.distChart.setAttribute(
-      "aria-label",
-      `Verteilung der Tageswerte (${config.label}) im Vergleich zur Referenzperiode`
-    );
+    el.distChart.setAttribute("aria-label", TEXTS.trend.distributionAria(config.label));
 
     renderPeriodToggle(data);
     setupDistYearBounds(data);
@@ -150,8 +143,8 @@
   function renderModeToggle() {
     el.modeToggle.innerHTML = "";
     const items = [
-      { key: "annual", label: "Jahresbalken" },
-      { key: "distribution", label: "Verteilung" },
+      { key: "annual", label: TEXTS.trend.modes.annual },
+      { key: "distribution", label: TEXTS.trend.modes.distribution },
     ];
     for (const item of items) {
       const btn = document.createElement("button");
@@ -185,14 +178,14 @@
 
   function renderSeasonToggle() {
     el.seasonToggle.innerHTML = "";
-    for (const item of SEASON_ITEMS) {
+    for (const key of SEASON_KEYS) {
       const btn = document.createElement("button");
       btn.type = "button";
-      const active = state.season === item.key;
+      const active = state.season === key;
       btn.className = `period-toggle-btn${active ? " active" : ""}`;
       btn.setAttribute("aria-pressed", active ? "true" : "false");
-      btn.textContent = item.label;
-      btn.addEventListener("click", () => setSeason(item.key));
+      btn.textContent = TEXTS.trend.seasons[key];
+      btn.addEventListener("click", () => setSeason(key));
       el.seasonToggle.appendChild(btn);
     }
   }
@@ -248,15 +241,8 @@
 
   function updateCaption(data) {
     const period = data[state.activePeriod];
-    if (period.mean_annual_metric === null || period.mean_annual_metric === undefined) {
-      el.caption.innerHTML =
-        "Für die aktuell ausgewählte Referenzperiode liegen bei dieser Station zu wenige vollständige Jahre vor, " +
-        "um einen verlässlichen Vergleich zu berechnen.";
-      return;
-    }
-    el.caption.innerHTML =
-      "Jeder Balken zeigt den tatsächlichen Jahreswert. Die gestrichelte Linie markiert das Mittel der Referenzperiode, " +
-      "die Farbe die Abweichung davon. Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt.";
+    const tooFewYears = period.mean_annual_metric === null || period.mean_annual_metric === undefined;
+    el.caption.innerHTML = tooFewYears ? TEXTS.common.periodTooFewYears : TEXTS.trend.annualCaption;
   }
 
   // preserveYear: keep whichever year the distribution timeline is
@@ -283,32 +269,18 @@
   }
 
   function updateDistYearBadge(year) {
-    const data = state.currentData;
-    el.distributionYear.textContent = year || "–";
-    const seasonLabel = state.season === "full" ? null : SEASON_LABEL_BY_KEY[state.season];
-    el.distributionStationLabel.textContent = seasonLabel ? `${seasonLabel} · ${data.meta.name}` : data.meta.name;
+    el.distributionYear.textContent = year || TEXTS.dash;
+    el.distributionStationLabel.textContent = TEXTS.trend.badgeSub(seasonLabel(), state.currentData.meta.name);
   }
 
   function updateDistCaption(data) {
     const period = data[state.activePeriod];
     if (period.mean_annual_metric === null || period.mean_annual_metric === undefined) {
-      el.distCaption.innerHTML =
-        "Für die aktuell ausgewählte Referenzperiode liegen bei dieser Station zu wenige vollständige Jahre vor, " +
-        "um einen verlässlichen Vergleich zu berechnen.";
+      el.distCaption.innerHTML = TEXTS.common.periodTooFewYears;
       return;
     }
-    const seasonLabel = state.season === "full" ? null : SEASON_LABEL_BY_KEY[state.season];
-    const subject = seasonLabel ? `${seasonLabel}-Tageswerte` : "Tageswerte";
-    let html =
-      `Die farbige Fläche zeigt, wie die ${subject} im ausgewählten Jahr verteilt sind. Die gestrichelte Linie ist ` +
-      `dieselbe Verteilung für die Referenzperiode <strong>${period.start}–${period.end}</strong>. ` +
-      `Nutze den Regler, um durch die einzelnen Jahre zu blättern.`;
-    if (state.season === "full" && state.currentVariable === "temperature") {
-      html +=
-        " Bei der Ganzjahresansicht ist die Verteilung oft zweigipflig: Die Temperatur ändert sich um die kältesten " +
-        "Wintertage und die wärmsten Sommertage herum am langsamsten, weshalb sich die Tageswerte dort häufen — " +
-        "probiere Winter oder Sommer aus, um die einzelnen Jahreszeiten für sich zu sehen.";
-    }
+    let html = TEXTS.trend.distributionCaption(seasonLabel(), period.start, period.end);
+    if (state.season === "full" && state.currentVariable === "temperature") html += TEXTS.trend.bimodalNote;
     el.distCaption.innerHTML = html;
   }
 

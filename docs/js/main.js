@@ -86,18 +86,15 @@
   const VIEW_STORAGE_KEY = "scapeViewMode";
   const MOBILE_QUERY = "(max-width: 699px)";
 
-  // All variable-specific presentation lives in js/variable-config.js so it
-  // can be shared with trend.js (the annual-trend page) without duplicating
-  // the German copy in two places.
   const VARIABLE_CONFIG = window.VARIABLE_CONFIG;
+  const TEXTS = window.TEXTS;
+  const THEME = window.THEME;
 
   function setViewMode(mode) {
     document.documentElement.setAttribute("data-view", mode);
-    el.viewToggle.textContent = mode === "mobile" ? "Desktop-Ansicht" : "Mobile-Ansicht";
-    el.viewToggle.setAttribute(
-      "aria-label",
-      mode === "mobile" ? "Zur Desktop-Ansicht wechseln" : "Zur Mobile-Ansicht wechseln"
-    );
+    const vt = TEXTS.viewToggle;
+    el.viewToggle.textContent = mode === "mobile" ? vt.toDesktop : vt.toMobile;
+    el.viewToggle.setAttribute("aria-label", mode === "mobile" ? vt.toDesktopAria : vt.toMobileAria);
   }
 
   function setupViewToggle() {
@@ -127,7 +124,7 @@
     setupInfoPopover();
     const res = await fetch("data/processed/stations_index.json");
     state.stations = await res.json();
-    state.stations.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    state.stations.sort((a, b) => a.name.localeCompare(b.name, TEXTS.lang));
     buildStationOptions();
 
     state.spaghettiPlot = window.SpaghettiPlot.create({
@@ -205,17 +202,6 @@
     refreshOpenPopover();
   }
 
-  const MITTELWERT_EXPLANATION =
-    "<strong>Mittelwert:</strong> Ein Mittelwert (Durchschnitt) fasst mehrere Messungen zu einem typischen Wert zusammen: " +
-    "Man addiert alle Werte und teilt die Summe durch ihre Anzahl. Beispiel: Aus den drei Zahlen 10, 15 und 18 ergibt sich " +
-    "(10 + 15 + 18) ÷ 3 = 14,3 als Mittelwert.";
-
-  const REFERENZPERIODE_EXPLANATION =
-    "Eine Referenzperiode ist ein fester, 30 Jahre langer Vergleichszeitraum, den die Weltorganisation für Meteorologie " +
-    "als gemeinsamen Maßstab für das Klima festlegt. Der Durchschnitt dieser 30 Jahre gilt als „normales“ Klima, gegen das " +
-    "einzelne Jahre verglichen werden. Diese App nutzt die beiden offiziellen Referenzperioden 1961–1990 und 1991–2020 — " +
-    "der Wechsel zwischen ihnen zeigt, wie sich das Klimamittel selbst über die Zeit verschoben hat.";
-
   // All popover triggers (station details, variable info, chart usage hint,
   // methodology, climate context) share one dialog; this builds the
   // title/body for whichever "kind" was opened, always from current state so
@@ -223,16 +209,17 @@
   function popoverContentFor(kind) {
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
+    const txt = TEXTS.daily;
     switch (kind) {
       case "station": {
         const meta = data.meta;
         const dl = document.createElement("dl");
         dl.className = "info-popover-dl";
         const rows = [
-          ["Koordinaten", `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° O`],
-          ["Höhe", `${meta.elevation_m} m ü. NHN`],
-          ["Bundesland", meta.bundesland],
-          ["Aktive Jahre", `${data.years[0]}–${data.years[data.years.length - 1]}`],
+          [txt.station.coordinates, txt.station.formatCoordinates(meta.lat, meta.lon)],
+          [txt.station.elevation, txt.station.formatElevation(meta.elevation_m)],
+          [txt.station.state, meta.bundesland],
+          [txt.station.years, `${data.years[0]}–${data.years[data.years.length - 1]}`],
         ];
         for (const [label, value] of rows) {
           const dt = document.createElement("dt");
@@ -242,25 +229,25 @@
           dl.appendChild(dt);
           dl.appendChild(dd);
         }
-        return { title: "Stationsdetails", bodyEl: dl };
+        return { title: txt.station.title, bodyEl: dl };
       }
       case "variable":
         return { title: config.label, bodyHTML: `<p>${config.generalInfo}</p>` };
       case "period":
-        return { title: "Referenzperiode", bodyHTML: `<p>${REFERENZPERIODE_EXPLANATION}</p>` };
+        return { title: txt.periodInfo.title, bodyHTML: `<p>${txt.periodInfo.text}</p>` };
       case "hint":
-        return { title: "Was sehe ich auf dem Diagramm?", bodyHTML: `<p>${config.chartExplanation}</p>` };
+        return { title: txt.hintTitle, bodyHTML: `<p>${config.chartExplanation}</p>` };
       case "calc":
         return {
-          title: "Wie werden diese Werte berechnet?",
+          title: txt.calcTitle,
           bodyHTML:
-            `<p>${MITTELWERT_EXPLANATION}</p>` +
+            `<p>${txt.meanExplanation}</p>` +
             `<p>${config.methodology.day}</p>` +
             `<p>${config.methodology.year}</p>` +
             `<p>${config.methodology.period}</p>`,
         };
       case "climate":
-        return { title: "Was hat das mit dem Klimawandel zu tun?", bodyHTML: `<p>${config.methodology.context}</p>` };
+        return { title: txt.climateTitle, bodyHTML: `<p>${config.methodology.context}</p>` };
       default:
         return { title: "", bodyHTML: "" };
     }
@@ -318,10 +305,10 @@
   function renderBarLegend(data, config) {
     if (state.plotMode !== "bar") return;
     el.barLegendYearSwatch.style.background = config.aboveColor;
-    el.barLegendYearLabel.textContent = "Ausgewähltes Jahr";
-    el.barLegendPeriodSwatch.style.background = "var(--ink-dim)";
+    el.barLegendYearLabel.textContent = TEXTS.daily.barLegendYear;
+    el.barLegendPeriodSwatch.style.background = THEME.chart.periodBar;
     const period = data[state.activePeriod];
-    el.barLegendPeriodLabel.textContent = `Referenzperiode ${period.start}–${period.end}`;
+    el.barLegendPeriodLabel.textContent = TEXTS.daily.barLegendPeriod(period.start, period.end);
   }
 
   // A symmetric diverging scale over how far each complete year's annual
@@ -376,7 +363,7 @@
       el.legendPeriods.appendChild(btn);
     }
     const active = data[state.activePeriod];
-    el.deviationPeriodLabel.textContent = `(vs. ${active.start}–${active.end})`;
+    el.deviationPeriodLabel.textContent = TEXTS.daily.deviationVs(active.start, active.end);
     el.colorbarPeriodLabel.textContent = `${active.start}–${active.end}`;
   }
 
@@ -446,7 +433,7 @@
 
   function setDeviation(diff, config) {
     if (diff === null || diff === undefined) {
-      el.deviationValue.textContent = "–";
+      el.deviationValue.textContent = TEXTS.dash;
       el.deviationValue.style.color = "";
       return;
     }
@@ -460,9 +447,9 @@
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
     const period = data[state.activePeriod];
-    el.deviationYear.textContent = year || "–";
+    el.deviationYear.textContent = year || TEXTS.dash;
     if (!year) {
-      el.deviationMean.textContent = "–";
+      el.deviationMean.textContent = TEXTS.dash;
       setDeviation(null, config);
       return;
     }
@@ -511,16 +498,14 @@
     const pb = data.period_b;
     const config = VARIABLE_CONFIG[state.currentVariable];
 
-    el.compareTitle.textContent = `Klimavergleich für ${meta.name}`;
+    el.compareTitle.textContent = TEXTS.daily.compareTitle(meta.name);
 
     const svg = d3.select(el.compareChart);
     svg.selectAll("*").remove();
 
     if (pa.mean_annual_metric === null || pb.mean_annual_metric === null) {
-      const missing = pa.mean_annual_metric === null ? `${pa.start}–${pa.end}` : `${pb.start}–${pb.end}`;
-      el.compareHeadline.textContent =
-        `Für die Referenzperiode ${missing} liegen bei dieser Station zu wenige vollständige Jahre vor, ` +
-        `um einen verlässlichen Vergleich zu berechnen.`;
+      const missing = pa.mean_annual_metric === null ? pa : pb;
+      el.compareHeadline.textContent = TEXTS.daily.compareTooFewYears(missing.start, missing.end);
       el.compareLegend.innerHTML = "";
       return;
     }
@@ -531,14 +516,15 @@
     const isBar = config.chartType === "bar";
     el.compareLegend.innerHTML = "";
     for (const item of [
-      { cls: "period-a", label: `${pa.start}–${pa.end}` },
-      { cls: "period-b", label: `${pb.start}–${pb.end}` },
+      { color: THEME.chart.periodA, label: `${pa.start}–${pa.end}` },
+      { color: THEME.chart.periodB, label: `${pb.start}–${pb.end}` },
     ]) {
       const span = document.createElement("span");
-      span.className = `compare-legend-item ${item.cls}`;
-      span.innerHTML = isBar
-        ? `<span class="swatch-box"></span>${item.label}`
-        : `<span class="swatch-line"></span>${item.label}`;
+      span.className = "compare-legend-item";
+      const swatch = document.createElement("span");
+      swatch.className = isBar ? "swatch-box" : "swatch-line";
+      swatch.style.color = item.color;
+      span.append(swatch, item.label);
       el.compareLegend.appendChild(span);
     }
 
@@ -562,15 +548,10 @@
 
     const g = svg.append("g").attr("transform", `translate(${M.left},${M.top})`);
     const monthStarts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-    const monthLabels = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
-    g.append("g").attr("transform", `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).tickValues(monthStarts).tickFormat((d, i) => monthLabels[i]))
-      .call((sel) => sel.selectAll("text").attr("fill", "#6b6558").attr("font-family", "Jost, sans-serif"))
-      .call((sel) => sel.selectAll("path,line").attr("stroke", "#e7ddc8"));
-    g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat((d) => d + config.axisSuffix))
-      .call((sel) => sel.selectAll("text").attr("fill", "#6b6558").attr("font-family", "Jost, sans-serif"))
-      .call((sel) => sel.selectAll("path,line").attr("stroke", "#e7ddc8"));
+    g.append("g").attr("class", "axis").attr("transform", `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).tickValues(monthStarts).tickFormat((d, i) => TEXTS.months[i]));
+    g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(5).tickFormat((d) => d + config.axisSuffix));
 
     const rows = pa.daily_series.map((v, i) => ({
       doy: i + 1,
@@ -585,8 +566,8 @@
       .defined((d) => d.a !== null && d.b !== null && d.b < d.a)
       .x((d) => x(d.doy)).y0((d) => y(d.a)).y1((d) => y(d.b));
 
-    g.append("path").datum(rows).attr("d", areaWarmer).attr("fill", "#dd2a26").attr("opacity", 0.18);
-    g.append("path").datum(rows).attr("d", areaCooler).attr("fill", "#2b3990").attr("opacity", 0.18);
+    g.append("path").datum(rows).attr("d", areaWarmer).attr("fill", THEME.chart.periodB).attr("opacity", 0.18);
+    g.append("path").datum(rows).attr("d", areaCooler).attr("fill", THEME.chart.periodA).attr("opacity", 0.18);
 
     const line = d3.line().defined((d) => d[1] !== null).x((d) => x(d[0])).y((d) => y(d[1]));
 
@@ -594,14 +575,14 @@
       .datum(pa.daily_series.map((v, i) => [i + 1, v]))
       .attr("d", line)
       .attr("fill", "none")
-      .attr("stroke", "#2b3990")
+      .attr("stroke", THEME.chart.periodA)
       .attr("stroke-width", 2.5);
 
     g.append("path")
       .datum(pb.daily_series.map((v, i) => [i + 1, v]))
       .attr("d", line)
       .attr("fill", "none")
-      .attr("stroke", "#dd2a26")
+      .attr("stroke", THEME.chart.periodB)
       .attr("stroke-width", 2.5);
   }
 
@@ -613,7 +594,7 @@
     const innerW = W - M.left - M.right;
     const innerH = H - M.top - M.bottom;
 
-    const monthLabels = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+    const monthLabels = TEXTS.months;
     const sumsA = monthlySumsFromDaily(pa.daily_series);
     const sumsB = monthlySumsFromDaily(pb.daily_series);
 
@@ -627,13 +608,8 @@
 
     const g = svg.append("g").attr("transform", `translate(${M.left},${M.top})`);
 
-    g.append("g").attr("transform", `translate(0,${innerH})`)
-      .call(d3.axisBottom(x))
-      .call((sel) => sel.selectAll("text").attr("fill", "#6b6558").attr("font-family", "Jost, sans-serif"))
-      .call((sel) => sel.selectAll("path,line").attr("stroke", "#e7ddc8"));
-    g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat((d) => d + config.axisSuffix))
-      .call((sel) => sel.selectAll("text").attr("fill", "#6b6558").attr("font-family", "Jost, sans-serif"))
-      .call((sel) => sel.selectAll("path,line").attr("stroke", "#e7ddc8"));
+    g.append("g").attr("class", "axis").attr("transform", `translate(0,${innerH})`).call(d3.axisBottom(x));
+    g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(5).tickFormat((d) => d + config.axisSuffix));
 
     const rows = monthLabels.map((month, i) => ({ month, a: sumsA[i], b: sumsB[i] }));
     const groups = g
@@ -645,8 +621,8 @@
 
     groups.each(function (d) {
       const bars = [
-        { key: "a", val: d.a, color: "#2b3990" },
-        { key: "b", val: d.b, color: "#dd2a26" },
+        { key: "a", val: d.a, color: THEME.chart.periodA },
+        { key: "b", val: d.b, color: THEME.chart.periodB },
       ].filter((b) => b.val !== null);
       d3.select(this)
         .selectAll("rect")

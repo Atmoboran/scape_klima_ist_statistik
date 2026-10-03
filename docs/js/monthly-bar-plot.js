@@ -11,21 +11,16 @@
 
   const MARGIN = { top: 22, right: 24, bottom: 30, left: 52 };
   const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // non-leap, matches the 365-day daily series
-  const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+  const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
   const TRANSITION_MS = 220;
 
+  // Colours and tooltip wording always come from the caller's config
+  // (theme/theme.js and content/texts.de.js via js/variable-config.js).
   const DEFAULT_CONFIG = {
     axisSuffix: " h",
     yMin: 0,
-    aboveColor: "#f0b429",
     activePeriod: "period_a",
-    formatMonthTooltip: (monthLabel, year, yearVal, periodVal, config) =>
-      `<b>${monthLabel}</b><br/>` +
-      (yearVal !== null
-        ? `${year}: <b>${yearVal.toFixed(0)}${config.axisSuffix}</b><br/>`
-        : `${year}: keine Daten<br/>`) +
-      `Referenzperiode: ${periodVal !== null ? periodVal.toFixed(0) + config.axisSuffix : "–"}`,
   };
 
   function createMonthlyBarPlot(opts) {
@@ -206,7 +201,7 @@
             (update) => update,
             (exit) => exit.transition().duration(TRANSITION_MS).attr("y", y0).attr("height", 0).remove()
           )
-          .attr("fill", (b) => (b.key === "year" ? config.aboveColor : "var(--ink-dim)"))
+          .attr("fill", (b) => (b.key === "year" ? config.aboveColor : window.THEME.chart.periodBar))
           .transition()
           .duration(TRANSITION_MS)
           .attr("y", (b) => yScale(b.val))
