@@ -16,10 +16,14 @@ Zwei Stationen sind eingebunden: Frankfurt/Main (01420, Tiefland, 100 m) und
 Kleiner Feldberg/Taunus (02601, Mittelgebirge, 822 m).
 
 Daten: [DWD Climate Data Center](https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/), CC BY 4.0.
-Gestaltung: SCAPE°-Logo und -Indigo als Akzentfarbe, Schrift Founders
-Grotesk (im Web durch die freie Schrift „Jost“ angenähert). Die Datenfarben
-folgen den in der Klimaforschung üblichen Skalen (Blau–Rot für Temperatur,
-Braun–Blaugrün für Niederschlag) mit neutralem Grau als Mittelpunkt.
+Gestaltung nach dem SCAPE° Corporate Design (Bureau Mitte für SCAPE°):
+Wortmarke „SCAPE°“ mit Unterzeile „Wetter Klima Mensch“, Schrift Founders
+Grotesk (im Web durch die freie Schrift „Jost“ angenähert), große
+Überschriften in Versalien, flächige rechteckige Farbfelder aus kräftigen
+und Pastelltönen der CD-Palette, keine Rundungen. Auch die Datenfarben
+stammen aus der CD-Palette (Blau–Rot für Temperatur, Orange–Cyan für
+Niederschlag, Petrol–Ocker für Sonnenschein) mit neutralem Grau als
+Mittelpunkt.
 
 ## Projektstruktur
 
@@ -84,9 +88,12 @@ bleiben und beide Enden ähnlich dunkel sein, damit „mehr“ und „weniger“
 gleich stark wirken. In Texten, die Farben beschreiben (z. B.
 „wärmer (rot)“ in `content/texts.de.js`), die Farbnamen mit anpassen.
 
-**Eigenes Logo:** Die Logo-Marke ist im Kopf von `index.html`/`trend.html`
-als kleines HTML/SVG-Element (`.brand-quad`) eingebaut, der Name kommt aus
-`brand.nameHtml` in den Texten.
+**Eigene Marke:** Die Wortmarke im Kopf von `index.html`/`trend.html`
+besteht aus Text: Name (`brand.nameHtml`) und Unterzeile (`brand.claim`)
+kommen aus den Texten, die Farbleiste darunter aus `--band-1` bis
+`--band-4` in `theme/theme.css`. Wer die lizenzierte Founders Grotesk als
+Webfont hat, bindet sie per `@font-face` in `theme/theme.css` ein — sie
+steht in `--font` bereits an erster Stelle.
 
 ## Lokale Vorschau
 

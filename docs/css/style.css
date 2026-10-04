@@ -30,65 +30,46 @@ p { margin: 0; }
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.55rem 1rem;
-  border-bottom: 1px solid var(--rule);
+  padding: 0.7rem 1rem 0.6rem;
 }
 
-.brand-identity {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-width: 0;
-}
-
-.brand-quad {
-  position: relative;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  overflow: hidden;
-  flex: none;
-}
-
-.brand-quad span:nth-child(1) { background: var(--brand-1); }
-.brand-quad span:nth-child(2) { background: var(--brand-2); }
-.brand-quad span:nth-child(3) { background: var(--brand-3); }
-.brand-quad span:nth-child(4) { background: var(--brand-4); }
-
-.brand-arc {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.brand-arc path {
-  fill: none;
-  stroke: var(--brand-arc);
-  stroke-width: 16;
-}
-
-.brand-word {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.6rem;
+.brand-wordmark {
+  display: inline-flex;
+  flex-direction: column;
   min-width: 0;
 }
 
 .brand-logo {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 400;
+  font-size: 1.6rem;
+  line-height: 0.95;
+  letter-spacing: 0.005em;
   white-space: nowrap;
 }
-.brand-logo sup { font-size: 0.7em; }
 
+/* The claim runs across the full width of the wordmark, as in the CD. */
 .brand-sub {
-  font-size: 0.75rem;
-  color: var(--ink-muted);
+  margin-top: 0.2rem;
+  font-size: 0.55rem;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: var(--heading-case);
+  text-align: justify;
+  text-align-last: justify;
   white-space: nowrap;
+  word-spacing: 0.3em;
 }
+
+/* ---- Colour band -------------------------------------------------------- */
+
+.color-band {
+  display: flex;
+  height: 10px;
+}
+.color-band span:nth-child(1) { flex: 3; background: var(--band-1); }
+.color-band span:nth-child(2) { flex: 5; background: var(--band-2); }
+.color-band span:nth-child(3) { flex: 4; background: var(--band-3); }
+.color-band span:nth-child(4) { flex: 2; background: var(--band-4); }
 
 .view-toggle {
   appearance: none;
@@ -113,7 +94,7 @@ p { margin: 0; }
   display: flex;
   gap: 1.4rem;
   padding: 0 1rem;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule-soft);
 }
 
 .page-nav-link {
@@ -126,7 +107,7 @@ p { margin: 0; }
   margin-bottom: -1px;
 }
 .page-nav-link:hover { color: var(--ink); }
-.page-nav-link.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+.page-nav-link.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
 
 /* ---- Header and pickers ------------------------------------------------- */
 
@@ -136,9 +117,10 @@ p { margin: 0; }
 
 .app-header h1 {
   margin: 0;
-  font-weight: 600;
-  font-size: clamp(1.35rem, 6vw, 1.75rem);
-  line-height: 1.15;
+  font-weight: 400;
+  font-size: clamp(1.7rem, 8vw, 2.2rem);
+  line-height: 1;
+  text-transform: var(--heading-case);
 }
 
 .subtitle {
@@ -167,9 +149,11 @@ p { margin: 0; }
 }
 
 .field-label {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: var(--heading-case);
+  color: var(--ink);
 }
 
 .field-with-info {
@@ -183,7 +167,7 @@ p { margin: 0; }
   appearance: none;
   -webkit-appearance: none;
   border: 1px solid var(--rule);
-  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%234a5563' stroke-width='2' d='M5 8l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 0.55rem center / 14px;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='%23111111' stroke-width='2' d='M5 8l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 0.55rem center / 14px;
   color: var(--ink);
   padding: 0.45rem 1.9rem 0.45rem 0.65rem;
   min-height: 40px;
@@ -197,7 +181,7 @@ p { margin: 0; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.station-select:hover { border-color: var(--ink-muted); }
+.station-select:hover { background-color: var(--panel-alt); }
 
 .info-btn {
   appearance: none;
@@ -207,9 +191,9 @@ p { margin: 0; }
   border-radius: var(--radius-sm);
   border: 1px solid var(--rule);
   background: var(--surface);
-  color: var(--ink-muted);
+  color: var(--ink);
   font-family: var(--font);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
@@ -217,7 +201,7 @@ p { margin: 0; }
   align-items: center;
   justify-content: center;
 }
-.info-btn:hover { color: var(--accent); border-color: var(--accent); }
+.info-btn:hover { background: var(--panel-alt); }
 
 .info-btn.small {
   width: 28px;
@@ -243,7 +227,8 @@ p { margin: 0; }
   max-width: 28rem;
   margin: 0 auto;
   background: var(--surface);
-  border-top: 4px solid var(--accent);
+  border: 1px solid var(--rule);
+  border-top: 10px solid var(--band-1);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 0.9rem 1.1rem 1.1rem;
@@ -329,9 +314,11 @@ p { margin: 0; }
 }
 
 .ref-period-label {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: var(--heading-case);
+  color: var(--ink);
   white-space: nowrap;
 }
 
@@ -352,7 +339,7 @@ p { margin: 0; }
   font-family: var(--font);
   font-weight: 500;
   font-size: 0.8rem;
-  color: var(--ink-muted);
+  color: var(--ink);
   background: var(--surface);
   border: none;
   border-left: 1px solid var(--rule);
@@ -362,15 +349,14 @@ p { margin: 0; }
   font-variant-numeric: tabular-nums;
 }
 .period-toggle-btn:first-child { border-left: none; }
-.period-toggle-btn:hover { color: var(--ink); background: var(--surface-muted); }
+.period-toggle-btn:hover { color: var(--ink); background: var(--panel-alt); }
 .period-toggle-btn.active { color: var(--ink-inverse); background: var(--accent); }
 .period-toggle-btn:focus-visible { outline-offset: -3px; }
 
 /* ---- Readout strip (year, mean, deviation) ------------------------------ */
 
 .deviation-badge {
-  background: var(--surface-muted);
-  border-left: 4px solid var(--accent);
+  background: var(--highlight);
   padding: 0.55rem 0.9rem;
   display: flex;
   align-items: center;
@@ -405,7 +391,7 @@ p { margin: 0; }
 
 .stat-label {
   font-size: 0.72rem;
-  color: var(--ink-muted);
+  color: var(--ink);
 }
 
 .deviation-mean,
@@ -461,7 +447,7 @@ p { margin: 0; }
 .chart-wrap {
   position: relative;
   background: var(--surface);
-  border: 1px solid var(--rule);
+  border: 1px solid var(--rule-soft);
   border-radius: var(--radius);
   padding: 0.4rem 0.3rem;
 }
@@ -540,7 +526,7 @@ p { margin: 0; }
 }
 
 .axis text { fill: var(--ink-muted); font-family: var(--font); font-size: 12px; font-variant-numeric: tabular-nums; }
-.axis path, .axis line { stroke: var(--rule); }
+.axis path, .axis line { stroke: var(--rule-soft); }
 .axis.month-axis text { fill: var(--ink); font-size: 11px; font-weight: 500; }
 .axis-unit-label { fill: var(--ink-muted); font-family: var(--font); font-size: 11.5px; font-weight: 500; }
 
@@ -646,9 +632,9 @@ p { margin: 0; }
   width: 40px;
   border: 1px solid var(--rule);
   background: var(--surface);
-  color: var(--ink-muted);
+  color: var(--ink);
 }
-.step-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
+.step-btn:hover { background: var(--panel-alt); }
 
 .year-slider {
   flex: 1 1 auto;
@@ -660,15 +646,17 @@ p { margin: 0; }
 /* ---- Period comparison -------------------------------------------------- */
 
 .compare {
-  margin-top: 2rem;
-  padding-top: 1.2rem;
-  border-top: 1px solid var(--rule);
+  margin: 2rem -1rem 0;
+  padding: 1.2rem 1rem 1.3rem;
+  background: var(--panel);
 }
 
 .compare h2 {
-  margin: 0 0 0.35rem;
-  font-size: 1.15rem;
-  font-weight: 600;
+  margin: 0 0 0.4rem;
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1.05;
+  text-transform: var(--heading-case);
 }
 
 .compare-headline {
@@ -676,7 +664,7 @@ p { margin: 0; }
   max-width: 40rem;
   font-size: 0.92rem;
   line-height: 1.5;
-  color: var(--ink-muted);
+  color: var(--ink);
 }
 .compare-headline strong { color: var(--ink); font-weight: 600; }
 
@@ -734,8 +722,8 @@ p { margin: 0; }
   align-items: center;
   gap: 0.8rem;
 }
-.methodology-link-btn::after { content: "→"; color: var(--accent); }
-.methodology-link-btn:hover { border-color: var(--accent); }
+.methodology-link-btn::after { content: "→"; }
+.methodology-link-btn:hover { background: var(--panel-alt); }
 
 /* ---- Footer ------------------------------------------------------------- */
 
@@ -744,7 +732,7 @@ p { margin: 0; }
   font-size: 0.78rem;
   line-height: 1.5;
   padding: 1.2rem 1rem 2rem;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--rule-soft);
 }
 .footer-scape { margin-top: 0.3rem; font-weight: 500; }
 
@@ -769,12 +757,12 @@ p { margin: 0; }
 }
 
 :root[data-view="desktop"] .brand-bar { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-:root[data-view="desktop"] .brand-quad { width: 34px; height: 34px; }
-:root[data-view="desktop"] .brand-logo { font-size: 1.15rem; }
-:root[data-view="desktop"] .brand-sub { font-size: 0.8rem; }
+:root[data-view="desktop"] .brand-logo { font-size: 2.1rem; }
+:root[data-view="desktop"] .brand-sub { font-size: 0.68rem; }
+:root[data-view="desktop"] .color-band { height: 14px; }
 
 :root[data-view="desktop"] .app-header { padding-top: 2rem; }
-:root[data-view="desktop"] .app-header h1 { font-size: clamp(2rem, 3.6vw, 2.8rem); }
+:root[data-view="desktop"] .app-header h1 { font-size: clamp(2.6rem, 5vw, 3.8rem); }
 :root[data-view="desktop"] .subtitle { font-size: 1.02rem; }
 
 :root[data-view="desktop"] .picker-row { gap: 1.2rem; padding-top: 1.2rem; }
@@ -823,8 +811,8 @@ p { margin: 0; }
   transform: translate(-50%, -50%);
 }
 
-:root[data-view="desktop"] .compare { margin-top: 2.6rem; padding-top: 1.6rem; }
-:root[data-view="desktop"] .compare h2 { font-size: 1.35rem; }
+:root[data-view="desktop"] .compare { margin: 2.6rem 0 0; padding: 1.6rem clamp(1rem, 3vw, 2rem) 1.8rem; }
+:root[data-view="desktop"] .compare h2 { font-size: 1.8rem; }
 :root[data-view="desktop"] .compare-headline { font-size: 1rem; }
 
 :root[data-view="desktop"] .methodology-links { flex-direction: row; margin-top: 2rem; }

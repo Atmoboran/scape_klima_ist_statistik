@@ -10,8 +10,8 @@ window.TEXTS = {
   dash: "–",
 
   brand: {
-    nameHtml: "SCAPE<sup>°</sup>",
-    claim: "Wetter · Klima · Mensch",
+    nameHtml: "SCAPE°",
+    claim: "Wetter Klima Mensch",
   },
 
   nav: {
@@ -191,7 +191,7 @@ window.TEXTS = {
       generalInfo:
         "Niederschlag umfasst alles Wasser, das als Regen, Schnee, Hagel oder Nieselregen auf den Boden fällt. Er wird in Millimetern (mm) gemessen — 1 mm entspricht 1 Liter Wasser pro Quadratmeter. Niederschlag ist entscheidend für Wasserversorgung, Landwirtschaft und das Risiko von Dürren oder Überschwemmungen.",
       chartExplanation:
-        "Jede Linie zeigt den im Jahresverlauf aufsummierten (kumulierten) Niederschlag eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe zeigt, ob an diesem Tag bislang mehr (blaugrün, nasser) oder weniger (braun, trockener) Niederschlag gefallen ist als in der Referenzperiode. Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
+        "Jede Linie zeigt den im Jahresverlauf aufsummierten (kumulierten) Niederschlag eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe zeigt, ob an diesem Tag bislang mehr (blau, nasser) oder weniger (orange, trockener) Niederschlag gefallen ist als in der Referenzperiode. Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler oben, um durch die einzelnen Jahre zu blättern.",
       formatDayTooltip: (stat, dateLabel) =>
         `<b>bis ${dateLabel}</b><br/>im Schnitt: ${stat.mean} mm<br/>` +
         `<span class="tt-cold">am wenigsten: ${stat.min} mm (${stat.minYear})</span><br/>` +

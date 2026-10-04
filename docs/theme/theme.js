@@ -1,30 +1,30 @@
-// Chart data colours for both pages. UI chrome (backgrounds, text, borders)
-// lives in theme/theme.css; everything the charts draw or interpolate lives
-// here. Diverging scales are [cold/low pole, neutral midpoint, warm/high
-// pole]: keep the two poles at a similar lightness and the midpoint a
-// neutral grey, so neither side of "normal" reads as more important.
+// Chart data colours. The charts interpolate between these in JS, so they
+// live here as hex values rather than CSS variables. All values come from
+// the SCAPE° colour palette (see the CD). Diverging scales run from a
+// "below reference" pole through a neutral light gray to an "above" pole;
+// keep both poles similarly dark so neither side looks more dramatic.
 window.THEME = {
   chart: {
-    missing: "#9aa3ad", // a day without a reading inside a year's line
-    periodBar: "#8b95a1", // reference-period bars in the monthly bar chart
-    periodA: "#2f6bd6", // older reference period in the comparison chart
-    periodB: "#d0312d", // newer reference period in the comparison chart
+    missing: "#a6a6a6",   // days/years without data
+    periodBar: "#8c8c8c", // reference-period bars in the monthly sunshine chart
+    periodA: "#3274BA",   // first reference period in the comparison chart
+    periodB: "#E41513",   // second reference period in the comparison chart
   },
   variables: {
     temperature: {
-      colorStops: ["#2166ac", "#cccccc", "#b2182b"],
-      belowColor: "#2166ac",
-      aboveColor: "#b2182b",
+      colorStops: ["#3274BA", "#d9d6cf", "#E41513"], // colder → warmer
+      belowColor: "#3274BA",
+      aboveColor: "#E41513",
     },
     precipitation: {
-      colorStops: ["#8c510a", "#cccccc", "#01665e"],
-      belowColor: "#8c510a",
-      aboveColor: "#01665e",
+      colorStops: ["#D55117", "#d9d6cf", "#0097BE"], // drier → wetter
+      belowColor: "#D55117",
+      aboveColor: "#0097BE",
     },
     sunshine: {
-      colorStops: ["#6b7480", "#cccccc", "#b07d00"],
-      belowColor: "#6b7480",
-      aboveColor: "#b07d00",
+      colorStops: ["#1F6C8E", "#d9d6cf", "#C9820F"], // less sun → more sun
+      belowColor: "#1F6C8E",
+      aboveColor: "#C9820F",
     },
   },
 };
