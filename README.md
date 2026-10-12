@@ -95,6 +95,16 @@ kommen aus den Texten, die Farbleiste darunter aus `--band-1` bis
 Webfont hat, bindet sie per `@font-face` in `theme/theme.css` ein — sie
 steht in `--font` bereits an erster Stelle.
 
+## Layout
+
+- **Handy:** alles untereinander – Auswahl, Jahresanzeige, Zeitleiste, Diagramm.
+- **Desktop** (automatisch ab 700 px oder per Umschalter): Die Bedienelemente
+  (Messgröße, Station, Jahresanzeige, Referenzperiode, Zeitleiste, Legende)
+  stehen in einer Spalte links, das Diagramm füllt rechts den Rest der Breite
+  und die Höhe des Bildschirms. Vergleich und Methodik laufen darunter über
+  die volle Breite. Technisch: `.workspace` ist ein Grid, `.plot-shell` wird
+  dort zu `display: contents` (siehe Ende von `css/style.css`).
+
 ## Lokale Vorschau
 
 ```bash

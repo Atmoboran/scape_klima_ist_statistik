@@ -739,7 +739,7 @@ p { margin: 0; }
 /* ==========================================================================
    Desktop view - applied when the viewport is wide (auto-detected) or when
    a visitor has explicitly picked the desktop view via the toggle button.
-   Content sits in a left-aligned column of at most 1100px.
+   Content sits in a centred column of at most 1320px.
    ========================================================================== */
 
 :root[data-view="desktop"] {
@@ -752,8 +752,8 @@ p { margin: 0; }
 :root[data-view="desktop"] .picker-row,
 :root[data-view="desktop"] .plot-shell,
 :root[data-view="desktop"] .app-footer {
-  padding-left: max(var(--gutter), calc((100% - 1100px) / 2));
-  padding-right: max(var(--gutter), calc((100% - 1100px) / 2));
+  padding-left: max(var(--gutter), calc((100% - 1320px) / 2));
+  padding-right: max(var(--gutter), calc((100% - 1320px) / 2));
 }
 
 :root[data-view="desktop"] .brand-bar { padding-top: 0.75rem; padding-bottom: 0.75rem; }
@@ -819,3 +819,53 @@ p { margin: 0; }
 :root[data-view="desktop"] .methodology-link-btn { flex: 0 1 22rem; }
 
 :root[data-view="desktop"] .app-footer { font-size: 0.82rem; }
+
+
+/* ==========================================================================
+   Desktop workspace: the controls move into a sidebar on the left, the chart
+   takes the rest of the width and the height of the screen. The comparison
+   section and the methodology links run full width below.
+   (.plot-shell turns into "display: contents", so its children become cells
+   of the .workspace grid.)
+   ========================================================================== */
+:root[data-view="desktop"] .workspace {
+  display: grid;
+  grid-template-columns: 19rem minmax(0, 1fr);
+  column-gap: 2rem;
+  align-items: start;
+  padding: 1.2rem max(var(--gutter), calc((100% - 1320px) / 2)) 2rem;
+}
+:root[data-view="desktop"] .workspace .picker-row,
+:root[data-view="desktop"] .workspace .plot-shell { padding: 0; }
+:root[data-view="desktop"] .workspace .plot-shell { display: contents; }
+:root[data-view="desktop"] .workspace > .picker-row,
+:root[data-view="desktop"] .workspace .plot-toolbar,
+:root[data-view="desktop"] .workspace .timeline-wrap,
+:root[data-view="desktop"] .workspace .colorbar-row,
+:root[data-view="desktop"] .workspace .bar-legend-row,
+:root[data-view="desktop"] .workspace .hint-btn { grid-column: 1; }
+:root[data-view="desktop"] .workspace .chart-wrap { grid-column: 2; grid-row: 1 / span 7; }
+:root[data-view="desktop"] .workspace .chart-wrap + .compare-headline { grid-column: 2; }
+:root[data-view="desktop"] .workspace .compare,
+:root[data-view="desktop"] .workspace .methodology-links { grid-column: 1 / -1; }
+
+:root[data-view="desktop"] .workspace .picker-row { flex-direction: column; align-items: stretch; gap: 0.9rem; }
+:root[data-view="desktop"] .workspace .field-group { flex: 1 1 auto; }
+:root[data-view="desktop"] .workspace .station-select { width: 100%; min-width: 0; }
+:root[data-view="desktop"] .workspace .plot-toolbar { flex-direction: column; align-items: stretch; margin: 1.2rem 0 1rem; }
+:root[data-view="desktop"] .workspace .deviation-badge { flex: none; width: 100%; min-width: 0; box-sizing: border-box; flex-wrap: wrap; }
+:root[data-view="desktop"] .workspace .deviation-stats { flex: 1 1 auto; justify-content: space-between; }
+:root[data-view="desktop"] .workspace .period-toggle-group { flex-wrap: wrap; }
+:root[data-view="desktop"] .workspace .timeline-wrap { flex-direction: column; align-items: stretch; }
+:root[data-view="desktop"] .workspace .transport-controls { align-self: center; }
+:root[data-view="desktop"] .workspace .colorbar-row,
+:root[data-view="desktop"] .workspace .bar-legend-row { flex-wrap: wrap; }
+
+:root[data-view="desktop"] .workspace #chart,
+:root[data-view="desktop"] .workspace #chart-bar,
+:root[data-view="desktop"] .workspace #trend-chart,
+:root[data-view="desktop"] .workspace #distribution-chart { height: clamp(420px, calc(100vh - 320px), 760px); }
+:root[data-view="desktop"] .workspace .deviation-stats { flex-wrap: wrap; gap: 0.4rem 1rem; min-width: 0; }
+:root[data-view="desktop"] .workspace .stat-block { min-width: 0; }
+:root[data-view="desktop"] .workspace .deviation-mean,
+:root[data-view="desktop"] .workspace .deviation-value { font-size: 1.5rem; }
