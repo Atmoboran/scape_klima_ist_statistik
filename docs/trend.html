@@ -1,118 +1,161 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title data-t="trend.pageTitle"></title>
-<link rel="stylesheet" href="theme/theme.css" />
-<link rel="stylesheet" href="css/style.css" />
-<script>
-  (function () {
-    var mode;
-    try {
-      var stored = localStorage.getItem("scapeViewMode");
-      mode = (stored === "mobile" || stored === "desktop") ? stored : null;
-    } catch (e) {}
-    if (!mode) {
-      mode = window.matchMedia("(max-width: 699px)").matches ? "mobile" : "desktop";
-    }
-    document.documentElement.setAttribute("data-view", mode);
-  })();
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-t="trend.pageTitle">Klimatrend</title>
+<meta name="description" content="">
+<!-- Structure only. Design: theme/ · texts: content/texts.de.js · layout: css/ · behaviour: js/ -->
+<script src="js/view.js" data-app="klimastatistik"></script>
+<link rel="stylesheet" href="theme/theme.css">
+<link rel="stylesheet" href="css/kit.css">
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
-<div class="brand-bar">
-  <div class="brand-wordmark">
-    <span class="brand-logo" data-t-html="brand.nameHtml"></span>
-    <span class="brand-sub" data-t="brand.claim"></span>
+<header class="top">
+  <a class="logo" href="index.html" data-brand="logo"></a>
+  <div class="top-right">
+    <nav class="nav" data-t-aria="nav.ariaLabel">
+      <a href="index.html"><span class="num">1</span><span data-t="nav.daily"></span></a>
+      <a href="trend.html" aria-current="page"><span class="num">2</span><span data-t="nav.trend"></span></a>
+    </nav>
+    <button type="button" class="view-toggle"></button>
   </div>
-  <button id="view-toggle" class="view-toggle" type="button"></button>
-</div>
-
-<div class="color-band" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-
-<nav class="page-nav" data-t-aria="nav.ariaLabel">
-  <a href="index.html" class="page-nav-link" data-t="nav.daily"></a>
-  <a href="trend.html" class="page-nav-link active" aria-current="page" data-t="nav.trend"></a>
-</nav>
-
-<header class="app-header">
-  <h1 data-t="trend.title"></h1>
-  <p class="subtitle" data-t="trend.subtitle"></p>
 </header>
 
-<div class="workspace">
-<div class="picker-row">
-  <div class="field-group">
-    <label for="trend-variable-select" class="field-label" data-t="pickers.variable"></label>
-    <select id="trend-variable-select" class="station-select">
-      <option value="temperature" data-t="variables.temperature.label"></option>
-      <option value="precipitation" data-t="variables.precipitation.label"></option>
-      <option value="sunshine" data-t="variables.sunshine.label"></option>
-    </select>
-  </div>
-  <div class="field-group">
-    <label for="trend-station-select" class="field-label" data-t="pickers.station"></label>
-    <select id="trend-station-select" class="station-select"></select>
+<div class="poster small">
+  <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+  <svg class="l2" viewBox="0 0 120 120" aria-hidden="true">
+    <path d="M4,114 C30,114 38,20 60,20 C82,20 90,114 116,114 Z" fill="currentColor"/>
+  </svg>
+  <svg class="l3" viewBox="0 0 400 400" aria-hidden="true">
+    <path d="M0,330 C90,330 110,110 170,110 C230,110 250,330 340,330"/>
+    <path d="M60,330 C150,330 170,90 230,90 C290,90 310,330 400,330"/>
+  </svg>
+  <div class="poster-text">
+    <p class="kicker" data-t="trend.kicker"></p>
+    <h1 class="headline" data-t-html="trend.headline"></h1>
+    <p class="lead" data-t="trend.lead"></p>
   </div>
 </div>
 
-<main class="plot-shell">
-  <div class="plot-toolbar">
-    <div class="period-toggle-group">
-      <span class="ref-period-label" data-t="trend.viewLabel"></span>
-      <div class="period-toggle-row" id="trend-mode-toggle"></div>
+<main class="page">
+  <div class="lab">
+    <div class="lab-pre">
+      <div class="field">
+        <div class="field-head">
+          <label for="trend-variable-select" class="section-label" data-t="pickers.variable"></label>
+          <button type="button" class="info" aria-controls="variable-note" data-t-aria="pickers.variableInfoAria"></button>
+        </div>
+        <select id="trend-variable-select" class="select">
+          <option value="temperature" data-t="variables.temperature.label"></option>
+          <option value="precipitation" data-t="variables.precipitation.label"></option>
+          <option value="sunshine" data-t="variables.sunshine.label"></option>
+        </select>
+        <div class="info-note" id="variable-note" hidden></div>
+      </div>
+      <div class="field">
+        <div class="field-head">
+          <label for="trend-station-select" class="section-label" data-t="pickers.station"></label>
+          <button type="button" class="info" aria-controls="station-note" data-t-aria="pickers.stationInfoAria"></button>
+        </div>
+        <select id="trend-station-select" class="select"></select>
+        <div class="info-note" id="station-note" hidden></div>
+      </div>
+      <div class="field">
+        <span class="section-label" data-t="trend.viewLabel"></span>
+        <div class="seg" id="trend-mode-toggle"></div>
+      </div>
     </div>
-    <div class="period-toggle-group">
-      <span class="ref-period-label" data-t="common.referencePeriodLabel"></span>
-      <div class="period-toggle-row" id="trend-period-toggle"></div>
+
+    <div class="lab-stage">
+      <div class="stage-frame chart-frame" id="stage-frame">
+        <div class="chart-pane" id="trend-annual-wrap">
+          <svg id="trend-chart" class="chart" role="img"></svg>
+        </div>
+        <div class="chart-pane" id="trend-distribution-wrap" hidden>
+          <div class="distribution-year-badge">
+            <span class="num" id="distribution-year">–</span>
+            <span class="sub" id="distribution-station-label"></span>
+          </div>
+          <svg id="distribution-chart" class="chart" role="img"></svg>
+        </div>
+        <div id="trend-tooltip" class="tooltip" hidden></div>
+        <p class="load-error" id="load-error" hidden data-t="loadError"></p>
+      </div>
+      <p class="hint" id="trend-caption"></p>
+      <p class="hint" id="dist-caption" hidden></p>
     </div>
-    <div class="period-toggle-group" id="dist-season-group" style="display: none;">
-      <span class="ref-period-label" data-t="trend.seasonLabel"></span>
-      <div class="period-toggle-row season-toggle-row" id="dist-season-toggle"></div>
+
+    <div class="lab-post">
+      <div id="dist-timeline-wrap" hidden>
+        <div class="section-label" data-t="timeline.label"></div>
+        <div class="timeline">
+          <span class="year-bound" id="dist-year-start">–</span>
+          <input type="range" id="dist-year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
+          <span class="year-bound" id="dist-year-end">–</span>
+        </div>
+        <div class="btn-row transport">
+          <button type="button" class="btn step" id="dist-prev-btn" data-t-aria="timeline.prevAria">&#9664;</button>
+          <button type="button" class="btn primary play" id="dist-play-btn" data-t-aria="timeline.playAria">
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8V4z" fill="currentColor"/></svg>
+            <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" fill="currentColor"/></svg>
+            <span id="dist-play-label" data-t="timeline.play"></span>
+          </button>
+          <button type="button" class="btn step" id="dist-next-btn" data-t-aria="timeline.nextAria">&#9654;</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <span class="section-label" data-t="common.referencePeriodLabel"></span>
+          <button type="button" class="info" aria-controls="period-note" data-t-aria="common.periodInfoAria"></button>
+        </div>
+        <div class="seg" id="trend-period-toggle"></div>
+        <div class="info-note" id="period-note" hidden data-t-html="common.periodInfo"></div>
+      </div>
+      <div class="field" id="dist-season-group" hidden>
+        <span class="section-label" data-t="trend.seasonLabel"></span>
+        <div class="seg" id="dist-season-toggle"></div>
+      </div>
+
+      <div class="tasks" id="trend-tasks">
+        <h3 data-t="trend.tasks.title"></h3>
+        <ul>
+          <li data-task="warmest"><span class="box"></span><span data-t="trend.tasks.warmest"></span></li>
+          <li data-task="dist"><span class="box"></span><span data-t="trend.tasks.dist"></span></li>
+        </ul>
+        <p class="status" id="task-status" aria-live="polite"></p>
+      </div>
+      <div class="merke locked" data-for="trend-tasks">
+        <h3 data-t="trend.merke.title"></h3>
+        <p data-t="trend.merke.text"></p>
+        <span class="locked-note"></span>
+      </div>
     </div>
   </div>
 
-  <div class="chart-wrap" id="trend-annual-wrap">
-    <svg id="trend-chart" role="img"></svg>
-    <div id="trend-tooltip" class="tooltip" hidden></div>
-  </div>
-  <p class="compare-headline" id="trend-caption"></p>
-
-  <div class="timeline-wrap" id="dist-timeline-wrap" style="display: none;">
-    <div class="timeline-track-row">
-      <span class="timeline-year-bound" id="dist-year-start">–</span>
-      <input type="range" id="dist-year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria" />
-      <span class="timeline-year-bound" id="dist-year-end">–</span>
-    </div>
-    <div class="transport-controls">
-      <button id="dist-prev-btn" class="step-btn" data-t-aria="timeline.prevAria">&#9664;</button>
-      <button id="dist-play-btn" class="play-btn" data-t-aria="timeline.playAria">&#9654;</button>
-      <button id="dist-next-btn" class="step-btn" data-t-aria="timeline.nextAria">&#9654;</button>
-    </div>
+  <div class="topics">
+    <details class="topic"><summary data-t="common.topics.calcTitle"></summary><div class="topic-body" id="topic-calc"></div></details>
+    <details class="topic"><summary data-t="common.topics.climateTitle"></summary><div class="topic-body" id="topic-climate"></div></details>
   </div>
 
-  <div class="chart-wrap" id="trend-distribution-wrap" style="display: none;">
-    <div class="distribution-year-badge">
-      <span class="num" id="distribution-year">–</span>
-      <span class="sub" id="distribution-station-label"></span>
-    </div>
-    <svg id="distribution-chart" role="img"></svg>
-  </div>
-  <p class="compare-headline" id="dist-caption" style="display: none;"></p>
+  <div class="next-part back"><a class="btn" href="index.html" data-t="trend.back"></a></div>
 </main>
-</div>
 
-<footer class="app-footer">
-  <p data-t="footer.data"></p>
-  <p class="footer-scape" data-t="footer.credit"></p>
+<footer class="foot">
+  <p class="sources" data-t="sources"></p>
+  <p class="brand-line" data-brand="line"></p>
 </footer>
 
 <script src="theme/theme.js"></script>
 <script src="content/texts.de.js"></script>
 <script src="js/texts.js"></script>
+<script src="js/brand.js"></script>
+<script src="js/kit.js"></script>
 <script src="js/vendor/d3.v7.min.js"></script>
+<script src="js/shared.js"></script>
 <script src="js/variable-config.js"></script>
 <script src="js/annual-trend-plot.js"></script>
 <script src="js/distribution-plot.js"></script>

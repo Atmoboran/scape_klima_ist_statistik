@@ -6,10 +6,10 @@
 // active climate reference period's monthly mean. Same render()/setYear()
 // surface as spaghetti-plot.js so main.js can swap between the two without
 // touching the timeline logic. Built with vendored D3 v7, no build step.
-(function () {
-  "use strict";
+(() => {
+  'use strict';
 
-  const MARGIN = { top: 22, right: 24, bottom: 30, left: 52 };
+  const MARGIN = { top: 22, right: 54, bottom: 30, left: 66 };
   const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // non-leap, matches the 365-day daily series
   const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
@@ -146,14 +146,16 @@
     function drawAxes(innerH) {
       gAxes.selectAll("*").remove();
 
-      const xAxis = d3.axisBottom(xScale);
+      // every other month on narrow screens, so the labels never overlap
+      const narrow = xScale.range()[1] < 480;
+      const xAxis = d3.axisBottom(xScale).tickValues(MONTH_LABELS.filter((d, i) => !narrow || i % 2 === 0));
       gAxes
         .append("g")
         .attr("class", "axis month-axis")
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => d + config.axisSuffix);
+      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => window.KIS.tick(d) + config.axisSuffix);
       gAxes.append("g").attr("class", "axis").call(yAxis);
 
       if (config.axisUnit) {
@@ -201,7 +203,7 @@
             (update) => update,
             (exit) => exit.transition().duration(TRANSITION_MS).attr("y", y0).attr("height", 0).remove()
           )
-          .attr("fill", (b) => (b.key === "year" ? config.aboveColor : window.THEME.chart.periodBar))
+          .attr("fill", (b) => (b.key === "year" ? config.aboveColor : window.THEME.klimastatistik.periodBar))
           .transition()
           .duration(TRANSITION_MS)
           .attr("y", (b) => yScale(b.val))
@@ -224,47 +226,27 @@
         })
         .on("pointerdown", (event, d) => {
           resetIdleTimer();
+          if (opts.onPointer) opts.onPointer();
           showMonthTooltip(d, event.clientX, event.clientY);
         })
         .on("pointerleave", hideTooltip);
     }
 
     function showMonthTooltip(d, clientX, clientY) {
-      tooltipEl.innerHTML = config.formatMonthTooltip(d.month, highlightedYear, d.yearVal, d.periodVal, config);
+      const fmt = (v) => (v !== null && v !== undefined ? window.KIS.num(v, 0) : null);
+      tooltipEl.innerHTML = config.formatMonthTooltip(d.month, highlightedYear, fmt(d.yearVal), fmt(d.periodVal));
       tooltipEl.hidden = false;
-
-      const wrapBox = opts.svgEl.parentElement.getBoundingClientRect();
-      const tw = tooltipEl.offsetWidth;
-      const th = tooltipEl.offsetHeight;
-      const margin = 6;
-
-      let left = clientX - wrapBox.left - tw / 2;
-      left = Math.max(margin, Math.min(left, wrapBox.width - tw - margin));
-
-      let top = clientY - wrapBox.top - th - 14;
-      if (top < margin) top = clientY - wrapBox.top + 18;
-
-      tooltipEl.style.left = left + "px";
-      tooltipEl.style.top = top + "px";
+      window.KIS.placeTooltip(tooltipEl, tooltipEl.parentElement, clientX, clientY);
     }
 
     window.addEventListener(
       "resize",
-      debounce(() => {
+      window.KIS.debounce(() => {
         if (data) render(data, Object.assign({}, config, { preserveYear: true }));
       }, 200)
     );
 
     return { render, setYear };
-  }
-
-  function debounce(fn, ms) {
-    let t;
-    return function () {
-      clearTimeout(t);
-      const args = arguments;
-      t = setTimeout(() => fn.apply(null, args), ms);
-    };
   }
 
   window.MonthlyBarPlot = { create: createMonthlyBarPlot };

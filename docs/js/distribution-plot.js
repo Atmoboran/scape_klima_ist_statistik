@@ -9,10 +9,10 @@
 // colour language used elsewhere in the app). Same render()/setYear()
 // surface as spaghetti-plot.js so trend.js can drive it with a normal
 // year timeline. Built with vendored D3 v7, no build step.
-(function () {
-  "use strict";
+(() => {
+  'use strict';
 
-  const MARGIN = { top: 28, right: 20, bottom: 34, left: 34 };
+  const MARGIN = { top: 28, right: 54, bottom: 34, left: 34 };
   const SAMPLE_COUNT = 160;
 
   const DEFAULT_CONFIG = {
@@ -240,7 +240,7 @@
         .axisBottom(xScale)
         .ticks(6)
         .tickSize(-innerH)
-        .tickFormat((d) => d + config.axisSuffix);
+        .tickFormat((d) => window.KIS.tick(d) + config.axisSuffix);
       gAxes.append("g").attr("class", "axis").attr("transform", `translate(0,${innerH})`).call(xAxis);
 
       if (config.axisUnit) {
@@ -347,21 +347,12 @@
 
     window.addEventListener(
       "resize",
-      debounce(() => {
+      window.KIS.debounce(() => {
         if (data) render(data, Object.assign({}, config, { preserveYear: true }));
       }, 200)
     );
 
     return { render, setYear };
-  }
-
-  function debounce(fn, ms) {
-    let t;
-    return function () {
-      clearTimeout(t);
-      const args = arguments;
-      t = setTimeout(() => fn.apply(null, args), ms);
-    };
   }
 
   window.DistributionPlot = { create: createDistributionPlot };

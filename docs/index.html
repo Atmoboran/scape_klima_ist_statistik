@@ -1,188 +1,172 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title data-t="daily.pageTitle"></title>
-<link rel="stylesheet" href="theme/theme.css" />
-<link rel="stylesheet" href="css/style.css" />
-<script>
-  (function () {
-    var mode;
-    try {
-      var stored = localStorage.getItem("scapeViewMode");
-      mode = (stored === "mobile" || stored === "desktop") ? stored : null;
-    } catch (e) {}
-    if (!mode) {
-      mode = window.matchMedia("(max-width: 699px)").matches ? "mobile" : "desktop";
-    }
-    document.documentElement.setAttribute("data-view", mode);
-  })();
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-t="daily.pageTitle">Klima ist Statistik</title>
+<meta name="description" content="">
+<!-- Structure only. Design: theme/ · texts: content/texts.de.js · layout: css/ · behaviour: js/ -->
+<script src="js/view.js" data-app="klimastatistik"></script>
+<link rel="stylesheet" href="theme/theme.css">
+<link rel="stylesheet" href="css/kit.css">
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
-<div class="brand-bar">
-  <div class="brand-wordmark">
-    <span class="brand-logo" data-t-html="brand.nameHtml"></span>
-    <span class="brand-sub" data-t="brand.claim"></span>
+<header class="top">
+  <a class="logo" href="index.html" data-brand="logo"></a>
+  <div class="top-right">
+    <nav class="nav" data-t-aria="nav.ariaLabel">
+      <a href="index.html" aria-current="page"><span class="num">1</span><span data-t="nav.daily"></span></a>
+      <a href="trend.html"><span class="num">2</span><span data-t="nav.trend"></span></a>
+    </nav>
+    <button type="button" class="view-toggle"></button>
   </div>
-  <button id="view-toggle" class="view-toggle" type="button"></button>
-</div>
-
-<div class="color-band" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-
-<nav class="page-nav" data-t-aria="nav.ariaLabel">
-  <a href="index.html" class="page-nav-link active" aria-current="page" data-t="nav.daily"></a>
-  <a href="trend.html" class="page-nav-link" data-t="nav.trend"></a>
-</nav>
-
-<header class="app-header">
-  <h1 data-t="daily.title"></h1>
-  <p class="subtitle" data-t="daily.subtitle"></p>
 </header>
 
-<div class="workspace">
-<div class="picker-row">
-  <div class="field-group">
-    <label for="variable-select" class="field-label" data-t="pickers.variable"></label>
-    <div class="field-with-info">
-      <select id="variable-select" class="station-select">
-        <option value="temperature" data-t="variables.temperature.label"></option>
-        <option value="precipitation" data-t="variables.precipitation.label"></option>
-        <option value="sunshine" data-t="variables.sunshine.label"></option>
-      </select>
-      <button
-        id="variable-info-btn"
-        class="info-btn"
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded="false"
-        aria-controls="info-popover"
-        data-t-aria="pickers.variableInfoAria"
-      >i</button>
-    </div>
-  </div>
-  <div class="field-group">
-    <label for="station-select" class="field-label" data-t="pickers.station"></label>
-    <div class="field-with-info">
-      <select id="station-select" class="station-select"></select>
-      <button
-        id="station-info-btn"
-        class="info-btn"
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded="false"
-        aria-controls="info-popover"
-        data-t-aria="pickers.stationInfoAria"
-      >i</button>
-    </div>
+<div class="poster small">
+  <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+  <svg class="l2" viewBox="0 0 120 120" aria-hidden="true">
+    <rect x="6" y="70" width="18" height="44" fill="currentColor"/><rect x="30" y="56" width="18" height="58" fill="currentColor"/>
+    <rect x="54" y="62" width="18" height="52" fill="currentColor"/><rect x="78" y="34" width="18" height="80" fill="currentColor"/>
+    <rect x="102" y="12" width="18" height="102" fill="currentColor"/>
+  </svg>
+  <svg class="l3" viewBox="0 0 400 400" aria-hidden="true">
+    <path d="M0,330 C110,330 120,120 200,120 C280,120 290,330 400,330"/>
+    <path d="M0,300 C110,300 120,80 200,80 C280,80 290,300 400,300"/>
+  </svg>
+  <div class="poster-text">
+    <p class="kicker" data-t="daily.kicker"></p>
+    <h1 class="headline" data-t-html="daily.headline"></h1>
+    <p class="lead" data-t="daily.lead"></p>
   </div>
 </div>
 
-<div class="info-popover-backdrop" id="info-popover-backdrop" hidden></div>
-<div class="info-popover" id="info-popover" role="dialog" aria-modal="true" aria-labelledby="info-popover-title" hidden>
-  <div class="info-popover-header">
-    <span id="info-popover-title" class="info-popover-title"></span>
-    <button type="button" class="info-popover-close" id="info-popover-close" data-t-aria="dialog.closeAria">&times;</button>
-  </div>
-  <div class="info-popover-body" id="info-popover-body"></div>
-</div>
+<main class="page">
+  <div class="lab">
+    <div class="lab-pre">
+      <div class="field">
+        <div class="field-head">
+          <label for="variable-select" class="section-label" data-t="pickers.variable"></label>
+          <button type="button" class="info" aria-controls="variable-note" data-t-aria="pickers.variableInfoAria"></button>
+        </div>
+        <select id="variable-select" class="select">
+          <option value="temperature" data-t="variables.temperature.label"></option>
+          <option value="precipitation" data-t="variables.precipitation.label"></option>
+          <option value="sunshine" data-t="variables.sunshine.label"></option>
+        </select>
+        <div class="info-note" id="variable-note" hidden></div>
+      </div>
+      <div class="field">
+        <div class="field-head">
+          <label for="station-select" class="section-label" data-t="pickers.station"></label>
+          <button type="button" class="info" aria-controls="station-note" data-t-aria="pickers.stationInfoAria"></button>
+        </div>
+        <select id="station-select" class="select"></select>
+        <div class="info-note" id="station-note" hidden></div>
+      </div>
 
-<main class="plot-shell">
-  <div class="plot-toolbar">
-    <div class="deviation-badge" id="deviation-badge">
-      <span class="deviation-year" id="deviation-year">–</span>
-      <div class="deviation-stats">
-        <div class="stat-block">
-          <span class="stat-label" id="stat-label-mean"></span>
-          <span class="deviation-mean" id="deviation-mean">–</span>
-        </div>
-        <div class="stat-block">
-          <span class="stat-label"><span data-t="daily.deviation"></span> <span id="deviation-period-label"></span></span>
-          <span class="deviation-value" id="deviation-value">–</span>
-        </div>
+      <div class="readout-grid" aria-live="polite">
+        <div><span data-t="daily.year"></span><b id="deviation-year">–</b></div>
+        <div><span id="stat-label-mean"></span><b id="deviation-mean">–</b></div>
+        <div><span><span data-t="daily.deviation"></span> <span id="deviation-period-label"></span></span><b id="deviation-value">–</b></div>
       </div>
     </div>
-    <div class="period-toggle-group">
-      <span class="ref-period-label" data-t="common.referencePeriodLabel"></span>
-      <div class="period-toggle-row" id="legend-periods"></div>
-      <button
-        id="period-info-btn"
-        class="info-btn small"
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded="false"
-        aria-controls="info-popover"
-        data-t-aria="daily.periodInfoAria"
-      >i</button>
+
+    <div class="lab-stage">
+      <div class="stage-frame chart-frame" id="stage-frame">
+        <svg id="chart" class="chart" role="img"></svg>
+        <svg id="chart-bar" class="chart" role="img" hidden></svg>
+        <div id="tooltip" class="tooltip" hidden></div>
+        <p class="load-error" id="load-error" hidden data-t="loadError"></p>
+      </div>
+      <div class="legend-row" id="colorbar-row" aria-hidden="true">
+        <span class="legend-label" id="legend-label-cold"></span>
+        <svg id="legend-gradient" width="160" height="10"></svg>
+        <span class="legend-label" id="legend-label-warm"></span>
+        <span class="legend-vs">
+          <span data-t="daily.legendVs"></span> <span class="line-swatch"></span>
+          <span data-t="daily.legendReference"></span> <span id="colorbar-period-label"></span>
+        </span>
+      </div>
+      <div class="legend-row" id="bar-legend-row" aria-hidden="true" hidden>
+        <span class="legend-item"><span class="swatch-box" id="bar-legend-year-swatch"></span><span id="bar-legend-year-label"></span></span>
+        <span class="legend-item"><span class="swatch-box" id="bar-legend-period-swatch"></span><span id="bar-legend-period-label"></span></span>
+      </div>
+      <p class="hint" id="chart-hint"></p>
+    </div>
+
+    <div class="lab-post">
+      <div class="section-label" data-t="timeline.label"></div>
+      <div class="timeline">
+        <span class="year-bound" id="timeline-year-start">–</span>
+        <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
+        <span class="year-bound" id="timeline-year-end">–</span>
+      </div>
+      <div class="btn-row transport">
+        <button type="button" class="btn step" id="prev-year-btn" data-t-aria="timeline.prevAria">&#9664;</button>
+        <button type="button" class="btn primary play" id="play-btn" data-t-aria="timeline.playAria">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8V4z" fill="currentColor"/></svg>
+          <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" fill="currentColor"/></svg>
+          <span id="play-label" data-t="timeline.play"></span>
+        </button>
+        <button type="button" class="btn step" id="next-year-btn" data-t-aria="timeline.nextAria">&#9654;</button>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <span class="section-label" data-t="common.referencePeriodLabel"></span>
+          <button type="button" class="info" aria-controls="period-note" data-t-aria="common.periodInfoAria"></button>
+        </div>
+        <div class="seg" id="legend-periods"></div>
+        <div class="info-note" id="period-note" hidden data-t-html="common.periodInfo"></div>
+      </div>
+
+      <div class="tasks" id="daily-tasks">
+        <h3 data-t="daily.tasks.title"></h3>
+        <ul>
+          <li data-task="cold"><span class="box"></span><span data-t="daily.tasks.cold"></span></li>
+          <li data-task="period"><span class="box"></span><span data-t="daily.tasks.period"></span></li>
+          <li data-task="station"><span class="box"></span><span data-t="daily.tasks.station"></span></li>
+        </ul>
+        <p class="status" id="task-status" aria-live="polite"></p>
+      </div>
+      <div class="merke locked" data-for="daily-tasks">
+        <h3 data-t="daily.merke.title"></h3>
+        <p data-t="daily.merke.text"></p>
+        <span class="locked-note"></span>
+      </div>
     </div>
   </div>
-
-  <div class="timeline-wrap">
-    <div class="timeline-track-row">
-      <span class="timeline-year-bound" id="timeline-year-start">–</span>
-      <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria" />
-      <span class="timeline-year-bound" id="timeline-year-end">–</span>
-    </div>
-    <div class="transport-controls">
-      <button id="prev-year-btn" class="step-btn" data-t-aria="timeline.prevAria">&#9664;</button>
-      <button id="play-btn" class="play-btn" data-t-aria="timeline.playAria">&#9654;</button>
-      <button id="next-year-btn" class="step-btn" data-t-aria="timeline.nextAria">&#9654;</button>
-    </div>
-  </div>
-
-  <div class="colorbar-row" id="colorbar-row" aria-hidden="true">
-    <span class="legend-label" id="legend-label-cold"></span>
-    <svg id="legend-gradient" width="180" height="10"></svg>
-    <span class="legend-label" id="legend-label-warm"></span>
-    <span class="colorbar-vs">
-      <span data-t="daily.legendVs"></span> <span class="line-swatch" aria-hidden="true"></span>
-      <span data-t="daily.legendReference"></span> <span id="colorbar-period-label"></span>
-    </span>
-  </div>
-
-  <div class="bar-legend-row" id="bar-legend-row" aria-hidden="true" style="display: none;">
-    <span class="bar-legend-item">
-      <span class="swatch-box" id="bar-legend-year-swatch"></span>
-      <span id="bar-legend-year-label"></span>
-    </span>
-    <span class="bar-legend-item">
-      <span class="swatch-box" id="bar-legend-period-swatch"></span>
-      <span id="bar-legend-period-label"></span>
-    </span>
-  </div>
-
-  <div class="chart-wrap">
-    <svg id="chart" role="img"></svg>
-    <svg id="chart-bar" role="img" style="display: none;"></svg>
-    <div id="tooltip" class="tooltip" hidden></div>
-  </div>
-  <button type="button" class="hint-btn" id="hint-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="info-popover" data-t="daily.hintButton"></button>
 
   <section class="compare" id="compare">
-    <h2 id="compare-title" data-t="daily.compareTitleDefault"></h2>
+    <h2 class="h2-short" id="compare-title" data-t="daily.compareTitleDefault"></h2>
     <p class="compare-headline" id="compare-headline"></p>
     <div class="compare-legend" id="compare-legend"></div>
-    <svg class="compare-chart" id="compare-chart" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
+    <svg class="compare-chart" id="compare-chart" role="img" data-t-aria="daily.compareAria"></svg>
   </section>
 
-  <div class="methodology-links">
-    <button type="button" class="methodology-link-btn" id="methodology-calc-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="info-popover" data-t="daily.methodologyCalcButton"></button>
-    <button type="button" class="methodology-link-btn" id="methodology-climate-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="info-popover" data-t="daily.methodologyClimateButton"></button>
+  <div class="topics">
+    <details class="topic"><summary data-t="common.topics.chartTitle"></summary><div class="topic-body" id="topic-chart"></div></details>
+    <details class="topic"><summary data-t="common.topics.calcTitle"></summary><div class="topic-body" id="topic-calc"></div></details>
+    <details class="topic"><summary data-t="common.topics.climateTitle"></summary><div class="topic-body" id="topic-climate"></div></details>
   </div>
-</main>
-</div>
 
-<footer class="app-footer">
-  <p data-t="footer.data"></p>
-  <p class="footer-scape" data-t="footer.credit"></p>
+  <div class="next-part"><a class="btn" href="trend.html" data-t="daily.next"></a></div>
+</main>
+
+<footer class="foot">
+  <p class="sources" data-t="sources"></p>
+  <p class="brand-line" data-brand="line"></p>
 </footer>
 
 <script src="theme/theme.js"></script>
 <script src="content/texts.de.js"></script>
 <script src="js/texts.js"></script>
+<script src="js/brand.js"></script>
+<script src="js/kit.js"></script>
 <script src="js/vendor/d3.v7.min.js"></script>
+<script src="js/shared.js"></script>
 <script src="js/variable-config.js"></script>
 <script src="js/spaghetti-plot.js"></script>
 <script src="js/monthly-bar-plot.js"></script>

@@ -1,0 +1,104 @@
+/* Klima ist Statistik – layout only (theme variables from theme/theme.css,
+   shared components from css/kit.css). Both pages use this file. */
+
+/* ---- pickers and labelled groups (right column on the desktop) ---- */
+.field { margin: 0 0 14px; }
+.field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.field-head .section-label { margin: 0; }
+.select {
+  appearance: none; -webkit-appearance: none; width: 100%; min-height: 46px; padding: 8px 40px 8px 12px;
+  border: var(--line-width) solid var(--line); border-radius: var(--radius); background-color: var(--paper); color: var(--ink);
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat;
+  font-weight: var(--fw-medium); font-size: 15px; cursor: pointer; text-overflow: ellipsis;
+}
+:root[data-view="desktop"] .select:hover { background-color: var(--accent-pale); }
+.seg .btn { flex: 1 1 auto; min-height: 44px; padding: 6px 10px; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* station facts inside the info note */
+.facts { display: grid; grid-template-columns: auto 1fr; margin: 6px 0 0; }
+.facts dt, .facts dd { padding: 4px 0; border-bottom: 1px solid var(--rule-soft); }
+.facts dt { padding-right: 14px; color: var(--ink-muted); }
+.facts dd { margin: 0; text-align: right; font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+
+/* readout: year, value, deviation */
+.readout-grid { gap: 10px 22px; margin-top: 4px; }
+.readout-grid b { font-variant-numeric: tabular-nums; min-width: 4.2em; }
+
+/* ---- the chart: a wide stage (time series) ---- */
+.chart-frame { background: var(--stage-bg); }
+.chart-pane { position: relative; }
+.chart { display: block; width: 100%; height: clamp(300px, 52svh, 440px); touch-action: pan-y; }
+:root[data-view="desktop"] .chart { height: clamp(380px, calc(100svh - var(--head-h) - 170px), 760px); }
+.stage-frame:fullscreen .chart-pane, .stage-frame.is-full .chart-pane { height: 100%; }
+.stage-frame:fullscreen .chart, .stage-frame.is-full .chart { height: 100%; }
+.stage-frame:fullscreen, .stage-frame.is-full { background: var(--stage-bg); }
+.load-error { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; font-size: 15px; background: var(--paper); }
+
+.tooltip {
+  position: absolute; z-index: 7; pointer-events: none; max-width: 230px;
+  background: var(--tooltip-bg); color: var(--tooltip-ink); padding: 8px 10px;
+  font-size: 13px; line-height: 1.4; font-variant-numeric: tabular-nums;
+}
+.tooltip b { font-weight: var(--fw-medium); }
+.tooltip .tt-cold { color: var(--tooltip-cold); }
+.tooltip .tt-warm { color: var(--tooltip-warm); }
+
+/* legends under the chart and above the comparison */
+.legend-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0 0; font-size: 13px; color: var(--ink-muted); }
+#legend-gradient { display: block; }
+.legend-vs { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.line-swatch { display: inline-block; width: 18px; border-top: 3px solid var(--ink); }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.swatch-box { display: inline-block; width: 12px; height: 12px; background: currentColor; }
+.swatch-line { display: inline-block; width: 18px; border-top: 3px solid currentColor; }
+#bar-legend-row { gap: 6px 18px; }
+
+/* ---- timeline: slider, step buttons, play ---- */
+.timeline { display: flex; align-items: center; gap: 10px; min-height: 46px; }
+.year-bound { flex: none; font-size: 13px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.year-slider { flex: 1; min-width: 0; height: 32px; accent-color: var(--active); }
+.transport { margin: 6px 0 18px; }
+.transport .step { flex: 0 0 56px; font-size: 14px; }
+.transport .play { flex: 1; }
+.play svg { width: 18px; height: 18px; }
+.play .i-stop, .play.playing .i-play { display: none; }
+.play.playing .i-stop { display: block; }
+
+/* ---- chart internals (SVG drawn by js/*-plot.js) ---- */
+.axis text { fill: var(--ink-muted); font-family: var(--font); font-size: 12px; font-variant-numeric: tabular-nums; }
+.axis path, .axis line { stroke: var(--rule-soft); }
+.axis.month-axis text { fill: var(--ink); font-weight: var(--fw-medium); }
+.axis-unit-label { fill: var(--ink-muted); font-family: var(--font); font-size: 12px; font-weight: var(--fw-medium); }
+:root[data-view="desktop"] .axis text { font-size: 13px; }
+
+.month-group-overlay, .trend-bar-overlay { fill: transparent; cursor: pointer; }
+.year-strand { fill: none; stroke-width: 1.1; opacity: .27; transition: opacity .2s ease, stroke-width .2s ease; }
+.year-strand.dimmed { opacity: .043; }
+.year-strand.highlighted { opacity: 1; stroke-width: 2.6; }
+.anomaly-area { pointer-events: none; opacity: .16; }
+.period-line { fill: none; stroke-width: 2.5; stroke: var(--ink); }
+.zero-line { stroke: var(--ink-muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
+.trend-line { stroke: var(--ink); stroke-width: 2.5; }
+.day-guide { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; opacity: .4; pointer-events: none; }
+.dist-ref-area { fill: var(--ink-muted); opacity: .08; stroke: none; }
+.dist-ref-line { fill: none; stroke: var(--ink-muted); stroke-width: 2; stroke-dasharray: 5 4; }
+.dist-year-area { opacity: .85; }
+.dist-year-line { fill: none; stroke: var(--ink); stroke-width: 2.5; }
+.dist-mean-line { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 1 3; stroke-linecap: round; opacity: .8; }
+.dist-mean-label { fill: var(--ink); font-family: var(--font); font-size: 12px; font-weight: var(--fw-medium); }
+
+/* year over the distribution chart */
+.distribution-year-badge { position: absolute; top: 10px; right: 14px; text-align: right; pointer-events: none; }
+.distribution-year-badge .num { display: block; font-weight: var(--fw-light); font-size: clamp(30px, 6vw, 44px); line-height: 1; font-variant-numeric: tabular-nums; }
+.distribution-year-badge .sub { display: block; margin-top: 4px; font-size: 12px; font-weight: var(--fw-medium); letter-spacing: .04em; text-transform: var(--caps); color: var(--ink-muted); }
+
+/* ---- period comparison (full width below the lab) ---- */
+.compare { margin: 28px 0 0; padding: 20px var(--gutter) 22px; background: var(--panel); border: var(--line-width) solid var(--line); }
+:root[data-view="mobile"] .compare { margin-inline: calc(-1 * var(--gutter)); border-left: 0; border-right: 0; }
+.compare-headline { font-size: 16px; line-height: 1.5; max-width: 46em; margin: 0 0 12px; }
+.compare-headline strong { font-weight: var(--fw-medium); }
+.compare-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.compare-chart { display: block; width: 100%; }
+
+.next-part.back { justify-content: flex-start; }

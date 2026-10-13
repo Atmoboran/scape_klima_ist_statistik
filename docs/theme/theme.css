@@ -1,63 +1,100 @@
-/* Design tokens for both pages, following the SCAPE° corporate design
-   (Bureau Mitte für SCAPE°). css/style.css only references these variables,
-   so restyling means editing this file alone. Chart data colours live in
-   theme/theme.js, because the charts compute with them in JS.
+/* =========================================================================
+   THEME – everything that makes this app look like SCAPE°.
+   css/kit.css and css/app.css only use the custom properties defined here,
+   so another institution changes this file (plus theme.js) and nothing else.
 
-   CD in short: black Founders Grotesk on white, flat rectangular colour
-   fields that pair a strong tone with pastels, no rounded corners, no
-   shadows or gradients. */
+   SCAPE° corporate design (Bureau Mitte), in short:
+   * Founders Grotesk only. Headlines very large, light, in caps; labels
+     medium weight in caps; running text regular, mixed case.
+   * Palette colours only. Strong tones always next to pastels. Text black,
+     white on dark fields.
+   * Flat: hard-edged rectangular colour fields, no rounded rectangles,
+     no shadows, no gradients. Circles and pills belong to the shape
+     vocabulary and may be used.
+   ========================================================================= */
 
-@font-face {
-  font-family: "Jost";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("../fonts/jost-latin.woff2") format("woff2");
-}
+/* Founders Grotesk (Klim Type Foundry) is commercial and not shipped. It is
+   used when installed on the device; otherwise the system fallback applies. */
+@font-face { font-family: "Founders Grotesk"; src: local("Founders Grotesk Light"), local("FoundersGrotesk-Light"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "Founders Grotesk"; src: local("Founders Grotesk Regular"), local("FoundersGrotesk-Regular"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Founders Grotesk"; src: local("Founders Grotesk Medium"), local("FoundersGrotesk-Medium"); font-weight: 500; font-display: swap; }
 
 :root {
-  /* Typeface ------------------------------------------------------------- */
-  /* Founders Grotesk is the brand face; Jost is a free, similar geometric
-     grotesque. Put "Founders Grotesk" first if you have a web licence. */
-  --font: "Founders Grotesk", "Jost", "Futura", "Century Gothic", "Helvetica Neue", Arial, sans-serif;
-  --heading-case: uppercase;  /* large headings and the wordmark claim */
+  /* ---- Type ------------------------------------------------------------ */
+  --font: "Founders Grotesk", "Helvetica Neue", Inter, Arial, sans-serif;
+  --fw-light: 300;      /* big headlines, big numbers, wordmark */
+  --fw-regular: 400;    /* running text */
+  --fw-medium: 500;     /* labels, buttons, small caps headings, emphasis */
+  --caps: uppercase;    /* headlines and labels; "none" for a brand without caps */
 
-  /* Surfaces ------------------------------------------------------------- */
-  --surface: #ffffff;         /* page background, charts, controls */
-  --highlight: #E0E5F5;       /* readout strip (year, mean, deviation) */
-  --panel: #F2E4BA;           /* period comparison section */
-  --panel-alt: #FDF6B7;       /* hover fill on controls */
+  /* ---- Palette (scape-corporate-design, section 4) --------------------- */
+  --c-black: #000000;   --c-white: #FFFFFF;
+  --c-olive: #726B1E;   --c-sand: #D4BFA3;
+  --c-gold: #E09F00;    --c-amber: #F59E24;   --c-yellow: #FFE547;
+  --c-yellow-strong: #FFD500;  --c-yellow-bright: #FFED00;  --c-yellow-pastel: #FFF487;  --c-yellow-pale: #FDF6B7;
+  --c-rust: #D55117;    --c-orange: #EE7518;  --c-salmon: #EF887F;
+  --c-pink: #F8E1E6;    --c-cream: #F2E4BA;
+  --c-red: #E41513;     --c-red-2: #E8472E;
+  --c-purple: #442683;  --c-purple-2: #523E91; --c-lavender: #E0E5F5; --c-lilac: #C5B8DB;
+  --c-green-strong: #00983A; --c-green: #62BA91; --c-green-pale: #B0D8C0;
+  --c-mint: #CFE6CE;    --c-pale-green: #D0E8DC;
+  --c-cyan: #0097BE;    --c-cyan-2: #44ABCC;  --c-cyan-3: #80C0DA;
+  --c-petrol: #1F6C8E;  --c-teal: #007B73;    --c-grey: #AEC4C2;
+  --c-navy: #28348B;    --c-blue: #0253A0;    --c-blue-2: #3274BA;
+  --c-blue-pale: #98B8DD; --c-ice: #D4EDF8;
 
-  /* Ink (text) ----------------------------------------------------------- */
-  --ink: #111111;             /* primary text, reference line in charts */
-  --ink-muted: #4d4d4d;       /* secondary text, labels (8.4:1 on white) */
-  --ink-inverse: #ffffff;     /* text on accent/ink backgrounds */
+  /* ---- Roles ----------------------------------------------------------- */
+  --ink: var(--c-black);          /* text, outlines */
+  --ink-inverse: var(--c-white);  /* text on dark fields */
+  --ink-muted: #4d4d4d;           /* secondary text (8.4:1 on white) */
+  --paper: var(--c-white);        /* page background */
+  --line: var(--c-black);         /* borders of buttons, cards, frames */
+  --line-width: 2px;
+  --rule-soft: #d9d9d9;           /* grid lines and axes inside charts only */
+  --primary: var(--c-yellow-bright); /* THE main action button */
+  --primary-ink: var(--c-black);
+  --active: var(--c-black);       /* selected / switched-on state */
+  --active-ink: var(--c-white);
+  --accent: var(--c-orange);      /* decoration of the current part */
+  --accent-pale: var(--c-yellow-pastel); /* hover */
+  --merke: var(--c-yellow-pale);  /* "Merke" box */
+  --focus: var(--c-cyan);         /* keyboard focus ring */
+  --stage-bg: var(--c-cream);     /* behind simulations */
 
-  /* Rules ---------------------------------------------------------------- */
-  --rule: #111111;            /* outlines of controls and panels */
-  --rule-soft: #d9d9d9;       /* chart frames, gridlines, separators */
+  /* Poster header (CD "Gestaltungsebenen"): background field, two fields on
+     the right, a small solid shape and a large cropped outline. Each app
+     overrides these with its own signature combination. */
+  --f1: var(--c-yellow-pastel);
+  --f2: var(--c-orange);
+  --f3: var(--c-navy);
+  --shape: var(--c-green);
+  --outline: var(--c-pink);
 
-  /* Interaction ---------------------------------------------------------- */
-  --accent: #28348B;          /* active toggle, slider, play button, links */
-  --accent-hover: #0253A0;
-  --focus: #EE7518;           /* keyboard focus ring */
+  /* Footer */
+  --foot-bg: var(--c-navy);
+  --foot-ink: var(--c-white);
 
-  /* Overlays ------------------------------------------------------------- */
-  --backdrop: rgba(17, 17, 17, 0.45);
-  --shadow: none;
-  --tooltip-bg: #111111;
-  --tooltip-ink: #ffffff;
-  --tooltip-cold: #98B8DD;    /* "coldest/least" line in day tooltips */
-  --tooltip-warm: #EF887F;    /* "warmest/most" line in day tooltips */
+  /* Shape */
+  --radius: 0;                    /* no rounded rectangles in the CD */
+  --tap: 44px;                    /* minimum touch target */
+}
 
-  /* Colour band under the brand bar (CD "Gestaltungsebene 1") ------------ */
-  --band-1: #EE7518;
-  --band-2: #FFF487;
-  --band-3: #F2E4BA;
-  --band-4: #28348B;
+/* ---- Wordmark ------------------------------------------------------------
+   "SCAPE°" with the subtitle spread over the full width of the word.
+   The markup comes from theme.js (brand.logoHtml). */
+.logo { display: inline-flex; flex-direction: column; color: var(--ink); text-decoration: none; line-height: 1; }
+.logo-word { font-family: var(--font); font-weight: var(--fw-light); font-size: var(--logo-size, 40px); letter-spacing: .01em; line-height: .85; white-space: nowrap; }
+.logo-sub { display: flex; justify-content: space-between; gap: .5em; margin-top: calc(var(--logo-size, 40px) * .13); font-family: var(--font); font-weight: var(--fw-medium); font-size: calc(var(--logo-size, 40px) * .23); letter-spacing: .04em; text-transform: uppercase; }
 
-  /* Shape ---------------------------------------------------------------- */
-  --radius-sm: 0;             /* buttons, inputs, segmented controls */
-  --radius: 0;                /* panels, charts, dialogs */
-  --tap: 44px;                /* minimum comfortable touch target */
+/* ---- Klima ist Statistik ---------------------------------------------------- */
+:root {
+  /* signature combination: pale green, cyan, yellow pastel, orange shape, white outline */
+  --f1: var(--c-pale-green); --f2: var(--c-cyan); --f3: var(--c-yellow-pastel);
+  --shape: var(--c-orange); --outline: var(--c-white);
+  --stage-bg: var(--c-white);          /* behind the charts */
+  --panel: var(--c-cream);             /* period comparison section */
+  --tooltip-bg: var(--c-black);        /* chart tooltips */
+  --tooltip-ink: var(--c-white);
+  --tooltip-cold: var(--c-blue-pale);  /* "coldest / least" line in day tooltips */
+  --tooltip-warm: var(--c-salmon);     /* "warmest / most" line in day tooltips */
 }

@@ -1,136 +1,121 @@
-# Klima ist Statistik
+# SCAPE° — Klima ist Statistik
 
-Ein interaktives Exponat für SCAPE° (Bureau Mitte für SCAPE°, Offenbach):
-jedes verfügbare Jahr der Tagesmitteltemperatur einer DWD-Wetterstation als
-eine Linie, eingefärbt nach dem Jahresmittel — kältere Jahre in Blau,
-wärmere Jahre in Rot. Zwei gestrichelte Linien für die offiziellen
-DWD/WMO-Klimareferenzperioden 1961–1990 und 1991–2020 machen den Unterschied
-direkt im Diagramm sichtbar; ein großes Zahlenfeld zeigt die Abweichung des
-gerade gewählten Jahres von der Referenzperiode 1991–2020. Besucher:innen
-können eine Linie antippen, durch die Jahre scrubben/abspielen, oder über das
-Diagramm fahren, um den kältesten/wärmsten Tag im Rekord für ein
-Kalenderdatum zu sehen. Ein Vergleichsdiagramm am Fuß der Seite stellt beide
-Klimareferenzperioden direkt gegenüber.
+A browser-only exhibit with real station data from the Deutscher Wetterdienst
+(DWD): one year of weather says little about the climate; only many years
+together show the pattern and the shift.
 
-Zwei Stationen sind eingebunden: Frankfurt/Main (01420, Tiefland, 100 m) und
-Kleiner Feldberg/Taunus (02601, Mittelgebirge, 822 m).
+Two parts, reachable from the buttons in the header:
 
-Daten: [DWD Climate Data Center](https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/), CC BY 4.0.
-Gestaltung nach dem SCAPE° Corporate Design (Bureau Mitte für SCAPE°):
-Wortmarke „SCAPE°“ mit Unterzeile „Wetter Klima Mensch“, Schrift Founders
-Grotesk (im Web durch die freie Schrift „Jost“ angenähert), große
-Überschriften in Versalien, flächige rechteckige Farbfelder aus kräftigen
-und Pastelltönen der CD-Palette, keine Rundungen. Auch die Datenfarben
-stammen aus der CD-Palette (Blau–Rot für Temperatur, Orange–Cyan für
-Niederschlag, Petrol–Ocker für Sonnenschein) mit neutralem Grau als
-Mittelpunkt.
+1. **Tagesverlauf** (`docs/index.html`) – every available year of a station
+   as one thin line (daily mean temperature, cumulative precipitation) or as
+   monthly bars (sunshine), coloured by the deviation from the chosen
+   reference period (1961–1990 or 1991–2020). A timeline with
+   step buttons and a yellow "Abspielen" button runs through the years; a
+   readout shows the year, its annual value and the deviation. Hovering or
+   tapping the chart shows the record coldest/warmest day for that date. A
+   comparison chart below puts both reference periods side by side.
+2. **Klimatrend** (`docs/trend.html`) – annual bars with a 10-year moving
+   average, or the distribution of daily values (bell curve) of one year
+   against the reference period, for the whole year or one season, with its
+   own timeline.
 
-## Projektstruktur
+Each part has tasks that unlock its "Merke" box:
 
-```
-docs/                     die eigentliche Website — unverändert eingecheckt, das ist es, was GitHub Pages ausliefert
-  index.html               Seite „Tagesverlauf“ (nur Struktur, alle Texte kommen aus content/)
-  trend.html               Seite „Klimatrend“
-  .nojekyll                deaktiviert GitHubs Jekyll-Verarbeitung (reine statische Dateien)
+- Tagesverlauf: find a year colder than the reference period (temperature,
+  picked with the slider/step buttons/stop); switch the reference period to
+  1991–2020; choose another station.
+- Klimatrend: find the warmest year by hovering/tapping the bars
+  (temperature); in the distribution view, look at a year before 1970 and
+  one after 2010.
 
-  theme/                   ── Gestaltung (zum Anpassen)
-    theme.css              Design-Tokens: Schrift, Flächen-, Text-, Akzentfarben, Radien, Schatten
-    theme.js               Datenfarben der Diagramme (Farbskalen je Messgröße, Vergleichsperioden)
-  content/                 ── Texte (zum Anpassen / Übersetzen)
-    texts.de.js            sämtliche sichtbaren Texte, Beschriftungen, Erklärungen, Tooltip-Formate
+Longer explanations (what the chart shows, how the values are computed, what
+this has to do with climate change) sit in collapsible topics below; info
+buttons next to the pickers and the reference period open short notes.
 
-  css/style.css            Layout und Komponenten — nutzt ausschließlich Variablen aus theme.css
-  js/texts.js              füllt die data-t-Platzhalter im HTML aus content/
-  js/variable-config.js    Verhalten je Messgröße (Achsen, Einheiten, Diagrammtyp) + Zusammenführung
-  js/main.js               Orchestrierung Tagesverlauf: Stationen, Zeitleiste, Vergleichsdiagramm
-  js/trend.js              Orchestrierung Klimatrend: Jahresbalken, Verteilung, Jahreszeiten
-  js/*-plot.js             die einzelnen Diagramme (vendored D3, kein Framework)
-  js/vendor/d3.v7.min.js   lokal eingebunden, damit das Exponat auch ohne Internet läuft
-  fonts/jost-latin.woff2   Schrift Jost (variabel, 100–900), ebenfalls lokal eingebunden
-  data/processed/*.json    vorberechnete Stationsdaten, die die Seite zur Laufzeit lädt
+18 DWD stations are included (Frankfurt/Main is the default).
 
-data/raw/                 rohe DWD-Stationsdateien, für Nachvollziehbarkeit (liegen außerhalb von docs/, werden also nicht mit ausgeliefert)
-scripts/
-  fetch_data.py            lädt Rohdaten + Stationsmetadaten für die 2 Stationen herunter
-  build_data.py            erzeugt daraus docs/data/processed/*.json
-```
+Data: [DWD Climate Data Center](https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/), daily values, CC BY 4.0.
 
-Es gibt keinen clientseitigen Build-Schritt — `docs/` ist reines HTML/CSS/JS
-und wird unverändert auf GitHub Pages veröffentlicht. `docs/` ist bewusst
-gewählt (statt z. B. `public/`), weil GitHub Pages im Modus „Deploy from a
-branch“ nur `/` (Repo-Root) oder `/docs` als Quellordner erlaubt — alles
-außerhalb von `docs/` (Rohdaten, Build-Skripte) wird dadurch automatisch
-nicht mit veröffentlicht.
+## Run
 
-## Eigene Version / Anpassen
-
-Gestaltung und Texte sind vom Code getrennt. Für eine eigene Version des
-Exponats (anderes Branding, andere Sprache, andere Formulierungen) genügt es
-in der Regel, diese drei Dateien zu bearbeiten — `css/` und `js/` bleiben
-unverändert:
-
-| Datei | Was darin steht |
-|---|---|
-| `docs/theme/theme.css` | Schrift (`--font`, `@font-face`), Hintergründe, Textfarben, Linien, Akzentfarbe für aktive Schalter/Regler/Play-Button, Tooltip-Farben, Logo-Farben, Eckenradien. |
-| `docs/theme/theme.js` | Farben in den Diagrammen: je Messgröße die Farbskala `colorStops` (kalt/trocken → neutral → warm/nass) sowie die Farben der beiden Referenzperioden im Vergleichsdiagramm. Als Hex-Werte, weil D3 damit rechnet. |
-| `docs/content/texts.de.js` | Alle sichtbaren Texte: Titel, Untertitel, Navigation, Beschriftungen, Pop-up-Erklärungen, Bildunterschriften, Monatsnamen, Zahlen-/Datumsformat (`locale`) sowie die Formatierungsfunktionen für Tooltips und Überschriften. |
-
-**Andere Sprache:** `content/texts.de.js` kopieren (z. B. `texts.en.js`),
-`lang`, `locale` und alle Einträge übersetzen und im `<script>`-Block von
-`index.html` und `trend.html` die eingebundene Datei austauschen. Im HTML
-selbst steht kein Text; die Elemente verweisen über `data-t="pfad.zum.text"`
-(Text), `data-t-html` (Text mit Auszeichnung) und `data-t-aria`
-(Screenreader-Beschriftung) auf Einträge in dieser Datei. Fehlt ein Eintrag,
-erscheint in der Browser-Konsole eine Warnung.
-
-**Farbskalen:** Für die Datenfarben sollte der Mittelpunkt neutral (grau)
-bleiben und beide Enden ähnlich dunkel sein, damit „mehr“ und „weniger“
-gleich stark wirken. In Texten, die Farben beschreiben (z. B.
-„wärmer (rot)“ in `content/texts.de.js`), die Farbnamen mit anpassen.
-
-**Eigene Marke:** Die Wortmarke im Kopf von `index.html`/`trend.html`
-besteht aus Text: Name (`brand.nameHtml`) und Unterzeile (`brand.claim`)
-kommen aus den Texten, die Farbleiste darunter aus `--band-1` bis
-`--band-4` in `theme/theme.css`. Wer die lizenzierte Founders Grotesk als
-Webfont hat, bindet sie per `@font-face` in `theme/theme.css` ein — sie
-steht in `--font` bereits an erster Stelle.
-
-## Layout
-
-- **Handy:** alles untereinander – Auswahl, Jahresanzeige, Zeitleiste, Diagramm.
-- **Desktop** (automatisch ab 700 px oder per Umschalter): Die Bedienelemente
-  (Messgröße, Station, Jahresanzeige, Referenzperiode, Zeitleiste, Legende)
-  stehen in einer Spalte links, das Diagramm füllt rechts den Rest der Breite
-  und die Höhe des Bildschirms. Vergleich und Methodik laufen darunter über
-  die volle Breite. Technisch: `.workspace` ist ein Grid, `.plot-shell` wird
-  dort zu `display: contents` (siehe Ende von `css/style.css`).
-
-## Lokale Vorschau
+The site is the `docs/` folder (no build step). The station data are JSON
+files that the page loads at runtime, so it needs a web server – GitHub Pages
+or any static server:
 
 ```bash
 cd docs
 python3 -m http.server 8000
-# http://localhost:8000 öffnen
+# open http://localhost:8000
 ```
 
-## Daten aktualisieren
+Opened by double-click (`file://`) the browser refuses to load the data; the
+page then says so in the chart area.
 
-Nur nötig, um ein neueres Jahr DWD-Daten nachzuziehen. Benötigt
+URL switches for staff:
+
+- `?kiosk` – exhibit mode: back to the start after 3 minutes without touch.
+
+There is no staff/dev panel.
+
+## Files
+
+```
+docs/
+  index.html             part 1 "Tagesverlauf" (structure only, data-t placeholders)
+  trend.html             part 2 "Klimatrend"
+  css/kit.css            shared SCAPE° components (same in every app)
+  css/app.css            layout of this app
+  js/view.js             phone/desktop layout switch (loaded in <head>)
+  js/texts.js            fills the texts from content/
+  js/brand.js            fills logo and footer line from the theme
+  js/kit.js              fullscreen button, hint badge, info notes, tasks/Merke, kiosk mode
+  js/shared.js           number format, data loading, station picker, notes, play button
+  js/variable-config.js  behaviour per quantity (axes, units, chart type)
+  js/main.js             part 1: pickers, readout, timeline, tasks, comparison chart
+  js/trend.js            part 2: annual bars / distribution, seasons, timeline, tasks
+  js/*-plot.js           the individual D3 charts
+  js/vendor/d3.v7.min.js D3, self-hosted
+  content/texts.de.js    every visible text (edit or translate here)
+  theme/                 the design: font, palette, logo, colours (see theme/README.md)
+  data/processed/*.json  pre-computed station data loaded at runtime
+data/raw/                raw DWD station files (not published)
+scripts/
+  fetch_data.py          downloads raw data and station metadata
+  build_data.py          builds docs/data/processed/*.json
+```
+
+## Layout
+
+Phone: pickers and readout, the chart at full width, timeline, reference
+period, tasks, Merke; comparison and topics below. Desktop (automatic from
+1000 px, or via the "Desktop-/Handy-Ansicht" toggle, remembered for this app
+only): the chart on the left (a wide stage – time series), sized to the
+screen and sticky; pickers, readout, timeline, reference period and tasks on
+the right; comparison and topics full width below. Every chart has a
+fullscreen button.
+
+## Updating the data
+
+Only needed to add a newer year of DWD data. Requires
 [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv run scripts/fetch_data.py   # lädt rohe Stationsdateien nach data/raw/
-uv run scripts/build_data.py   # baut docs/data/processed/*.json neu
+uv run scripts/fetch_data.py   # raw station files into data/raw/
+uv run scripts/build_data.py   # rebuilds docs/data/processed/*.json
 ```
 
-Anschließend die geänderten Dateien unter `data/raw/` und
-`docs/data/processed/` committen — die Daten sind Teil des Repos und werden
-nicht live von der Seite nachgeladen.
+Then commit the changed files under `data/raw/` and `docs/data/processed/`.
 
-## Deployment auf GitHub Pages
+## Deployment on GitHub Pages
 
-Einmalig in den Repo-Einstellungen unter **Settings → Pages → Build and
-deployment → Source** auf **„Deploy from a branch“** stellen und als Branch
-`main` mit Ordner `/docs` wählen. Ab dann veröffentlicht GitHub Pages bei
-jedem Push auf `main` automatisch den aktuellen Stand von `docs/` — ohne
-Build-Schritt, ohne GitHub Actions.
+Settings → Pages → Build and deployment → Source: "Deploy from a branch",
+branch `main`, folder `/docs`. Every push to `main` then publishes `docs/`.
+
+## Adapting
+
+Design: `docs/theme/` only (chart colours in `THEME.klimastatistik`).
+Texts: `docs/content/texts.de.js` only (lines marked `LOCAL` refer to the
+region or the station set; the default station is `KIS.DEFAULT_STATION_ID`
+in `js/shared.js`). Founders Grotesk is used when installed, otherwise the
+system fallback. When colour names appear in texts ("wärmer (rot)"), change
+them together with the colours.

@@ -1,70 +1,85 @@
-(function () {
-  "use strict";
+// Page "Tagesverlauf" (index.html): pickers, readout, chart (one line per
+// year, or monthly bars for sunshine), timeline with play, reference period,
+// tasks, the period comparison chart and the topics below.
+(() => {
+  'use strict';
+
+  const KIS = window.KIS;
+  const VARIABLE_CONFIG = window.VARIABLE_CONFIG;
+  const C = window.THEME.klimastatistik;
+  const $ = id => document.getElementById(id);
 
   const state = {
     stations: [],
     currentStationId: null,
-    currentVariable: "temperature",
+    currentVariable: 'temperature',
     currentData: null,
-    activePeriod: "period_a",
+    activePeriod: 'period_a',
     annualDiffScale: null,
     plot: null,
-    playTimer: null,
-    openPopoverKind: null,
-    openPopoverTrigger: null,
+    plotMode: 'line',
+    playTimer: null
   };
 
   const el = {
-    variableSelect: document.getElementById("variable-select"),
-    select: document.getElementById("station-select"),
-    variableInfoBtn: document.getElementById("variable-info-btn"),
-    stationInfoBtn: document.getElementById("station-info-btn"),
-    periodInfoBtn: document.getElementById("period-info-btn"),
-    hintBtn: document.getElementById("hint-btn"),
-    methodologyCalcBtn: document.getElementById("methodology-calc-btn"),
-    methodologyClimateBtn: document.getElementById("methodology-climate-btn"),
-    infoPopover: document.getElementById("info-popover"),
-    infoPopoverTitle: document.getElementById("info-popover-title"),
-    infoPopoverBody: document.getElementById("info-popover-body"),
-    infoPopoverClose: document.getElementById("info-popover-close"),
-    infoPopoverBackdrop: document.getElementById("info-popover-backdrop"),
-    chart: document.getElementById("chart"),
-    tooltip: document.getElementById("tooltip"),
-    legendLabelCold: document.getElementById("legend-label-cold"),
-    legendLabelWarm: document.getElementById("legend-label-warm"),
-    legendGradient: document.getElementById("legend-gradient"),
-    legendPeriods: document.getElementById("legend-periods"),
-    deviationYear: document.getElementById("deviation-year"),
-    deviationMean: document.getElementById("deviation-mean"),
-    statLabelMean: document.getElementById("stat-label-mean"),
-    deviationValue: document.getElementById("deviation-value"),
-    deviationPeriodLabel: document.getElementById("deviation-period-label"),
-    colorbarPeriodLabel: document.getElementById("colorbar-period-label"),
-    colorbarRow: document.getElementById("colorbar-row"),
-    chartBar: document.getElementById("chart-bar"),
-    barLegendRow: document.getElementById("bar-legend-row"),
-    barLegendYearSwatch: document.getElementById("bar-legend-year-swatch"),
-    barLegendYearLabel: document.getElementById("bar-legend-year-label"),
-    barLegendPeriodSwatch: document.getElementById("bar-legend-period-swatch"),
-    barLegendPeriodLabel: document.getElementById("bar-legend-period-label"),
-    timelineYearStart: document.getElementById("timeline-year-start"),
-    timelineYearEnd: document.getElementById("timeline-year-end"),
-    slider: document.getElementById("year-slider"),
-    playBtn: document.getElementById("play-btn"),
-    prevYearBtn: document.getElementById("prev-year-btn"),
-    nextYearBtn: document.getElementById("next-year-btn"),
-    compareTitle: document.getElementById("compare-title"),
-    compareHeadline: document.getElementById("compare-headline"),
-    compareLegend: document.getElementById("compare-legend"),
-    compareChart: document.getElementById("compare-chart"),
-    viewToggle: document.getElementById("view-toggle"),
+    variableSelect: $('variable-select'),
+    select: $('station-select'),
+    frame: $('stage-frame'),
+    chart: $('chart'),
+    chartBar: $('chart-bar'),
+    tooltip: $('tooltip'),
+    hint: $('chart-hint'),
+    legendLabelCold: $('legend-label-cold'),
+    legendLabelWarm: $('legend-label-warm'),
+    legendGradient: $('legend-gradient'),
+    legendPeriods: $('legend-periods'),
+    deviationYear: $('deviation-year'),
+    deviationMean: $('deviation-mean'),
+    statLabelMean: $('stat-label-mean'),
+    deviationValue: $('deviation-value'),
+    deviationPeriodLabel: $('deviation-period-label'),
+    colorbarPeriodLabel: $('colorbar-period-label'),
+    colorbarRow: $('colorbar-row'),
+    barLegendRow: $('bar-legend-row'),
+    barLegendYearSwatch: $('bar-legend-year-swatch'),
+    barLegendYearLabel: $('bar-legend-year-label'),
+    barLegendPeriodSwatch: $('bar-legend-period-swatch'),
+    barLegendPeriodLabel: $('bar-legend-period-label'),
+    timelineYearStart: $('timeline-year-start'),
+    timelineYearEnd: $('timeline-year-end'),
+    slider: $('year-slider'),
+    playBtn: $('play-btn'),
+    playLabel: $('play-label'),
+    prevYearBtn: $('prev-year-btn'),
+    nextYearBtn: $('next-year-btn'),
+    compare: $('compare'),
+    compareTitle: $('compare-title'),
+    compareHeadline: $('compare-headline'),
+    compareLegend: $('compare-legend'),
+    compareChart: $('compare-chart')
+  };
+
+  // ---- first hint + tasks ---------------------------------------------------
+  const hintBadge = window.SCAPE.badge(el.frame);
+  hintBadge.show(t('daily.badge'));
+  const firstTouch = () => hintBadge.hide();
+
+  const tasks = window.SCAPE.tasks($('daily-tasks'));
+  // A year the visitor picked (slider, step buttons, stopping playback).
+  const checkColdYear = year => {
+    if (state.currentVariable !== 'temperature' || !year) return;
+    const data = state.currentData;
+    const amt = data.annual_metric[year];
+    const base = data[state.activePeriod].mean_annual_metric;
+    if (amt === undefined || base === null || base === undefined) return;
+    if (amt < base && tasks.done('cold')) KIS.status(t('daily.tasks.doneCold', year));
   };
 
   // Sums a 365-entry daily series into 12 monthly totals (null when a month
-  // has no valid days at all) - used by the Klimavergleich bar comparison
-  // for variables (sunshine) whose main chart is monthly bars, not lines.
+  // has no valid days at all) - used by the comparison chart for variables
+  // (sunshine) whose main chart is monthly bars, not lines.
   const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  function monthlySumsFromDaily(series) {
+  const monthlySumsFromDaily = series => {
     const sums = [];
     let dayIdx = 0;
     for (let m = 0; m < 12; m++) {
@@ -80,561 +95,373 @@
       sums.push(any ? sum : null);
     }
     return sums;
-  }
+  };
 
-  const DEFAULT_STATION_ID = "01420"; // Frankfurt/Main
-  const VIEW_STORAGE_KEY = "scapeViewMode";
-  const MOBILE_QUERY = "(max-width: 699px)";
+  const renderOptions = (config, extra) => Object.assign({
+    colorStops: config.colorStops,
+    axisSuffix: config.axisSuffix,
+    axisUnit: config.axisUnit,
+    digits: config.digits,
+    maxAbsDev: config.maxAbsDev,
+    yMin: config.yMin,
+    aboveColor: config.aboveColor,
+    belowColor: config.belowColor,
+    formatDayTooltip: config.formatDayTooltip,
+    formatMonthTooltip: config.formatMonthTooltip,
+    activePeriod: state.activePeriod
+  }, extra || {});
 
-  const VARIABLE_CONFIG = window.VARIABLE_CONFIG;
-  const TEXTS = window.TEXTS;
-  const THEME = window.THEME;
-
-  function setViewMode(mode) {
-    document.documentElement.setAttribute("data-view", mode);
-    const vt = TEXTS.viewToggle;
-    el.viewToggle.textContent = mode === "mobile" ? vt.toDesktop : vt.toMobile;
-    el.viewToggle.setAttribute("aria-label", mode === "mobile" ? vt.toDesktopAria : vt.toMobileAria);
-  }
-
-  function setupViewToggle() {
-    setViewMode(document.documentElement.getAttribute("data-view") || "mobile");
-
-    el.viewToggle.addEventListener("click", () => {
-      const next = document.documentElement.getAttribute("data-view") === "mobile" ? "desktop" : "mobile";
-      setViewMode(next);
-      try {
-        localStorage.setItem(VIEW_STORAGE_KEY, next);
-      } catch (e) {}
-    });
-
-    const mql = window.matchMedia(MOBILE_QUERY);
-    const onViewportChange = (e) => {
-      let hasOverride = false;
-      try {
-        hasOverride = localStorage.getItem(VIEW_STORAGE_KEY) !== null;
-      } catch (err) {}
-      if (!hasOverride) setViewMode(e.matches ? "mobile" : "desktop");
-    };
-    if (mql.addEventListener) mql.addEventListener("change", onViewportChange);
-  }
-
-  async function main() {
-    setupViewToggle();
-    setupInfoPopover();
-    const res = await fetch("data/processed/stations_index.json");
-    state.stations = await res.json();
-    state.stations.sort((a, b) => a.name.localeCompare(b.name, TEXTS.lang));
-    buildStationOptions();
+  const main = async () => {
+    state.stations = await KIS.loadStations();
+    KIS.fillStationSelect(el.select, state.stations);
 
     state.spaghettiPlot = window.SpaghettiPlot.create({
       svgEl: el.chart,
       tooltipEl: el.tooltip,
       onColorScaleReady: renderLegend,
+      onPointer: firstTouch
     });
     state.barPlot = window.MonthlyBarPlot.create({
       svgEl: el.chartBar,
       tooltipEl: el.tooltip,
+      onPointer: firstTouch
     });
     state.plot = state.spaghettiPlot;
 
-    el.select.addEventListener("change", () => loadAndRender(el.select.value, state.currentVariable));
-    el.variableSelect.addEventListener("change", () => loadAndRender(state.currentStationId, el.variableSelect.value));
+    el.select.addEventListener('change', () => {
+      firstTouch();
+      if (el.select.value !== KIS.DEFAULT_STATION_ID && tasks.done('station')) KIS.status(t('daily.tasks.doneStation'));
+      loadAndRender(el.select.value, state.currentVariable);
+    });
+    el.variableSelect.addEventListener('change', () => {
+      firstTouch();
+      loadAndRender(state.currentStationId, el.variableSelect.value);
+    });
+    el.slider.addEventListener('input', () => {
+      firstTouch();
+      stopPlaying();
+      const year = state.currentData.years[+el.slider.value];
+      showYear(year);
+      checkColdYear(year);
+    });
+    el.playBtn.addEventListener('click', () => {
+      firstTouch();
+      if (state.playTimer) stopPlaying(true);
+      else startPlaying();
+    });
+    el.prevYearBtn.addEventListener('click', () => stepYear(-1));
+    el.nextYearBtn.addEventListener('click', () => stepYear(1));
+    window.addEventListener('resize', KIS.debounce(() => {
+      if (state.currentData) renderCompare(state.currentData);
+    }, 200));
 
-    const defaultStation = state.stations.find((s) => s.station_id === DEFAULT_STATION_ID) || state.stations[0];
+    const defaultStation = state.stations.find(s => s.station_id === KIS.DEFAULT_STATION_ID) || state.stations[0];
     await loadAndRender(defaultStation.station_id, state.currentVariable);
-  }
+  };
 
-  function buildStationOptions() {
-    el.select.innerHTML = "";
-    for (const s of state.stations) {
-      const opt = document.createElement("option");
-      opt.value = s.station_id;
-      opt.textContent = s.name;
-      el.select.appendChild(opt);
-    }
-  }
-
-  async function loadAndRender(stationId, variableKey) {
+  const loadAndRender = async (stationId, variableKey) => {
     stopPlaying();
     state.currentStationId = stationId;
     state.currentVariable = variableKey;
     el.select.value = stationId;
     el.variableSelect.value = variableKey;
 
-    const res = await fetch(`data/processed/${variableKey}/${stationId}.json`);
-    const data = await res.json();
+    const data = await KIS.loadJSON(`data/processed/${variableKey}/${stationId}.json`);
     state.currentData = data;
     const config = VARIABLE_CONFIG[variableKey];
 
-    const mode = config.chartType === "bar" ? "bar" : "line";
+    const mode = config.chartType === 'bar' ? 'bar' : 'line';
     state.plotMode = mode;
-    state.plot = mode === "bar" ? state.barPlot : state.spaghettiPlot;
-    el.chart.style.display = mode === "bar" ? "none" : "";
-    el.chartBar.style.display = mode === "bar" ? "" : "none";
-    el.colorbarRow.style.display = mode === "bar" ? "none" : "";
-    el.barLegendRow.style.display = mode === "bar" ? "" : "none";
-    (mode === "bar" ? el.chartBar : el.chart).setAttribute("aria-label", config.chartAriaLabel);
+    state.plot = mode === 'bar' ? state.barPlot : state.spaghettiPlot;
+    // SVG elements have no .hidden property - toggle the attribute
+    el.chart.toggleAttribute('hidden', mode === 'bar');
+    el.chartBar.toggleAttribute('hidden', mode !== 'bar');
+    el.colorbarRow.hidden = mode === 'bar';
+    el.barLegendRow.hidden = mode !== 'bar';
+    (mode === 'bar' ? el.chartBar : el.chart).setAttribute('aria-label', config.chartAriaLabel);
     el.statLabelMean.textContent = config.valueLabel;
     el.legendLabelCold.textContent = config.legendCold;
     el.legendLabelWarm.textContent = config.legendWarm;
-    el.legendLabelCold.style.color = config.colorStops[0];
-    el.legendLabelWarm.style.color = config.colorStops[2];
+    el.hint.textContent = config.hint;
+    KIS.fillVariableNotes(config);
+    KIS.fillStationNote(data);
 
     state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
-
-    state.plot.render(data, {
-      colorStops: config.colorStops,
-      axisSuffix: config.axisSuffix,
-      axisUnit: config.axisUnit,
-      maxAbsDev: config.maxAbsDev,
-      yMin: config.yMin,
-      aboveColor: config.aboveColor,
-      belowColor: config.belowColor,
-      formatDayTooltip: config.formatDayTooltip,
-      formatMonthTooltip: config.formatMonthTooltip,
-      activePeriod: state.activePeriod,
-    });
+    state.plot.render(data, renderOptions(config));
     renderPeriodLegend(data);
     renderBarLegend(data, config);
     setupTimeline(data);
     renderCompare(data);
-    refreshOpenPopover();
-  }
+  };
 
-  // All popover triggers (station details, variable info, chart usage hint,
-  // methodology, climate context) share one dialog; this builds the
-  // title/body for whichever "kind" was opened, always from current state so
-  // it stays correct if the station/variable changes while a popover is open.
-  function popoverContentFor(kind) {
-    const data = state.currentData;
-    const config = VARIABLE_CONFIG[state.currentVariable];
-    const txt = TEXTS.daily;
-    switch (kind) {
-      case "station": {
-        const meta = data.meta;
-        const dl = document.createElement("dl");
-        dl.className = "info-popover-dl";
-        const rows = [
-          [txt.station.coordinates, txt.station.formatCoordinates(meta.lat, meta.lon)],
-          [txt.station.elevation, txt.station.formatElevation(meta.elevation_m)],
-          [txt.station.state, meta.bundesland],
-          [txt.station.years, `${data.years[0]}–${data.years[data.years.length - 1]}`],
-        ];
-        for (const [label, value] of rows) {
-          const dt = document.createElement("dt");
-          dt.textContent = label;
-          const dd = document.createElement("dd");
-          dd.textContent = value;
-          dl.appendChild(dt);
-          dl.appendChild(dd);
-        }
-        return { title: txt.station.title, bodyEl: dl };
-      }
-      case "variable":
-        return { title: config.label, bodyHTML: `<p>${config.generalInfo}</p>` };
-      case "period":
-        return { title: txt.periodInfo.title, bodyHTML: `<p>${txt.periodInfo.text}</p>` };
-      case "hint":
-        return { title: txt.hintTitle, bodyHTML: `<p>${config.chartExplanation}</p>` };
-      case "calc":
-        return {
-          title: txt.calcTitle,
-          bodyHTML:
-            `<p>${txt.meanExplanation}</p>` +
-            `<p>${config.methodology.day}</p>` +
-            `<p>${config.methodology.year}</p>` +
-            `<p>${config.methodology.period}</p>`,
-        };
-      case "climate":
-        return { title: txt.climateTitle, bodyHTML: `<p>${config.methodology.context}</p>` };
-      default:
-        return { title: "", bodyHTML: "" };
-    }
-  }
-
-  function openInfoPopover(kind, triggerEl) {
-    const content = popoverContentFor(kind);
-    el.infoPopoverTitle.textContent = content.title;
-    el.infoPopoverBody.innerHTML = "";
-    if (content.bodyEl) el.infoPopoverBody.appendChild(content.bodyEl);
-    else el.infoPopoverBody.innerHTML = content.bodyHTML;
-
-    if (state.openPopoverTrigger) state.openPopoverTrigger.setAttribute("aria-expanded", "false");
-    state.openPopoverKind = kind;
-    state.openPopoverTrigger = triggerEl || null;
-    if (triggerEl) triggerEl.setAttribute("aria-expanded", "true");
-
-    el.infoPopover.hidden = false;
-    el.infoPopoverBackdrop.hidden = false;
-  }
-
-  function closeInfoPopover() {
-    if (state.openPopoverTrigger) state.openPopoverTrigger.setAttribute("aria-expanded", "false");
-    state.openPopoverKind = null;
-    state.openPopoverTrigger = null;
-    el.infoPopover.hidden = true;
-    el.infoPopoverBackdrop.hidden = true;
-  }
-
-  // Called whenever the underlying data changes (station/variable switch) so
-  // a popover left open while that happens shows content for the new state
-  // instead of stale text from before the switch.
-  function refreshOpenPopover() {
-    if (state.openPopoverKind) openInfoPopover(state.openPopoverKind, state.openPopoverTrigger);
-  }
-
-  function setupInfoPopover() {
-    const toggle = (kind, btn) => {
-      if (!el.infoPopover.hidden && state.openPopoverKind === kind) closeInfoPopover();
-      else openInfoPopover(kind, btn);
-    };
-    el.stationInfoBtn.addEventListener("click", () => toggle("station", el.stationInfoBtn));
-    el.variableInfoBtn.addEventListener("click", () => toggle("variable", el.variableInfoBtn));
-    el.periodInfoBtn.addEventListener("click", () => toggle("period", el.periodInfoBtn));
-    el.hintBtn.addEventListener("click", () => toggle("hint", el.hintBtn));
-    el.methodologyCalcBtn.addEventListener("click", () => toggle("calc", el.methodologyCalcBtn));
-    el.methodologyClimateBtn.addEventListener("click", () => toggle("climate", el.methodologyClimateBtn));
-    el.infoPopoverClose.addEventListener("click", closeInfoPopover);
-    el.infoPopoverBackdrop.addEventListener("click", closeInfoPopover);
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !el.infoPopover.hidden) closeInfoPopover();
-    });
-  }
-
-  function renderBarLegend(data, config) {
-    if (state.plotMode !== "bar") return;
+  const renderBarLegend = (data, config) => {
+    if (state.plotMode !== 'bar') return;
     el.barLegendYearSwatch.style.background = config.aboveColor;
-    el.barLegendYearLabel.textContent = TEXTS.daily.barLegendYear;
-    el.barLegendPeriodSwatch.style.background = THEME.chart.periodBar;
+    el.barLegendYearLabel.textContent = t('daily.barLegendYear');
+    el.barLegendPeriodSwatch.style.background = C.periodBar;
     const period = data[state.activePeriod];
-    el.barLegendPeriodLabel.textContent = TEXTS.daily.barLegendPeriod(period.start, period.end);
-  }
+    el.barLegendPeriodLabel.textContent = t('daily.barLegendPeriod', period.start, period.end);
+  };
 
   // A symmetric diverging scale over how far each complete year's annual
-  // metric sits from the active reference period's mean - drives the shade
-  // of the big deviation figure so it reflects magnitude, not just sign.
-  function buildAnnualDiffScale(data, activePeriodKey, colorStops) {
+  // metric sits from the active reference period's mean - drives the colour
+  // of the deviation figure so it reflects magnitude, not just sign.
+  const buildAnnualDiffScale = (data, activePeriodKey, colorStops) => {
     const baselineMean = data[activePeriodKey].mean_annual_metric;
     if (baselineMean === null || baselineMean === undefined) return null;
-    const diffs = Object.values(data.annual_metric).map((v) => v - baselineMean);
+    const diffs = Object.values(data.annual_metric).map(v => v - baselineMean);
     if (!diffs.length) return null;
     const maxAbs = Math.max(...diffs.map(Math.abs)) || 1;
     return d3.scaleLinear().domain([-maxAbs, 0, maxAbs]).range(colorStops).interpolate(d3.interpolateRgb).clamp(true);
-  }
+  };
 
   function renderLegend(colorScale, minAmt, maxAmt) {
-    const width = 180;
+    const width = 160;
     const height = 10;
-    el.legendGradient.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    el.legendGradient.innerHTML = "";
+    el.legendGradient.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    el.legendGradient.innerHTML = '';
     const svg = d3.select(el.legendGradient);
-    const gradId = "legend-grad";
-    const defs = svg.append("defs");
-    const grad = defs.append("linearGradient").attr("id", gradId).attr("x1", "0%").attr("x2", "100%");
+    const gradId = 'legend-grad';
+    const grad = svg.append('defs').append('linearGradient').attr('id', gradId).attr('x1', '0%').attr('x2', '100%');
     const stopCount = 12;
     for (let i = 0; i <= stopCount; i++) {
-      const t = i / stopCount;
-      const value = minAmt + t * (maxAmt - minAmt);
-      grad.append("stop").attr("offset", `${t * 100}%`).attr("stop-color", colorScale(value));
+      const f = i / stopCount;
+      grad.append('stop').attr('offset', `${f * 100}%`).attr('stop-color', colorScale(minAmt + f * (maxAmt - minAmt)));
     }
-    svg
-      .append("rect")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("rx", 4)
-      .attr("fill", `url(#${gradId})`);
+    svg.append('rect').attr('width', width).attr('height', height).attr('fill', `url(#${gradId})`);
   }
 
-  function renderPeriodLegend(data) {
-    el.legendPeriods.innerHTML = "";
-    const items = [
-      { key: "period_a", cls: "period-a", label: `${data.period_a.start}–${data.period_a.end}` },
-      { key: "period_b", cls: "period-b", label: `${data.period_b.start}–${data.period_b.end}` },
-    ];
-    for (const item of items) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      const active = state.activePeriod === item.key;
-      btn.className = `period-toggle-btn ${item.cls}${active ? " active" : ""}`;
-      btn.setAttribute("aria-pressed", active ? "true" : "false");
-      btn.textContent = item.label;
-      btn.addEventListener("click", () => setActivePeriod(item.key));
-      el.legendPeriods.appendChild(btn);
-    }
+  const renderPeriodLegend = data => {
+    const items = ['period_a', 'period_b'].map(key => ({ key, label: `${data[key].start}–${data[key].end}` }));
+    KIS.fillSeg(el.legendPeriods, items, state.activePeriod, key => {
+      firstTouch();
+      setActivePeriod(key);
+    });
     const active = data[state.activePeriod];
-    el.deviationPeriodLabel.textContent = TEXTS.daily.deviationVs(active.start, active.end);
+    el.deviationPeriodLabel.textContent = t('daily.deviationVs', active.start, active.end);
     el.colorbarPeriodLabel.textContent = `${active.start}–${active.end}`;
-  }
+  };
 
-  function setActivePeriod(key) {
+  const setActivePeriod = key => {
+    if (key === 'period_b' && tasks.done('period')) KIS.status(t('daily.tasks.donePeriod'));
     if (state.activePeriod === key) return;
     state.activePeriod = key;
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
-
     state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
-    state.plot.render(data, {
-      colorStops: config.colorStops,
-      axisSuffix: config.axisSuffix,
-      axisUnit: config.axisUnit,
-      maxAbsDev: config.maxAbsDev,
-      yMin: config.yMin,
-      aboveColor: config.aboveColor,
-      belowColor: config.belowColor,
-      formatDayTooltip: config.formatDayTooltip,
-      formatMonthTooltip: config.formatMonthTooltip,
-      activePeriod: state.activePeriod,
-      preserveYear: true,
-    });
+    state.plot.render(data, renderOptions(config, { preserveYear: true }));
     renderPeriodLegend(data);
     renderBarLegend(data, config);
     updateReadout(data.years[+el.slider.value]);
-  }
+  };
 
-  function setupTimeline(data) {
+  const showYear = year => {
+    state.plot.setYear(year);
+    updateReadout(year);
+  };
+
+  const setupTimeline = data => {
     const years = data.years;
     el.timelineYearStart.textContent = years[0];
     el.timelineYearEnd.textContent = years[years.length - 1];
     el.slider.min = 0;
     el.slider.max = years.length - 1;
     el.slider.value = years.length - 1;
-
-    el.slider.oninput = () => {
-      stopPlaying();
-      const year = years[+el.slider.value];
-      state.plot.setYear(year);
-      updateReadout(year);
-    };
-
-    el.playBtn.onclick = () => {
-      if (state.playTimer) {
-        stopPlaying();
-      } else {
-        startPlaying();
-      }
-    };
-
-    el.prevYearBtn.onclick = () => stepYear(-1);
-    el.nextYearBtn.onclick = () => stepYear(1);
-
     updateReadout(years[years.length - 1]);
-  }
+  };
 
-  function stepYear(delta) {
+  const stepYear = delta => {
+    firstTouch();
     stopPlaying();
     const years = state.currentData.years;
     const idx = Math.min(years.length - 1, Math.max(0, +el.slider.value + delta));
     el.slider.value = idx;
-    const year = years[idx];
-    state.plot.setYear(year);
-    updateReadout(year);
-  }
+    showYear(years[idx]);
+    checkColdYear(years[idx]);
+  };
 
-  function setDeviation(diff, config) {
+  const setDeviation = (diff, config) => {
     if (diff === null || diff === undefined) {
-      el.deviationValue.textContent = TEXTS.dash;
-      el.deviationValue.style.color = "";
+      el.deviationValue.textContent = t('dash');
+      el.deviationValue.style.color = '';
       return;
     }
     el.deviationValue.textContent = config.formatDiff(diff);
     el.deviationValue.style.color = state.annualDiffScale
       ? state.annualDiffScale(diff)
       : diff >= 0 ? config.aboveColor : config.belowColor;
-  }
+  };
 
-  function updateReadout(year) {
+  const updateReadout = year => {
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
     const period = data[state.activePeriod];
-    el.deviationYear.textContent = year || TEXTS.dash;
+    el.deviationYear.textContent = year || t('dash');
     if (!year) {
-      el.deviationMean.textContent = TEXTS.dash;
+      el.deviationMean.textContent = t('dash');
       setDeviation(null, config);
       return;
     }
     const amt = data.annual_metric[year];
     const baseline = period.mean_annual_metric;
-
     if (amt === undefined) {
       el.deviationMean.textContent = config.incompleteLabel;
       setDeviation(null, config);
       return;
     }
     el.deviationMean.textContent = config.formatValue(amt);
-    if (baseline === null || baseline === undefined) {
-      setDeviation(null, config);
-      return;
-    }
-    setDeviation(amt - baseline, config);
-  }
+    setDeviation(baseline === null || baseline === undefined ? null : amt - baseline, config);
+  };
 
-  function startPlaying() {
+  const startPlaying = () => {
     const years = state.currentData.years;
-    el.playBtn.classList.add("playing");
-    el.playBtn.innerHTML = "&#9724;";
+    KIS.setPlaying(el.playBtn, el.playLabel, true);
     let idx = +el.slider.value;
     state.playTimer = setInterval(() => {
       idx = (idx + 1) % years.length;
       el.slider.value = idx;
-      const year = years[idx];
-      state.plot.setYear(year);
-      updateReadout(year);
+      showYear(years[idx]);
     }, 550);
-  }
+  };
 
-  function stopPlaying() {
+  // byVisitor: the visitor stopped playback on purpose - the year shown now counts for the tasks.
+  function stopPlaying(byVisitor) {
     if (state.playTimer) {
       clearInterval(state.playTimer);
       state.playTimer = null;
     }
-    el.playBtn.classList.remove("playing");
-    el.playBtn.innerHTML = "&#9654;";
+    KIS.setPlaying(el.playBtn, el.playLabel, false);
+    if (byVisitor === true) checkColdYear(state.currentData.years[+el.slider.value]);
   }
 
-  function renderCompare(data) {
+  // ---- period comparison chart (full width below the lab) -------------------
+  const renderCompare = data => {
     const meta = data.meta;
     const pa = data.period_a;
     const pb = data.period_b;
     const config = VARIABLE_CONFIG[state.currentVariable];
 
-    el.compareTitle.textContent = TEXTS.daily.compareTitle(meta.name);
-
+    el.compareTitle.textContent = t('daily.compareTitle', meta.name);
     const svg = d3.select(el.compareChart);
-    svg.selectAll("*").remove();
+    svg.selectAll('*').remove();
 
     if (pa.mean_annual_metric === null || pb.mean_annual_metric === null) {
       const missing = pa.mean_annual_metric === null ? pa : pb;
-      el.compareHeadline.textContent = TEXTS.daily.compareTooFewYears(missing.start, missing.end);
-      el.compareLegend.innerHTML = "";
+      el.compareHeadline.textContent = t('daily.compareTooFewYears', missing.start, missing.end);
+      el.compareLegend.innerHTML = '';
       return;
     }
 
     const diff = pb.mean_annual_metric - pa.mean_annual_metric;
-    el.compareHeadline.innerHTML = config.formatCompareHeadline(pa, pb, diff);
+    el.compareHeadline.innerHTML = config.formatCompareHeadline(pa, pb, diff, KIS.num(Math.abs(diff), config.digits));
 
-    const isBar = config.chartType === "bar";
-    el.compareLegend.innerHTML = "";
+    const isBar = config.chartType === 'bar';
+    el.compareLegend.innerHTML = '';
     for (const item of [
-      { color: THEME.chart.periodA, label: `${pa.start}–${pa.end}` },
-      { color: THEME.chart.periodB, label: `${pb.start}–${pb.end}` },
+      { color: C.periodA, label: `${pa.start}–${pa.end}` },
+      { color: C.periodB, label: `${pb.start}–${pb.end}` }
     ]) {
-      const span = document.createElement("span");
-      span.className = "compare-legend-item";
-      const swatch = document.createElement("span");
-      swatch.className = isBar ? "swatch-box" : "swatch-line";
+      const span = document.createElement('span');
+      span.className = 'legend-item';
+      const swatch = document.createElement('span');
+      swatch.className = isBar ? 'swatch-box' : 'swatch-line';
       swatch.style.color = item.color;
       span.append(swatch, item.label);
       el.compareLegend.appendChild(span);
     }
 
-    if (isBar) renderCompareBars(svg, pa, pb, config);
-    else renderCompareLines(svg, pa, pb, config);
-  }
+    // Drawn at the real pixel size, so axis text keeps its CSS size on phones.
+    const W = Math.max(300, el.compareChart.clientWidth || el.compare.clientWidth || 800);
+    const H = Math.round(Math.max(220, Math.min(360, W * 0.4)));
+    svg.attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    if (isBar) renderCompareBars(svg, pa, pb, config, W, H);
+    else renderCompareLines(svg, pa, pb, config, W, H);
+  };
 
-  // Klimavergleich chart for variables whose main chart is a daily line
-  // (temperature, precipitation): period_a vs period_b as two lines over the
-  // day of year, with the warmer/cooler gap between them shaded.
-  function renderCompareLines(svg, pa, pb, config) {
-    const W = 800, H = 320, M = { top: 16, right: 20, bottom: 34, left: 44 };
+  // Variables whose main chart is a daily line (temperature, precipitation):
+  // period_a vs period_b as two lines over the day of year, gap shaded.
+  const renderCompareLines = (svg, pa, pb, config, W, H) => {
+    const M = { top: 16, right: 16, bottom: 34, left: 52 };
     const innerW = W - M.left - M.right;
     const innerH = H - M.top - M.bottom;
 
     const x = d3.scaleLinear().domain([1, 365]).range([0, innerW]);
-    const values = pa.daily_series.concat(pb.daily_series).filter((v) => v !== null);
+    const values = pa.daily_series.concat(pb.daily_series).filter(v => v !== null);
     const yDomain = d3.extent(values);
     if (config.yMin !== null) yDomain[0] = config.yMin;
     const y = d3.scaleLinear().domain(yDomain).nice().range([innerH, 0]);
 
-    const g = svg.append("g").attr("transform", `translate(${M.left},${M.top})`);
+    const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`);
     const monthStarts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+    const months = t('months');
+    const every = innerW < 420 ? 2 : 1;
+    g.append('g').attr('class', 'axis month-axis').attr('transform', `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).tickValues(monthStarts.filter((d, i) => i % every === 0))
+        .tickFormat(d => months[monthStarts.indexOf(d)]));
+    g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5).tickFormat(d => KIS.tick(d) + config.axisSuffix));
 
-    g.append("g").attr("class", "axis").attr("transform", `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).tickValues(monthStarts).tickFormat((d, i) => TEXTS.months[i]));
-    g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(5).tickFormat((d) => d + config.axisSuffix));
-
-    const rows = pa.daily_series.map((v, i) => ({
-      doy: i + 1,
-      a: v,
-      b: pb.daily_series[i],
-    }));
-
+    const rows = pa.daily_series.map((v, i) => ({ doy: i + 1, a: v, b: pb.daily_series[i] }));
     const areaWarmer = d3.area()
-      .defined((d) => d.a !== null && d.b !== null && d.b >= d.a)
-      .x((d) => x(d.doy)).y0((d) => y(d.a)).y1((d) => y(d.b));
+      .defined(d => d.a !== null && d.b !== null && d.b >= d.a)
+      .x(d => x(d.doy)).y0(d => y(d.a)).y1(d => y(d.b));
     const areaCooler = d3.area()
-      .defined((d) => d.a !== null && d.b !== null && d.b < d.a)
-      .x((d) => x(d.doy)).y0((d) => y(d.a)).y1((d) => y(d.b));
+      .defined(d => d.a !== null && d.b !== null && d.b < d.a)
+      .x(d => x(d.doy)).y0(d => y(d.a)).y1(d => y(d.b));
+    g.append('path').datum(rows).attr('d', areaWarmer).attr('fill', C.periodB).attr('opacity', 0.18);
+    g.append('path').datum(rows).attr('d', areaCooler).attr('fill', C.periodA).attr('opacity', 0.18);
 
-    g.append("path").datum(rows).attr("d", areaWarmer).attr("fill", THEME.chart.periodB).attr("opacity", 0.18);
-    g.append("path").datum(rows).attr("d", areaCooler).attr("fill", THEME.chart.periodA).attr("opacity", 0.18);
+    const line = d3.line().defined(d => d[1] !== null).x(d => x(d[0])).y(d => y(d[1]));
+    for (const [period, color] of [[pa, C.periodA], [pb, C.periodB]]) {
+      g.append('path')
+        .datum(period.daily_series.map((v, i) => [i + 1, v]))
+        .attr('d', line).attr('fill', 'none').attr('stroke', color).attr('stroke-width', 2.5);
+    }
+  };
 
-    const line = d3.line().defined((d) => d[1] !== null).x((d) => x(d[0])).y((d) => y(d[1]));
-
-    g.append("path")
-      .datum(pa.daily_series.map((v, i) => [i + 1, v]))
-      .attr("d", line)
-      .attr("fill", "none")
-      .attr("stroke", THEME.chart.periodA)
-      .attr("stroke-width", 2.5);
-
-    g.append("path")
-      .datum(pb.daily_series.map((v, i) => [i + 1, v]))
-      .attr("d", line)
-      .attr("fill", "none")
-      .attr("stroke", THEME.chart.periodB)
-      .attr("stroke-width", 2.5);
-  }
-
-  // Klimavergleich chart for variables whose main chart is monthly bars
-  // (sunshine): period_a vs period_b as a grouped bar pair per month,
-  // mirroring the main chart's own year-vs-period bar layout.
-  function renderCompareBars(svg, pa, pb, config) {
-    const W = 800, H = 320, M = { top: 16, right: 24, bottom: 34, left: 48 };
+  // Variables whose main chart is monthly bars (sunshine): period_a vs
+  // period_b as a grouped bar pair per month.
+  const renderCompareBars = (svg, pa, pb, config, W, H) => {
+    const M = { top: 16, right: 16, bottom: 34, left: 56 };
     const innerW = W - M.left - M.right;
     const innerH = H - M.top - M.bottom;
 
-    const monthLabels = TEXTS.months;
+    const monthLabels = t('months');
     const sumsA = monthlySumsFromDaily(pa.daily_series);
     const sumsB = monthlySumsFromDaily(pb.daily_series);
-
     const x = d3.scaleBand().domain(monthLabels).range([0, innerW]).paddingInner(0.35).paddingOuter(0.1);
-    const xSub = d3.scaleBand().domain(["a", "b"]).range([0, x.bandwidth()]).padding(0.12);
+    const xSub = d3.scaleBand().domain(['a', 'b']).range([0, x.bandwidth()]).padding(0.12);
 
-    const allVals = sumsA.concat(sumsB).filter((v) => v !== null);
+    const allVals = sumsA.concat(sumsB).filter(v => v !== null);
     const maxV = allVals.length ? Math.max(...allVals) : 1;
     const yMin = config.yMin !== null ? config.yMin : 0;
     const y = d3.scaleLinear().domain([yMin, maxV || 1]).nice().range([innerH, 0]);
 
-    const g = svg.append("g").attr("transform", `translate(${M.left},${M.top})`);
-
-    g.append("g").attr("class", "axis").attr("transform", `translate(0,${innerH})`).call(d3.axisBottom(x));
-    g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(5).tickFormat((d) => d + config.axisSuffix));
+    const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`);
+    const every = innerW < 420 ? 2 : 1;
+    g.append('g').attr('class', 'axis month-axis').attr('transform', `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).tickValues(monthLabels.filter((d, i) => i % every === 0)));
+    g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5).tickFormat(d => KIS.tick(d) + config.axisSuffix));
 
     const rows = monthLabels.map((month, i) => ({ month, a: sumsA[i], b: sumsB[i] }));
-    const groups = g
-      .selectAll("g.compare-month-group")
-      .data(rows, (d) => d.month)
-      .join("g")
-      .attr("class", "compare-month-group")
-      .attr("transform", (d) => `translate(${x(d.month)},0)`);
+    const groups = g.selectAll('g.compare-month-group')
+      .data(rows, d => d.month)
+      .join('g')
+      .attr('class', 'compare-month-group')
+      .attr('transform', d => `translate(${x(d.month)},0)`);
 
     groups.each(function (d) {
       const bars = [
-        { key: "a", val: d.a, color: THEME.chart.periodA },
-        { key: "b", val: d.b, color: THEME.chart.periodB },
-      ].filter((b) => b.val !== null);
-      d3.select(this)
-        .selectAll("rect")
-        .data(bars, (b) => b.key)
-        .join("rect")
-        .attr("x", (b) => xSub(b.key))
-        .attr("width", xSub.bandwidth())
-        .attr("y", (b) => y(b.val))
-        .attr("height", (b) => innerH - y(b.val))
-        .attr("fill", (b) => b.color);
+        { key: 'a', val: d.a, color: C.periodA },
+        { key: 'b', val: d.b, color: C.periodB }
+      ].filter(b => b.val !== null);
+      d3.select(this).selectAll('rect').data(bars, b => b.key).join('rect')
+        .attr('x', b => xSub(b.key))
+        .attr('width', xSub.bandwidth())
+        .attr('y', b => y(b.val))
+        .attr('height', b => innerH - y(b.val))
+        .attr('fill', b => b.color);
     });
-  }
+  };
 
-  main();
+  main().catch(e => console.error(e));
 })();

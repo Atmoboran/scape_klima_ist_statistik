@@ -9,10 +9,10 @@
 // presentation (units, colours, tooltip wording) is passed in via a `config`
 // object on each render() call, so this module doesn't need to know which
 // variable it's drawing. Built with vendored D3 v7, no build step.
-(function () {
-  "use strict";
+(() => {
+  'use strict';
 
-  const MARGIN = { top: 22, right: 24, bottom: 30, left: 52 };
+  const MARGIN = { top: 22, right: 54, bottom: 30, left: 66 }; // right: room for the fullscreen button
   const MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
   const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
@@ -140,15 +140,16 @@
 
       const xAxis = d3
         .axisBottom(xScale)
-        .tickValues(MONTH_STARTS)
-        .tickFormat((d, i) => MONTH_LABELS[i]);
+        // every other month on narrow screens, so the labels never overlap
+        .tickValues(MONTH_STARTS.filter((d, i) => innerW >= 480 || i % 2 === 0))
+        .tickFormat((d) => MONTH_LABELS[MONTH_STARTS.indexOf(d)]);
       gAxes
         .append("g")
         .attr("class", "axis month-axis")
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => d + config.axisSuffix);
+      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => window.KIS.tick(d) + config.axisSuffix);
       gAxes.append("g").attr("class", "axis").call(yAxis);
 
       if (config.axisUnit) {
@@ -169,7 +170,7 @@
 
     function dayColor(strand, i) {
       const v = strand[i], b = baseline[i];
-      return v !== null && b !== null && b !== undefined ? devColorScale(v - b) : window.THEME.chart.missing;
+      return v !== null && b !== null && b !== undefined ? devColorScale(v - b) : window.THEME.klimastatistik.missing;
     }
 
     function drawStrands() {
@@ -229,22 +230,17 @@
         tooltipEl.hidden = true;
         return;
       }
-      tooltipEl.innerHTML = config.formatDayTooltip(stat, doyToDateLabel(doy));
+      const digits = config.digits || 0;
+      const shown = {
+        mean: window.KIS.num(stat.mean, digits),
+        min: window.KIS.num(stat.min, digits),
+        max: window.KIS.num(stat.max, digits),
+        minYear: stat.minYear,
+        maxYear: stat.maxYear,
+      };
+      tooltipEl.innerHTML = config.formatDayTooltip(shown, doyToDateLabel(doy));
       tooltipEl.hidden = false;
-
-      const wrapBox = opts.svgEl.parentElement.getBoundingClientRect();
-      const tw = tooltipEl.offsetWidth;
-      const th = tooltipEl.offsetHeight;
-      const margin = 6;
-
-      let left = clientX - wrapBox.left - tw / 2;
-      left = Math.max(margin, Math.min(left, wrapBox.width - tw - margin));
-
-      let top = clientY - wrapBox.top - th - 14;
-      if (top < margin) top = clientY - wrapBox.top + 18; // flip below the pointer near the top edge
-
-      tooltipEl.style.left = left + "px";
-      tooltipEl.style.top = top + "px";
+      window.KIS.placeTooltip(tooltipEl, tooltipEl.parentElement, clientX, clientY);
     }
 
     function drawGuide(doy) {
@@ -302,6 +298,7 @@
 
       overlay.on("pointerdown", (event) => {
         resetIdleTimer();
+        if (opts.onPointer) opts.onPointer();
         const [mx] = d3.pointer(event, gStrands.node());
         const doy = Math.min(365, Math.max(1, Math.round(xScale.invert(mx))));
         drawGuide(doy);
@@ -311,20 +308,11 @@
       overlay.on("pointerleave", hideTooltip);
     }
 
-    window.addEventListener("resize", debounce(() => {
+    window.addEventListener("resize", window.KIS.debounce(() => {
       if (data) render(data, Object.assign({}, config, { preserveYear: true }));
     }, 200));
 
     return { render, setYear };
-  }
-
-  function debounce(fn, ms) {
-    let t;
-    return function () {
-      clearTimeout(t);
-      const args = arguments;
-      t = setTimeout(() => fn.apply(null, args), ms);
-    };
   }
 
   // A handful of extreme record days shouldn't stretch the colour scale so
