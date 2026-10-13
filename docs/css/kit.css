@@ -80,7 +80,8 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-view="mobile"] .poster .f2 { top: auto; bottom: 0; left: 0; right: auto; width: 58%; height: 70px; }
 :root[data-view="mobile"] .poster .f3 { bottom: 0; right: 0; width: 42%; height: 70px; }
 :root[data-view="mobile"] .poster .l2 { right: auto; left: calc(58% - 40px); top: auto; bottom: 28px; width: 80px; height: 80px; }
-:root[data-view="mobile"] .poster .l3 { width: 150vw; right: -70%; top: -20%; }
+/* phone: only the top of the large outline shows, rising out of the colour band, so it never crosses the text */
+:root[data-view="mobile"] .poster .l3 { width: 95vw; right: -25%; top: auto; bottom: 0; transform: translateY(70%); }
 
 /* ---------- Page body ---------------------------------------------------- */
 .page { padding: 20px var(--gutter) 40px; max-width: 1400px; margin: 0 auto; }
@@ -98,14 +99,14 @@ p.text { font-size: 16px; line-height: 1.55; max-width: 46em; margin: 0 0 12px; 
 .lab-stage { grid-area: stage; min-width: 0; }
 .lab-post { grid-area: post; min-width: 0; }
 :root[data-view="desktop"] .lab {
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(min(320px, 45%), 420px);
   grid-template-areas: "stage pre" "stage post";
   grid-template-rows: auto 1fr;
 }
 :root[data-view="desktop"] .lab-stage { position: sticky; top: calc(var(--head-h) + 12px); }
 /* a square stage that fits the screen on the desktop */
 .stage-frame.square { aspect-ratio: 1 / 1; }
-:root[data-view="desktop"] .stage-frame.fit { width: min(100%, calc(100svh - var(--head-h) - var(--fit-offset, 230px))); min-width: 360px; margin: 0 auto; }
+:root[data-view="desktop"] .stage-frame.fit { width: min(100%, calc(100svh - var(--head-h) - var(--fit-offset, 230px))); min-width: min(360px, 100%); margin: 0 auto; }
 
 /* ---------- Stage frame, fullscreen button, first-hint badge ------------- */
 .stage-frame { position: relative; border: var(--line-width) solid var(--line); background: var(--stage-bg); }
