@@ -107,6 +107,78 @@
     }
   };
 
+  // ---- seasons ------------------------------------------------------------------------
+  // Day-of-year ranges (1-365, Feb 29 dropped by build_data.py) of the four
+  // meteorological seasons as [startDoy, endDoy, yearOffset]. Winter is
+  // labelled by the year its Jan/Feb fall in: last year's December plus this
+  // year's Jan/Feb. "full" (or anything else) is the whole calendar year.
+  const SEASON_RANGES = {
+    winter: [[335, 365, -1], [1, 59, 0]],
+    spring: [[60, 151, 0]],
+    summer: [[152, 243, 0]],
+    autumn: [[244, 334, 0]]
+  };
+
+  // Per-day values of a strand; precipitation strands are a running total
+  // (see build_data.py) and are differenced back into daily amounts.
+  const dailyValues = (strand, isCumulative) => {
+    if (!isCumulative) return strand;
+    const out = new Array(strand.length);
+    let prev = 0;
+    for (let i = 0; i < strand.length; i++) {
+      // a missing day stays missing (and doesn't reset the running total)
+      if (strand[i] === null || strand[i] === undefined) { out[i] = null; continue; }
+      out[i] = strand[i] - prev;
+      prev = strand[i];
+    }
+    return out;
+  };
+
+  // Every valid daily value of one labelled year of a season.
+  const seasonValues = (data, year, season, isCumulative) => {
+    const ranges = SEASON_RANGES[season] || [[1, 365, 0]];
+    const out = [];
+    for (const [startDoy, endDoy, yearOffset] of ranges) {
+      const strand = data.strands[String(+year + yearOffset)];
+      if (!strand) continue;
+      const daily = dailyValues(strand, isCumulative);
+      for (let doy = startDoy; doy <= endDoy; doy++) {
+        const v = daily[doy - 1];
+        if (v !== null && v !== undefined) out.push(v);
+      }
+    }
+    return out;
+  };
+
+  // Only years the build marked complete (listed in annual_metric) count;
+  // winter also needs the previous December.
+  const seasonComplete = (data, year, season) =>
+    (season === 'winter' ? [+year - 1, +year] : [+year]).every(y => data.annual_metric[String(y)] !== undefined);
+
+  // One number per year/season: mean of its days, or their sum (aggregate "sum").
+  const summarise = (values, aggregate) => {
+    const sum = values.reduce((a, b) => a + b, 0);
+    return aggregate === 'sum' ? sum : sum / values.length;
+  };
+
+  // The station data as seen through one season: annual_metric holds the
+  // season's value per complete year, and both reference periods get the
+  // mean of those. "full" returns the data unchanged (the build's own values).
+  const seasonalData = (data, season, config) => {
+    if (!SEASON_RANGES[season]) return data;
+    const annual = {};
+    for (const y of data.years) {
+      if (!seasonComplete(data, y, season)) continue;
+      const values = seasonValues(data, y, season, !!config.dailyIsCumulative);
+      if (values.length) annual[String(y)] = summarise(values, config.aggregate);
+    }
+    const period = p => {
+      const vals = Object.keys(annual).filter(y => +y >= p.start && +y <= p.end).map(y => annual[y]);
+      return Object.assign({}, p, { mean_annual_metric: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null });
+    };
+    return Object.assign({}, data, { annual_metric: annual, period_a: period(data.period_a), period_b: period(data.period_b) });
+  };
+
   // ---- reference period select (both pages) ----------------------------------------
   const fillPeriodSelect = (select, data, activeKey) => {
     select.innerHTML = '';
@@ -230,6 +302,7 @@
     num, signed, tick, loadJSON, loadStations, fillStationSelect,
     fillVariableNotes, fillStationNote, fillSeg, fillPeriodSelect, setPlaying, wireDialog, quiz, parseAnswer,
     placeTooltip, debounce,
+    seasons: { RANGES: SEASON_RANGES, values: seasonValues, complete: seasonComplete, summarise, seasonalData },
     // LOCAL: default station when the page opens (Frankfurt/Main)
     DEFAULT_STATION_ID: '01420'
   };

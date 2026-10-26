@@ -149,9 +149,12 @@ window.TEXTS = {
     annualAria: (variableLabel, firstYear, lastYear) =>
       `${variableLabel} je Jahr im Vergleich zur Referenzperiode, ${firstYear}–${lastYear}`,
     distributionAria: (variableLabel) => `Verteilung der Tageswerte (${variableLabel}) im Vergleich zur Referenzperiode`,
-    annualCaption:
-      'Jeder Balken zeigt den tatsächlichen Jahreswert. Die gestrichelte Linie markiert das Mittel der Referenzperiode, ' +
-      'die Farbe die Abweichung davon. Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt.',
+    // seasonLabel is null for the whole year.
+    annualCaption: (seasonLabel) =>
+      `Jeder Balken zeigt den tatsächlichen Wert ${seasonLabel ? `des ${seasonLabel}s` : 'des Jahres'}. ` +
+      'Die gestrichelte Linie markiert das Mittel der Referenzperiode, die Farbe die Abweichung davon. ' +
+      'Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt.' +
+      (seasonLabel === 'Winter' ? ' Ein Winter gehört zu dem Jahr, in dem sein Januar und Februar liegen; der Dezember davor zählt mit.' : ''),
     // seasonLabel is null for the whole year.
     distributionCaption: (seasonLabel, start, end) =>
       `Die farbige Fläche zeigt, wie die ${seasonLabel ? `${seasonLabel}-Tageswerte` : 'Tageswerte'} im ausgewählten Jahr verteilt sind. ` +
@@ -171,19 +174,19 @@ window.TEXTS = {
       lastTen: {
         question: (name, first, last) => `Wie viele der Jahre ${first}–${last} waren in ${name} wärmer als das Mittel 1961–1990?`,
         unit: '',
-        hint: 'Stell Temperatur, Jahresbalken und Referenz 1961–1990 ein und zähl ganz rechts die roten Balken.',
+        hint: 'Stell Temperatur, Jahresbalken, Jahreszeit „Jahr“ und Referenz 1961–1990 ein und zähl ganz rechts die roten Balken.',
         solved: (name, answer) => `Richtig: ${answer}. Ein kaltes Jahr ist inzwischen die Ausnahme.`
       },
       coldest: {
         question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am kältesten?`,
         unit: '',
-        hint: 'Stell Temperatur und Jahresbalken ein und such den längsten blauen Balken. Tippe darauf, um das Jahr zu sehen.',
+        hint: 'Stell Temperatur, Jahresbalken und Jahreszeit „Jahr“ ein und such den längsten blauen Balken. Tippe darauf, um das Jahr zu sehen.',
         solved: (name, answer) => `Richtig: ${answer}. Die kältesten Jahre liegen weit zurück.`
       },
       rain2018: {
         question: (name) => `Wie viel Niederschlag fiel 2018 in ${name}? (Jahressumme)`,
         unit: 'mm',
-        hint: 'Wähl Niederschlag und Jahresbalken und tippe auf den Balken 2018.',
+        hint: 'Wähl Niederschlag, Jahresbalken und Jahreszeit „Jahr“ und tippe auf den Balken 2018.',
         solved: (name, answer) => `Richtig: rund ${answer} mm. 2018 war ein sehr trockenes Jahr.`
       }
     },

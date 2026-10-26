@@ -198,6 +198,53 @@ def build_period(
     return {"start": start, "end": end, "daily_series": daily_series, "mean_annual_metric": mean_annual_metric}
 
 
+# Meteorological seasons as (start_doy, end_doy, year_offset) on the 365-day
+# axis; winter is labelled by the year of its Jan/Feb and takes the December
+# before. Must match SEASON_RANGES in docs/js/shared.js.
+SEASONS = {
+    "winter": [(335, 365, -1), (1, 59, 0)],
+    "spring": [(60, 151, 0)],
+    "summer": [(152, 243, 0)],
+    "autumn": [(244, 334, 0)],
+}
+
+
+def seasonal_metric(payload: dict, spec: dict, season: str) -> dict[str, float]:
+    """One value per complete year for one season (same rule as the website:
+    every calendar year involved must be in annual_metric)."""
+    strands, annual = payload["strands"], payload["annual_metric"]
+    out: dict[str, float] = {}
+    for year in payload["years"]:
+        needed = [year - 1, year] if season == "winter" else [year]
+        if not all(str(y) in annual for y in needed):
+            continue
+        values: list[float] = []
+        for start, end, offset in SEASONS[season]:
+            strand = strands.get(str(year + offset))
+            if strand is None:
+                continue
+            if spec["strand_mode"] == "cumulative":
+                daily, prev = [], 0.0
+                for v in strand:
+                    if v is None:
+                        daily.append(None)
+                        continue
+                    daily.append(v - prev)
+                    prev = v
+            else:
+                daily = strand
+            values += [v for v in daily[start - 1 : end] if v is not None]
+        if values:
+            out[str(year)] = sum(values) if spec["annual_agg"] == "sum" else sum(values) / len(values)
+    return out
+
+
+def update_ranges(ranges: dict, values: list[float]) -> None:
+    if values:
+        ranges["min"] = min(ranges.get("min", min(values)), min(values))
+        ranges["max"] = max(ranges.get("max", max(values)), max(values))
+
+
 def clip(period: tuple[int, int], first_year: int, last_year: int) -> tuple[int, int]:
     start, end = period
     return max(start, first_year), min(end, last_year)
@@ -236,10 +283,10 @@ def main() -> None:
     stations_meta = json.loads((RAW_DIR / "stations_meta.json").read_text(encoding="utf-8"))
 
     index = []
-    # lowest/highest annual value per variable across all stations - the
-    # Klimatrend bar chart starts its y-axis at the overall minimum, so the
-    # axis floor stays the same when switching stations
-    annual_ranges: dict[str, dict[str, float]] = {}
+    # lowest/highest annual (and per-season) value per variable across all
+    # stations - the Klimatrend bar chart starts its y-axis at the overall
+    # minimum, so the axis floor stays the same when switching stations
+    annual_ranges: dict[str, dict] = {}
     for station_id in STATION_IDS:
         print(f"Building {station_id}...")
         df = load_station_frame(station_id)
@@ -251,10 +298,10 @@ def main() -> None:
 
         for variable_key, spec in VARIABLES.items():
             payload = build_variable_payload(df, variable_key, spec, meta, years_all, first_year, last_year)
-            values = list(payload["annual_metric"].values())
-            if values:
-                r = annual_ranges.setdefault(variable_key, {"min": min(values), "max": max(values)})
-                r["min"], r["max"] = min(r["min"], min(values)), max(r["max"], max(values))
+            r = annual_ranges.setdefault(variable_key, {"seasons": {}})
+            update_ranges(r, list(payload["annual_metric"].values()))
+            for season in SEASONS:
+                update_ranges(r["seasons"].setdefault(season, {}), list(seasonal_metric(payload, spec, season).values()))
             out_dir = OUT_DIR / spec["subdir"]
             out_dir.mkdir(parents=True, exist_ok=True)
             out_path = out_dir / f"{station_id}.json"

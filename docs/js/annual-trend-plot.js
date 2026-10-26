@@ -168,7 +168,12 @@
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const yAxis = d3.axisLeft(y).ticks(6).tickFormat((d) => window.KIS.tick(d)); // the unit stands above the axis
+      // the floor is always labelled, even where it falls between two regular ticks
+      const ticks = y.ticks(6);
+      const floor = y.domain()[0];
+      const step = ticks.length > 1 ? ticks[1] - ticks[0] : 0;
+      if (ticks.length && ticks[0] - floor > step * 0.4) ticks.unshift(floor);
+      const yAxis = d3.axisLeft(y).tickValues(ticks).tickFormat((d) => window.KIS.tick(d)); // the unit stands above the axis
       gAxes.append("g").attr("class", "axis").call(yAxis);
 
       if (config.axisUnit) {

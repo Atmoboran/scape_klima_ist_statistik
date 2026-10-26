@@ -24,29 +24,11 @@
     formatValue: (v) => `${v.toFixed(1)}`,
   };
 
-  // Day-of-year ranges (1-365, Feb 29 already dropped - see build_data.py's
-  // alignment) for the four meteorological seasons, each as [startDoy,
-  // endDoy, yearOffset]. Meteorological winter spans a calendar-year
-  // boundary and is conventionally labelled by the year its Jan/Feb fall
-  // in, so it's built from *last* year's December plus *this* year's
-  // Jan/Feb (yearOffset -1 and 0).
-  const SEASON_RANGES = {
-    winter: [
-      [335, 365, -1],
-      [1, 59, 0],
-    ],
-    spring: [[60, 151, 0]],
-    summer: [[152, 243, 0]],
-    autumn: [[244, 334, 0]],
-  };
+  // Season ranges, per-day values and completeness come from KIS.seasons (js/shared.js),
+  // shared with the annual bars.
+  const seasonValues = (data, year, season, isCumulative) => window.KIS.seasons.values(data, year, season, isCumulative);
 
-  // A year/season only gets a deviation when every calendar year it draws on
-  // is complete (listed in annual_metric, as everywhere else in the app) -
-  // winter also needs the previous December.
-  function isComplete(data, year, season) {
-    const years = season === "winter" ? [year - 1, year] : [year];
-    return years.every((y) => data.annual_metric[String(y)] !== undefined);
-  }
+  const isComplete = (data, year, season) => window.KIS.seasons.complete(data, year, season);
 
   function mean(arr) {
     return arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -79,50 +61,6 @@
       for (let i = 0; i < n; i++) sum += gaussianKernel((x - values[i]) / bandwidth);
       return sum / (n * bandwidth);
     });
-  }
-
-  // strands are either the raw daily value (temperature/sunshine, nulls for
-  // missing days) or a cumulative running total (precipitation, see
-  // build_data.py) - this returns the actual per-day value at every
-  // day-of-year, nulls preserved, so slicing by day-of-year range still
-  // lines up (unlike a null-filtered flat array).
-  function alignedDailyValues(strand, isCumulative) {
-    if (!isCumulative) return strand;
-    const out = new Array(strand.length);
-    let prev = 0;
-    for (let i = 0; i < strand.length; i++) {
-      // a missing day stays missing (and doesn't reset the running total)
-      if (strand[i] === null || strand[i] === undefined) {
-        out[i] = null;
-        continue;
-      }
-      out[i] = strand[i] - prev;
-      prev = strand[i];
-    }
-    return out;
-  }
-
-  // Every valid day-of-year value for one "labelled year" of one season
-  // (or the whole year when season is "full"/unrecognised), pulling in the
-  // previous year's strand too when the season straddles New Year's (winter).
-  function seasonValues(data, year, season, isCumulative) {
-    const ranges = SEASON_RANGES[season];
-    if (!ranges) {
-      const strand = data.strands[String(year)];
-      if (!strand) return [];
-      return alignedDailyValues(strand, isCumulative).filter((v) => v !== null && v !== undefined);
-    }
-    const out = [];
-    for (const [startDoy, endDoy, yearOffset] of ranges) {
-      const strand = data.strands[String(year + yearOffset)];
-      if (!strand) continue;
-      const aligned = alignedDailyValues(strand, isCumulative);
-      for (let doy = startDoy; doy <= endDoy; doy++) {
-        const v = aligned[doy - 1];
-        if (v !== null && v !== undefined) out.push(v);
-      }
-    }
-    return out;
   }
 
   // A robust (97th-percentile) half-width around the mean, so a handful of
@@ -345,10 +283,7 @@
     }
 
     // One number per year/season: mean of its days or their sum (see config.aggregate).
-    function summarise(values) {
-      const sum = values.reduce((a, b) => a + b, 0);
-      return config.aggregate === "sum" ? sum : sum / values.length;
-    }
+    const summarise = (values) => window.KIS.seasons.summarise(values, config.aggregate);
 
     function setYear(year) {
       currentYear = year;

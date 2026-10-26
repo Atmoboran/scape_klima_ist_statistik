@@ -16,7 +16,7 @@
     currentData: null,
     activePeriod: 'period_a',
     chartType: 'annual', // "annual" (per-year bars) or "distribution" (bell-curve shift)
-    season: 'full', // "full" | "winter" | "spring" | "summer" | "autumn" - distribution only
+    season: 'full', // "full" | "winter" | "spring" | "summer" | "autumn" - both views
     annualPlot: null,
     distPlot: null,
     distPlayTimer: null
@@ -158,7 +158,6 @@
     const isDist = state.chartType === 'distribution';
     el.annualWrap.hidden = isDist;
     el.tooltip.hidden = true;
-    el.seasonGroup.hidden = !isDist;
     el.distTimelineWrap.hidden = !isDist;
     el.distWrap.hidden = !isDist;
     if (state.currentData) updateCaption();
@@ -173,6 +172,7 @@
     if (state.season === key) return;
     state.season = key;
     renderSeasonToggle();
+    renderAnnual();
     renderDistribution(true);
   };
 
@@ -186,21 +186,23 @@
 
   // Lowest annual value of all stations, rounded down to a step that only
   // depends on the variable's overall range - so every station gets the same floor.
-  const annualFloor = variable => {
-    const r = state.annualRanges && state.annualRanges[variable];
+  const annualFloor = (variable, season) => {
+    const v = state.annualRanges && state.annualRanges[variable];
+    const r = v && (season === 'full' ? v : v.seasons && v.seasons[season]);
     if (!r) return null;
     const step = d3.tickStep(r.min, r.max, 6);
     return Math.floor(r.min / step) * step;
   };
 
   const renderAnnual = () => {
-    const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
+    // for a season: each year's value and the reference means come from that season only
+    const data = KIS.seasons.seasonalData(state.currentData, state.season, config);
     state.annualPlot.render(data, {
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
-      yFloor: annualFloor(state.currentVariable),
+      yFloor: annualFloor(state.currentVariable, state.season),
       activePeriod: state.activePeriod,
       formatValue: config.formatValue,
       formatDiff: config.formatDiff,
@@ -247,7 +249,7 @@
       html = t('trend.distributionCaption', seasonLabel(), period.start, period.end);
       if (state.season === 'full' && state.currentVariable === 'temperature') html += t('trend.bimodalNote');
     } else {
-      html = t('trend.annualCaption');
+      html = t('trend.annualCaption', seasonLabel());
     }
     el.topicChart.innerHTML = `<p>${html}</p>`;
   };

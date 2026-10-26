@@ -17,11 +17,14 @@ Two parts, reachable from the buttons in the header:
    das mit dem Klimawandel zu tun?" (drawn when the topic is opened).
 2. **Klimatrend** (`docs/trend.html`) – annual bars with a 10-year moving
    average, or the distribution of daily values (bell curve) of one year
-   against the reference period, for the whole year or one season, with its
-   own timeline. The bar chart's y-axis starts at the lowest annual value
-   of all stations (`data/processed/annual_ranges.json`, written by
-   `build_data.py`), rounded down to a round number – the same floor at
-   every station, not 0. Under the year in the
+   against the reference period, with its own timeline. Both views share a
+   season filter (Jahr / Winter / Frühling / Sommer / Herbst; winter = the
+   December before plus January and February); the seasonal values and
+   reference means are computed in the browser from the daily data
+   (`KIS.seasons` in `js/shared.js`). The bar chart's y-axis starts at the
+   lowest value of all stations for that season
+   (`data/processed/annual_ranges.json`, written by `build_data.py`),
+   rounded down to a round number – the same floor at every station, not 0. Under the year in the
    distribution view: that year's (or season's) deviation from the
    reference period – mean of the days for temperature, total for
    precipitation and sunshine; "lückenhaft" for incomplete years.
