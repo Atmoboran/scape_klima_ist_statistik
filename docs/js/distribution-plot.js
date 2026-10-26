@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 28, right: 54, bottom: 34, left: 34 };
+  const MARGIN = { top: 50, right: 14, bottom: 34, left: 34 }; // top: room for the year and the buttons
   const SAMPLE_COUNT = 160;
 
   const DEFAULT_CONFIG = {

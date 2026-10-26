@@ -48,10 +48,12 @@ button, input, select { font: inherit; color: inherit; }
   font-weight: var(--fw-medium); font-size: 11px; letter-spacing: .05em; text-transform: var(--caps); cursor: pointer; white-space: nowrap;
 }
 :root[data-view="mobile"] .top { position: static; }
-:root[data-view="mobile"] .top-right:has(.nav) { width: 100%; justify-content: space-between; }
+:root[data-view="mobile"] .top { align-items: center; padding-top: 12px; padding-bottom: 10px; gap: 10px; }
+/* phone: the view toggle sits on the logo row, the part buttons get a row of their own below */
+:root[data-view="mobile"] .top-right { display: contents; }
+:root[data-view="mobile"] .view-toggle { order: 1; margin-left: auto; min-height: 34px; }
 :root[data-view="mobile"] .nav { flex: 1 1 100%; order: 2; }
-:root[data-view="mobile"] .nav a, :root[data-view="mobile"] .nav button { flex: 1 1 auto; justify-content: center; padding: 6px 8px; font-size: 12px; }
-:root[data-view="mobile"] .view-toggle { margin-left: auto; }
+:root[data-view="mobile"] .nav a, :root[data-view="mobile"] .nav button { flex: 1 1 auto; justify-content: center; min-height: 36px; padding: 4px 8px; font-size: 12px; }
 
 /* ---------- Poster header (three CD layers) ------------------------------ */
 .poster { position: relative; overflow: hidden; isolation: isolate; min-height: 280px; padding: 36px var(--gutter) 44px; }
@@ -75,7 +77,7 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-view="desktop"] .poster.small .kicker { margin-bottom: 8px; }
 :root[data-view="desktop"] .poster.small .lead { font-size: 17px; }
 :root[data-view="desktop"] .poster.small .l3 { top: -60%; width: min(44vw, 540px); }
-:root[data-view="mobile"] .poster, :root[data-view="mobile"] .poster.small { min-height: 0; padding: 26px var(--gutter) 96px; }
+:root[data-view="mobile"] .poster, :root[data-view="mobile"] .poster.small { min-height: 0; padding: 20px var(--gutter) 84px; }
 :root[data-view="mobile"] .poster-text { max-width: 100%; }
 :root[data-view="mobile"] .poster .f2 { top: auto; bottom: 0; left: 0; right: auto; width: 58%; height: 70px; }
 :root[data-view="mobile"] .poster .f3 { bottom: 0; right: 0; width: 42%; height: 70px; }

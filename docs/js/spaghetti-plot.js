@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 22, right: 54, bottom: 30, left: 66 }; // right: room for the fullscreen button
+  const MARGIN = { top: 46, right: 12, bottom: 28, left: 40 }; // top: room for the buttons inside the chart; unit sits above the y-axis
   const MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
   const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
@@ -149,16 +149,16 @@
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => window.KIS.tick(d) + config.axisSuffix);
+      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => window.KIS.tick(d)); // the unit stands above the axis
       gAxes.append("g").attr("class", "axis").call(yAxis);
 
       if (config.axisUnit) {
         gAxes
           .append("text")
           .attr("class", "axis-unit-label")
-          .attr("x", -MARGIN.left + 4)
-          .attr("y", -6)
-          .attr("text-anchor", "start")
+          .attr("x", 0)
+          .attr("y", -12)
+          .attr("text-anchor", "middle")
           .text(config.axisUnit);
       }
     }

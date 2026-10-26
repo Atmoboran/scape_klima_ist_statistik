@@ -43,34 +43,55 @@
 <main class="page">
   <div class="lab">
     <div class="lab-pre">
-      <div class="field">
-        <div class="field-head">
-          <label for="trend-variable-select" class="section-label" data-t="pickers.variable"></label>
-          <button type="button" class="info" aria-controls="variable-note" data-t-aria="pickers.variableInfoAria"></button>
+      <div class="pickers">
+        <div class="pick">
+          <div class="pick-head">
+            <label for="trend-variable-select" class="section-label" data-t="pickers.variable"></label>
+            <button type="button" class="info" aria-controls="variable-note" data-t-aria="pickers.variableInfoAria"></button>
+          </div>
+          <select id="trend-variable-select" class="select">
+            <option value="temperature" data-t="variables.temperature.label"></option>
+            <option value="precipitation" data-t="variables.precipitation.label"></option>
+            <option value="sunshine" data-t="variables.sunshine.label"></option>
+          </select>
         </div>
-        <select id="trend-variable-select" class="select">
-          <option value="temperature" data-t="variables.temperature.label"></option>
-          <option value="precipitation" data-t="variables.precipitation.label"></option>
-          <option value="sunshine" data-t="variables.sunshine.label"></option>
-        </select>
-        <div class="info-note" id="variable-note" hidden></div>
-      </div>
-      <div class="field">
-        <div class="field-head">
-          <label for="trend-station-select" class="section-label" data-t="pickers.station"></label>
-          <button type="button" class="info" aria-controls="station-note" data-t-aria="pickers.stationInfoAria"></button>
+        <div class="pick">
+          <div class="pick-head">
+            <label for="trend-station-select" class="section-label" data-t="pickers.station"></label>
+            <button type="button" class="info" aria-controls="station-note" data-t-aria="pickers.stationInfoAria"></button>
+          </div>
+          <select id="trend-station-select" class="select"></select>
         </div>
-        <select id="trend-station-select" class="select"></select>
-        <div class="info-note" id="station-note" hidden></div>
+        <div class="pick">
+          <div class="pick-head">
+            <label for="trend-period-select" class="section-label" data-t="common.referencePeriodShort"></label>
+            <button type="button" class="info" aria-controls="period-note" data-t-aria="common.periodInfoAria"></button>
+          </div>
+          <select id="trend-period-select" class="select"></select>
+        </div>
       </div>
-      <div class="field">
-        <span class="section-label" data-t="trend.viewLabel"></span>
-        <div class="seg" id="trend-mode-toggle"></div>
+      <div class="info-note" id="variable-note" hidden></div>
+      <div class="info-note" id="station-note" hidden></div>
+      <div class="info-note" id="period-note" hidden data-t-html="common.periodInfo"></div>
+
+      <div class="seg-row">
+        <div class="seg" id="trend-mode-toggle" role="group" data-t-aria="trend.viewLabel"></div>
+      </div>
+      <div class="seg-row" id="dist-season-group" hidden>
+        <div class="seg" id="dist-season-toggle" role="group" data-t-aria="trend.seasonLabel"></div>
       </div>
     </div>
 
     <div class="lab-stage">
       <div class="stage-frame chart-frame" id="stage-frame">
+        <div class="stage-tools" id="dist-tools" hidden>
+          <button type="button" class="tool" id="dist-prev-btn" data-t-aria="timeline.prevAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 5L8 12l9 7V5z"/></svg></button>
+          <button type="button" class="tool play pulse" id="dist-play-btn" data-t-aria="timeline.playAria">
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8V4z"/></svg>
+            <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12"/></svg>
+          </button>
+          <button type="button" class="tool" id="dist-next-btn" data-t-aria="timeline.nextAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l9 7-9 7V5z"/></svg></button>
+        </div>
         <div class="chart-pane" id="trend-annual-wrap">
           <svg id="trend-chart" class="chart" role="img"></svg>
         </div>
@@ -84,59 +105,31 @@
         <div id="trend-tooltip" class="tooltip" hidden></div>
         <p class="load-error" id="load-error" hidden data-t="loadError"></p>
       </div>
-      <p class="hint" id="trend-caption"></p>
-      <p class="hint" id="dist-caption" hidden></p>
+      <div class="timeline" id="dist-timeline-wrap" hidden>
+        <span class="year-bound" id="dist-year-start">–</span>
+        <input type="range" id="dist-year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
+        <span class="year-bound" id="dist-year-end">–</span>
+      </div>
     </div>
 
     <div class="lab-post">
-      <div id="dist-timeline-wrap" hidden>
-        <div class="section-label" data-t="timeline.label"></div>
-        <div class="timeline">
-          <span class="year-bound" id="dist-year-start">–</span>
-          <input type="range" id="dist-year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
-          <span class="year-bound" id="dist-year-end">–</span>
-        </div>
-        <div class="btn-row transport">
-          <button type="button" class="btn step" id="dist-prev-btn" data-t-aria="timeline.prevAria">&#9664;</button>
-          <button type="button" class="btn primary play" id="dist-play-btn" data-t-aria="timeline.playAria">
-            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8V4z" fill="currentColor"/></svg>
-            <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" fill="currentColor"/></svg>
-            <span id="dist-play-label" data-t="timeline.play"></span>
-          </button>
-          <button type="button" class="btn step" id="dist-next-btn" data-t-aria="timeline.nextAria">&#9654;</button>
-        </div>
-      </div>
-
-      <div class="field">
-        <div class="field-head">
-          <span class="section-label" data-t="common.referencePeriodLabel"></span>
-          <button type="button" class="info" aria-controls="period-note" data-t-aria="common.periodInfoAria"></button>
-        </div>
-        <div class="seg" id="trend-period-toggle"></div>
-        <div class="info-note" id="period-note" hidden data-t-html="common.periodInfo"></div>
-      </div>
-      <div class="field" id="dist-season-group" hidden>
-        <span class="section-label" data-t="trend.seasonLabel"></span>
-        <div class="seg" id="dist-season-toggle"></div>
-      </div>
-
-      <div class="tasks" id="trend-tasks">
-        <h3 data-t="trend.tasks.title"></h3>
-        <ul>
-          <li data-task="warmest"><span class="box"></span><span data-t="trend.tasks.warmest"></span></li>
-          <li data-task="dist"><span class="box"></span><span data-t="trend.tasks.dist"></span></li>
-        </ul>
-        <p class="status" id="task-status" aria-live="polite"></p>
-      </div>
-      <div class="merke locked" data-for="trend-tasks">
-        <h3 data-t="trend.merke.title"></h3>
-        <p data-t="trend.merke.text"></p>
-        <span class="locked-note"></span>
-      </div>
+      <button type="button" class="btn tasks-open" id="tasks-open" aria-haspopup="dialog" aria-controls="tasks-dialog">
+        <span data-t="quiz.open"></span> <span class="quiz-progress" id="quiz-progress"></span>
+      </button>
     </div>
   </div>
 
+  <dialog class="quiz-dialog" id="tasks-dialog" aria-labelledby="tasks-title">
+    <div class="quiz-head">
+      <h2 id="tasks-title" data-t="quiz.title"></h2>
+      <button type="button" class="quiz-close" id="tasks-close" data-t-aria="quiz.closeAria">&times;</button>
+    </div>
+    <p class="quiz-intro" data-t="quiz.intro"></p>
+    <ol class="quiz" id="quiz"></ol>
+  </dialog>
+
   <div class="topics">
+    <details class="topic"><summary data-t="common.topics.chartTitle"></summary><div class="topic-body" id="topic-chart"></div></details>
     <details class="topic"><summary data-t="common.topics.calcTitle"></summary><div class="topic-body" id="topic-calc"></div></details>
     <details class="topic"><summary data-t="common.topics.climateTitle"></summary><div class="topic-body" id="topic-climate"></div></details>
   </div>

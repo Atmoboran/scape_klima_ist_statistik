@@ -9,7 +9,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 22, right: 54, bottom: 30, left: 66 };
+  const MARGIN = { top: 46, right: 12, bottom: 28, left: 40 }; // top: room for the buttons inside the chart; unit sits above the y-axis
   const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // non-leap, matches the 365-day daily series
   const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
@@ -155,16 +155,16 @@
         .attr("transform", `translate(0,${innerH})`)
         .call(xAxis);
 
-      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => window.KIS.tick(d) + config.axisSuffix);
+      const yAxis = d3.axisLeft(yScale).ticks(6).tickFormat((d) => window.KIS.tick(d)); // the unit stands above the axis
       gAxes.append("g").attr("class", "axis").call(yAxis);
 
       if (config.axisUnit) {
         gAxes
           .append("text")
           .attr("class", "axis-unit-label")
-          .attr("x", -MARGIN.left + 4)
-          .attr("y", -6)
-          .attr("text-anchor", "start")
+          .attr("x", 0)
+          .attr("y", -12)
+          .attr("text-anchor", "middle")
           .text(config.axisUnit);
       }
     }

@@ -1,6 +1,7 @@
 // Page "Klimatrend" (trend.html): annual bars with a 10-year moving average,
 // or the distribution of daily values (bell curve) for one year against the
-// reference period, by season, with its own timeline. Tasks and topics.
+// reference period, by season, with play controls inside the chart. Tasks
+// dialog and topics.
 (() => {
   'use strict';
 
@@ -18,9 +19,7 @@
     season: 'full', // "full" | "winter" | "spring" | "summer" | "autumn" - distribution only
     annualPlot: null,
     distPlot: null,
-    distPlayTimer: null,
-    seenEarly: false, // tasks: a year before 1970 / after 2010 seen in the distribution view
-    seenLate: false
+    distPlayTimer: null
   };
 
   const el = {
@@ -30,14 +29,14 @@
     chart: $('trend-chart'),
     tooltip: $('trend-tooltip'),
     modeToggle: $('trend-mode-toggle'),
-    periodToggle: $('trend-period-toggle'),
-    caption: $('trend-caption'),
+    periodSelect: $('trend-period-select'),
+    topicChart: $('topic-chart'),
     seasonGroup: $('dist-season-group'),
     seasonToggle: $('dist-season-toggle'),
     annualWrap: $('trend-annual-wrap'),
     distWrap: $('trend-distribution-wrap'),
     distTimelineWrap: $('dist-timeline-wrap'),
-    distCaption: $('dist-caption'),
+    distTools: $('dist-tools'),
     distChart: $('distribution-chart'),
     distributionYear: $('distribution-year'),
     distributionStationLabel: $('distribution-station-label'),
@@ -45,7 +44,6 @@
     distYearStart: $('dist-year-start'),
     distYearEnd: $('dist-year-end'),
     distPlayBtn: $('dist-play-btn'),
-    distPlayLabel: $('dist-play-label'),
     distPrevBtn: $('dist-prev-btn'),
     distNextBtn: $('dist-next-btn')
   };
@@ -53,26 +51,35 @@
   const SEASON_KEYS = ['full', 'winter', 'spring', 'summer', 'autumn'];
   const seasonLabel = () => (state.season === 'full' ? null : t('trend.seasons.' + state.season));
 
-  // ---- first hint + tasks ---------------------------------------------------
-  const hintBadge = window.SCAPE.badge(el.frame);
-  hintBadge.show(t('trend.badge'));
-  const firstTouch = () => hintBadge.hide();
+  // ---- first interaction: the play button stops glowing ---------------------
+  const firstTouch = () => el.distPlayBtn.classList.remove('pulse');
+  const onAnnualYear = () => {};
 
-  const tasks = window.SCAPE.tasks($('trend-tasks'));
-  const warmestYear = () => {
-    const am = state.currentData.annual_metric;
-    return Object.keys(am).reduce((best, y) => (best === null || am[y] > am[best] ? y : best), null);
-  };
-  const onAnnualYear = (year, type) => {
-    if (type === 'pointerdown') firstTouch();
-    if (state.currentVariable !== 'temperature') return;
-    if (String(year) === warmestYear() && tasks.done('warmest')) KIS.status(t('trend.tasks.doneWarmest', year));
-  };
-  const noteDistYear = year => {
-    if (state.chartType !== 'distribution' || state.currentVariable !== 'temperature' || !year) return;
-    if (year < 1970) state.seenEarly = true;
-    if (year > 2010) state.seenLate = true;
-    if (state.seenEarly && state.seenLate && tasks.done('dist')) KIS.status(t('trend.tasks.doneDist'));
+  // ---- tasks dialog: questions about Frankfurt/Main --------------------------
+  const setupQuiz = async () => {
+    KIS.wireDialog($('tasks-open'), $('tasks-dialog'), $('tasks-close'));
+    const id = KIS.DEFAULT_STATION_ID;
+    const [temp, rain] = await Promise.all([
+      KIS.loadJSON(`data/processed/temperature/${id}.json`),
+      KIS.loadJSON(`data/processed/precipitation/${id}.json`)
+    ]);
+    const name = temp.meta.name;
+    const am = temp.annual_metric;
+    const pa = temp.period_a.mean_annual_metric;
+    const items = [];
+    const lastTen = temp.years.slice(-10).filter(y => am[y] !== undefined);
+    if (pa !== null && lastTen.length) {
+      items.push({
+        key: 'trend.quiz.lastTen', args: [name, lastTen[0], lastTen[lastTen.length - 1]],
+        answer: lastTen.filter(y => am[y] > pa).length, digits: 0, tolerance: 0
+      });
+    }
+    const coldest = Object.keys(am).reduce((best, y) => (best === null || am[y] < am[best] ? y : best), null);
+    if (coldest) items.push({ key: 'trend.quiz.coldest', args: [name], answer: +coldest, digits: 0, tolerance: 0 });
+    if (rain.annual_metric['2018'] !== undefined) {
+      items.push({ key: 'trend.quiz.rain2018', args: [name], answer: rain.annual_metric['2018'], digits: 0, tolerance: 5 });
+    }
+    KIS.quiz($('quiz'), $('quiz-progress'), items);
   };
 
   const main = async () => {
@@ -88,6 +95,7 @@
     renderModeToggle();
     renderSeasonToggle();
     setupDistTimeline();
+    el.periodSelect.addEventListener('change', () => setActivePeriod(el.periodSelect.value));
 
     el.select.addEventListener('change', () => {
       firstTouch();
@@ -118,7 +126,7 @@
     KIS.fillVariableNotes(config);
     KIS.fillStationNote(data);
 
-    renderPeriodToggle(data);
+    KIS.fillPeriodSelect(el.periodSelect, data, state.activePeriod);
     setupDistYearBounds(data);
     renderAnnual();
     renderDistribution();
@@ -147,12 +155,12 @@
   const updateChartVisibility = () => {
     const isDist = state.chartType === 'distribution';
     el.annualWrap.hidden = isDist;
-    el.caption.hidden = isDist;
     el.tooltip.hidden = true;
     el.seasonGroup.hidden = !isDist;
     el.distTimelineWrap.hidden = !isDist;
+    el.distTools.hidden = !isDist;
     el.distWrap.hidden = !isDist;
-    el.distCaption.hidden = !isDist;
+    if (state.currentData) updateCaption();
   };
 
   const renderSeasonToggle = () => {
@@ -167,16 +175,10 @@
     renderDistribution(true);
   };
 
-  const renderPeriodToggle = data => {
-    const items = ['period_a', 'period_b'].map(key => ({ key, label: `${data[key].start}–${data[key].end}` }));
-    KIS.fillSeg(el.periodToggle, items, state.activePeriod, setActivePeriod);
-  };
-
   const setActivePeriod = key => {
     firstTouch();
     if (state.activePeriod === key) return;
     state.activePeriod = key;
-    renderPeriodToggle(state.currentData);
     renderAnnual();
     renderDistribution(true);
   };
@@ -194,9 +196,7 @@
       formatDiff: config.formatDiff,
       incompleteLabel: config.incompleteLabel
     });
-    const period = data[state.activePeriod];
-    const tooFewYears = period.mean_annual_metric === null || period.mean_annual_metric === undefined;
-    el.caption.innerHTML = tooFewYears ? t('common.periodTooFewYears') : t('trend.annualCaption');
+    updateCaption();
   };
 
   // preserveYear: keep the year the distribution timeline is scrubbed to
@@ -218,24 +218,27 @@
     const idx = preserveYear ? Math.min(+el.distSlider.value, years.length - 1) : years.length - 1;
     el.distSlider.value = idx;
     updateDistYearBadge(years[idx]);
-    updateDistCaption(data);
+    updateCaption();
   }
 
   const updateDistYearBadge = year => {
     el.distributionYear.textContent = year || t('dash');
     el.distributionStationLabel.textContent = t('trend.badgeSub', seasonLabel(), state.currentData.meta.name);
-    noteDistYear(year);
   };
 
-  const updateDistCaption = data => {
-    const period = data[state.activePeriod];
+  // The explanation of the current view lives in the topic "Was sehe ich auf dem Diagramm?" below.
+  const updateCaption = () => {
+    const period = state.currentData[state.activePeriod];
+    let html;
     if (period.mean_annual_metric === null || period.mean_annual_metric === undefined) {
-      el.distCaption.innerHTML = t('common.periodTooFewYears');
-      return;
+      html = t('common.periodTooFewYears');
+    } else if (state.chartType === 'distribution') {
+      html = t('trend.distributionCaption', seasonLabel(), period.start, period.end);
+      if (state.season === 'full' && state.currentVariable === 'temperature') html += t('trend.bimodalNote');
+    } else {
+      html = t('trend.annualCaption');
     }
-    let html = t('trend.distributionCaption', seasonLabel(), period.start, period.end);
-    if (state.season === 'full' && state.currentVariable === 'temperature') html += t('trend.bimodalNote');
-    el.distCaption.innerHTML = html;
+    el.topicChart.innerHTML = `<p>${html}</p>`;
   };
 
   const setupDistYearBounds = data => {
@@ -260,6 +263,7 @@
       showDistYear(+el.distSlider.value);
     });
     el.distPlayBtn.addEventListener('click', () => {
+      firstTouch();
       if (state.distPlayTimer) stopDistPlaying();
       else startDistPlaying();
     });
@@ -275,7 +279,7 @@
 
   const startDistPlaying = () => {
     const years = state.currentData.years;
-    KIS.setPlaying(el.distPlayBtn, el.distPlayLabel, true);
+    KIS.setPlaying(el.distPlayBtn, true);
     let idx = +el.distSlider.value;
     state.distPlayTimer = setInterval(() => {
       idx = (idx + 1) % years.length;
@@ -288,9 +292,10 @@
       clearInterval(state.distPlayTimer);
       state.distPlayTimer = null;
     }
-    KIS.setPlaying(el.distPlayBtn, el.distPlayLabel, false);
+    KIS.setPlaying(el.distPlayBtn, false);
   }
 
   updateChartVisibility();
   main().catch(e => console.error(e));
+  setupQuiz().catch(e => console.error(e));
 })();

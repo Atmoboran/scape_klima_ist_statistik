@@ -107,12 +107,102 @@
     }
   };
 
-  // ---- play button (yellow main action) ------------------------------------------
-  const setPlaying = (btn, labelEl, playing) => {
+  // ---- reference period select (both pages) ----------------------------------------
+  const fillPeriodSelect = (select, data, activeKey) => {
+    select.innerHTML = '';
+    for (const key of ['period_a', 'period_b']) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `${data[key].start}–${data[key].end}`;
+      select.appendChild(opt);
+    }
+    select.value = activeKey;
+  };
+
+  // ---- play button (icon only, inside the chart) -------------------------------------
+  const setPlaying = (btn, playing) => {
     btn.classList.toggle('playing', playing);
-    labelEl.textContent = t(playing ? 'timeline.stop' : 'timeline.play');
     btn.setAttribute('aria-label', t(playing ? 'timeline.stopAria' : 'timeline.playAria'));
   };
+
+  // ---- tasks dialog ------------------------------------------------------------------
+  // Opens the <dialog> from a button; a click on the dimmed backdrop closes it too.
+  const wireDialog = (openBtn, dialog, closeBtn) => {
+    openBtn.addEventListener('click', () => {
+      if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
+    });
+    const close = () => { if (dialog.close) dialog.close(); else dialog.removeAttribute('open'); };
+    closeBtn.addEventListener('click', close);
+    dialog.addEventListener('click', e => { if (e.target === dialog) close(); });
+  };
+
+  // Tolerant number input: decimal comma, real minus, "+", spaces and units.
+  const parseAnswer = text => {
+    const cleaned = String(text).replace(/[−–]/g, '-').replace(/\s/g, '').replace(/,/g, '.').replace(/[^0-9.+-]/g, '');
+    if (!/\d/.test(cleaned)) return null;
+    const v = parseFloat(cleaned);
+    return Number.isFinite(v) ? v : null;
+  };
+
+  // Tasks with an answer field and a "Prüfen" button.
+  //   items: [{ key: 'daily.quiz.dev2003', args: [stationName, …], answer, digits, tolerance }]
+  // Texts come from <key>.question / .unit / .hint / .solved in content/texts.de.js.
+  const quiz = (list, progressEl, items) => {
+    list.innerHTML = '';
+    let solved = 0;
+    const progress = () => { progressEl.textContent = t('quiz.progress', solved, items.length); };
+    for (const item of items) {
+      const li = document.createElement('li');
+      li.className = 'quiz-item';
+      const q = document.createElement('p');
+      q.className = 'quiz-q';
+      q.textContent = t(item.key + '.question', ...item.args);
+      const form = document.createElement('form');
+      form.className = 'quiz-row';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.inputMode = 'decimal';
+      input.autocomplete = 'off';
+      input.className = 'quiz-input';
+      input.setAttribute('aria-label', t('quiz.answerAria'));
+      const unit = document.createElement('span');
+      unit.className = 'quiz-unit';
+      unit.textContent = t(item.key + '.unit');
+      const btn = document.createElement('button');
+      btn.type = 'submit';
+      btn.className = 'btn quiz-check';
+      btn.textContent = t('quiz.check');
+      const feedback = document.createElement('p');
+      feedback.className = 'quiz-feedback';
+      feedback.setAttribute('aria-live', 'polite');
+      form.append(input, unit, btn);
+      li.append(q, form, feedback);
+      list.appendChild(li);
+
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        if (li.classList.contains('done')) return;
+        const v = parseAnswer(input.value);
+        li.classList.remove('wrong');
+        if (v === null) { feedback.textContent = t('quiz.empty'); return; }
+        const right = Number(item.answer.toFixed(item.digits || 0));
+        if (Math.abs(v - right) <= (item.tolerance || 0) + 1e-9) {
+          li.classList.add('done');
+          input.disabled = true;
+          btn.disabled = true;
+          feedback.textContent = t(item.key + '.solved', item.args[0], signedIf(item, right));
+          solved++;
+          progress();
+        } else {
+          li.classList.add('wrong');
+          feedback.innerHTML = `${t('quiz.wrong')} <b>${t('quiz.hintLabel')}</b> ${t(item.key + '.hint')}`;
+        }
+      });
+    }
+    progress();
+  };
+  // Deviations read "+1,8", plain values "2018" / "401".
+  const signedIf = (item, v) => (item.signed ? signed(v, item.digits || 0) : num(v, item.digits || 0));
 
   // ---- tooltip inside the chart frame ---------------------------------------------
   const placeTooltip = (tooltipEl, frameEl, clientX, clientY) => {
@@ -136,15 +226,10 @@
     };
   };
 
-  // Tasks status line under the task list.
-  const status = text => {
-    const el = document.getElementById('task-status');
-    if (el) el.textContent = text;
-  };
-
   window.KIS = {
     num, signed, tick, loadJSON, loadStations, fillStationSelect,
-    fillVariableNotes, fillStationNote, fillSeg, setPlaying, placeTooltip, debounce, status,
+    fillVariableNotes, fillStationNote, fillSeg, fillPeriodSelect, setPlaying, wireDialog, quiz, parseAnswer,
+    placeTooltip, debounce,
     // LOCAL: default station when the page opens (Frankfurt/Main)
     DEFAULT_STATION_ID: '01420'
   };

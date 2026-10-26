@@ -45,12 +45,9 @@ window.TEXTS = {
   },
 
   timeline: {
-    label: 'Jahr wählen',
     sliderAria: 'Jahr auswählen',
     prevAria: 'Ein Jahr zurück',
     nextAria: 'Ein Jahr vor',
-    play: 'Abspielen',
-    stop: 'Stopp',
     playAria: 'Durch die Jahre abspielen',
     stopAria: 'Abspielen anhalten'
   },
@@ -58,6 +55,7 @@ window.TEXTS = {
   // Shared by both pages.
   common: {
     referencePeriodLabel: 'Referenzperiode',
+    referencePeriodShort: 'Referenz',
     periodInfoAria: 'Was ist eine Referenzperiode?',
     periodInfo:
       '<p><b>Referenzperiode:</b> Eine Referenzperiode ist ein fester, 30 Jahre langer Vergleichszeitraum, den die Weltorganisation für Meteorologie ' +
@@ -93,10 +91,8 @@ window.TEXTS = {
     kicker: 'Teil 1 von 2 · Tagesverlauf',
     headline: 'Klima ist<br>Statistik',
     lead: 'Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster – und die Abweichung vom Mittelwert.',
-    badge: 'Tippe ins Diagramm oder drück „Abspielen“',
     year: 'Jahr',
     deviation: 'Abweichung',
-    deviationVs: (start, end) => `(vs. ${start}–${end})`,
     legendVs: 'als',
     legendReference: 'Referenzperiode',
     barLegendYear: 'Ausgewähltes Jahr',
@@ -108,20 +104,27 @@ window.TEXTS = {
       'um einen verlässlichen Vergleich zu berechnen.',
     compareAria: 'Vergleich der beiden Referenzperioden über das Jahr',
     next: 'Weiter zu Klimatrend →',
-    tasks: {
-      title: 'Aufgaben',
-      cold: 'Such bei der Temperatur mit dem Regler ein Jahr, das kälter war als die Referenzperiode.',
-      period: 'Schalte die Referenzperiode auf 1991–2020 um. Wohin rückt die schwarze Linie?',
-      station: 'Wähl eine andere Messstation. Siehst du dort dasselbe Muster?',
-      doneCold: (year) => `Gefunden: ${year} war kälter. Auch heute gibt es noch kalte Jahre – nur seltener.`,
-      donePeriod: 'Das neue „Normal“ liegt höher: 1991–2020 war wärmer.',
-      doneStation: 'Andere Station, gleiches Bild: Die neuen Jahre liegen meist oben.'
+    // Tasks of this page. Every function gets the station name; `solved` also the right answer, already formatted.
+    quiz: {
+      dev2003: {
+        question: (name) => `Um wie viel Grad lag die Jahresmitteltemperatur 2003 in ${name} über dem Mittel der Referenzperiode 1961–1990?`,
+        unit: '°C',
+        hint: 'Stell Temperatur und Referenz 1961–1990 ein, schieb den Regler auf 2003 und lies die Abweichung ab.',
+        solved: (name, answer) => `Richtig: ${answer} °C. 2003 war das Jahr des großen Hitzesommers.`
+      },
+      warmest: {
+        question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am wärmsten?`,
+        unit: '',
+        hint: 'Spiel die Jahre ab und achte auf das Jahresmittel – oder schau im Klimatrend nach dem höchsten Balken.',
+        solved: (name, answer) => `Richtig: ${answer}. Die wärmsten Jahre liegen fast alle in der jüngsten Zeit.`
+      },
+      periods: {
+        question: (name) => `Um wie viel Grad war die Referenzperiode 1991–2020 in ${name} wärmer als 1961–1990?`,
+        unit: '°C',
+        hint: 'Die Antwort steht im Klimavergleich unter dem Diagramm.',
+        solved: (name, answer) => `Richtig: ${answer} °C. Das „normale“ Klima selbst hat sich verschoben.`
+      }
     },
-    merke: {
-      title: 'Merke',
-      // LOCAL: true for the German DWD stations in data/processed (check when other stations are added)
-      text: 'Ein einzelnes Jahr kann kalt oder warm sein. Das ist Zufall, wie beim Wetter. Erst viele Jahre zusammen zeigen das Klima. Und das Klima hat sich verschoben: 1991–2020 war es an allen Stationen hier wärmer als 1961–1990.'
-    }
   },
 
   // trend.html — "Klimatrend"
@@ -130,7 +133,6 @@ window.TEXTS = {
     kicker: 'Teil 2 von 2 · Klimatrend',
     headline: 'Klimatrend',
     lead: 'Jahreswerte im Vergleich zur Referenzperiode – und wie sich die ganze Verteilung der Tageswerte über die Zeit verschoben hat.',
-    badge: 'Tippe auf einen Balken',
     viewLabel: 'Ansicht',
     seasonLabel: 'Jahreszeit',
     back: '← Zurück zum Tagesverlauf',
@@ -163,17 +165,43 @@ window.TEXTS = {
       'probiere Winter oder Sommer aus, um die einzelnen Jahreszeiten für sich zu sehen.',
     // seasonLabel is null for the whole year.
     badgeSub: (seasonLabel, stationName) => (seasonLabel ? `${seasonLabel} · ${stationName}` : stationName),
-    tasks: {
-      title: 'Aufgaben',
-      warmest: 'Tippe bei der Temperatur auf die Balken oder fahre darüber: Finde das wärmste Jahr.',
-      dist: 'Schalte auf „Verteilung“. Vergleiche ein Jahr vor 1970 mit einem Jahr nach 2010.',
-      doneWarmest: (year) => `Gefunden: ${year} war das wärmste Jahr an dieser Station.`,
-      doneDist: 'Der Berg ist nach rechts gewandert – zu den wärmeren Tagen.'
+    // Tasks of this page. Every function gets the station name; `solved` also the right answer, already formatted.
+    quiz: {
+      lastTen: {
+        question: (name, first, last) => `Wie viele der Jahre ${first}–${last} waren in ${name} wärmer als das Mittel 1961–1990?`,
+        unit: '',
+        hint: 'Stell Temperatur, Jahresbalken und Referenz 1961–1990 ein und zähl ganz rechts die roten Balken.',
+        solved: (name, answer) => `Richtig: ${answer}. Ein kaltes Jahr ist inzwischen die Ausnahme.`
+      },
+      coldest: {
+        question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am kältesten?`,
+        unit: '',
+        hint: 'Stell Temperatur und Jahresbalken ein und such den längsten blauen Balken. Tippe darauf, um das Jahr zu sehen.',
+        solved: (name, answer) => `Richtig: ${answer}. Die kältesten Jahre liegen weit zurück.`
+      },
+      rain2018: {
+        question: (name) => `Wie viel Niederschlag fiel 2018 in ${name}? (Jahressumme)`,
+        unit: 'mm',
+        hint: 'Wähl Niederschlag und Jahresbalken und tippe auf den Balken 2018.',
+        solved: (name, answer) => `Richtig: rund ${answer} mm. 2018 war ein sehr trockenes Jahr.`
+      }
     },
-    merke: {
-      title: 'Merke',
-      text: 'Die meisten Balken der letzten Jahre sind rot: Es ist wärmer geworden. Der ganze Berg der Tageswerte ist nach rechts gewandert. Warme Tage gibt es jetzt öfter, sehr kalte seltener.'
-    }
+  },
+
+  // Tasks dialog: a question, an answer field and a "Prüfen" button each.
+  // The right answers are computed from the data in js/main.js / js/trend.js;
+  // `tolerance` there decides how close an answer must be.
+  quiz: {
+    open: 'Aufgaben',
+    title: 'Aufgaben',
+    closeAria: 'Aufgaben schließen',
+    intro: 'Finde die Antworten mit dem Diagramm heraus und trag sie ein.',
+    check: 'Prüfen',
+    answerAria: 'Deine Antwort',
+    empty: 'Trag zuerst eine Zahl ein.',
+    wrong: 'Noch nicht ganz.',
+    hintLabel: 'Tipp:',
+    progress: (done, total) => `${done}/${total}`
   },
 
   // Text drawn inside the charts themselves.
@@ -193,7 +221,6 @@ window.TEXTS = {
       valueLabel: 'Jahresmittel',
       incompleteLabel: 'lückenhaft',
       chartAriaLabel: 'Verlauf der Tagesmitteltemperatur für jedes verfügbare Jahr',
-      hint: 'Jede dünne Linie ist ein Jahr, die schwarze Linie das Mittel der Referenzperiode. Rot heißt: wärmer als dieses Mittel, blau: kälter.',
       generalInfo:
         'Die Lufttemperatur beschreibt, wie warm oder kalt die Luft in Bodennähe ist. Sie wird in Grad Celsius (°C) gemessen und ist einer der wichtigsten Klimaindikatoren: Ihr langfristiger Verlauf zeigt, ob sich ein Ort über Jahrzehnte erwärmt oder abkühlt.',
       chartExplanation:
@@ -220,7 +247,6 @@ window.TEXTS = {
       valueLabel: 'Jahressumme',
       incompleteLabel: 'lückenhaft',
       chartAriaLabel: 'Kumulierter Niederschlag im Jahresverlauf für jedes verfügbare Jahr',
-      hint: 'Jede Linie zählt den Regen eines Jahres zusammen, die schwarze Linie zeigt die Referenzperiode. Blau heißt: bis dahin nasser, orange: trockener.',
       generalInfo:
         'Niederschlag umfasst alles Wasser, das als Regen, Schnee, Hagel oder Nieselregen auf den Boden fällt. Er wird in Millimetern (mm) gemessen – 1 mm entspricht 1 Liter Wasser pro Quadratmeter. Niederschlag ist entscheidend für Wasserversorgung, Landwirtschaft und das Risiko von Dürren oder Überschwemmungen.',
       chartExplanation:
@@ -247,7 +273,6 @@ window.TEXTS = {
       valueLabel: 'Jahressumme',
       incompleteLabel: 'lückenhaft',
       chartAriaLabel: 'Monatliche Sonnenscheindauer des ausgewählten Jahres im Vergleich zur Referenzperiode',
-      hint: 'Grau: Sonnenstunden je Monat im Mittel der Referenzperiode. Farbig: das gewählte Jahr.',
       generalInfo:
         'Die Sonnenscheindauer gibt an, wie viele Stunden am Tag die Sonne direkt und ungehindert scheint – bewölkter oder diesiger Himmel zählt nicht mit. Sie wird in Stunden (h) gemessen und beeinflusst unter anderem Temperatur, Verdunstung und das Wohlbefinden von Menschen und Ökosystemen.',
       chartExplanation:

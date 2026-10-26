@@ -19,14 +19,16 @@ Two parts, reachable from the buttons in the header:
    against the reference period, for the whole year or one season, with its
    own timeline.
 
-Each part has tasks that unlock its "Merke" box:
+Each part has a tasks button that opens a dialog with questions about
+Frankfurt/Main; each has an answer field and a "Prüfen" button, and a wrong
+answer shows a tip. The right answers are computed from the data
+(`setupQuiz` in `js/main.js` / `js/trend.js`), the wording sits in
+`quiz` and `daily.quiz` / `trend.quiz` in `content/texts.de.js`:
 
-- Tagesverlauf: find a year colder than the reference period (temperature,
-  picked with the slider/step buttons/stop); switch the reference period to
-  1991–2020; choose another station.
-- Klimatrend: find the warmest year by hovering/tapping the bars
-  (temperature); in the distribution view, look at a year before 1970 and
-  one after 2010.
+- Tagesverlauf: deviation of 2003 from 1961–1990, the warmest year, how much
+  warmer 1991–2020 was than 1961–1990.
+- Klimatrend: how many of the last ten years were warmer than 1961–1990, the
+  coldest year, the precipitation total of 2018.
 
 Longer explanations (what the chart shows, how the values are computed, what
 this has to do with climate change) sit in collapsible topics below; info
@@ -68,11 +70,11 @@ docs/
   js/view.js             phone/desktop layout switch (loaded in <head>)
   js/texts.js            fills the texts from content/
   js/brand.js            fills logo and footer line from the theme
-  js/kit.js              fullscreen button, hint badge, info notes, tasks/Merke, kiosk mode
+  js/kit.js              fullscreen button, info notes, kiosk mode (hint badge and tasks/Merke unused here)
   js/shared.js           number format, data loading, station picker, notes, play button
   js/variable-config.js  behaviour per quantity (axes, units, chart type)
-  js/main.js             part 1: pickers, readout, timeline, tasks, comparison chart
-  js/trend.js            part 2: annual bars / distribution, seasons, timeline, tasks
+  js/main.js             part 1: pickers, readout, timeline, tasks dialog, comparison chart
+  js/trend.js            part 2: annual bars / distribution, seasons, timeline, tasks dialog
   js/*-plot.js           the individual D3 charts
   js/vendor/d3.v7.min.js D3, self-hosted
   content/texts.de.js    every visible text (edit or translate here)
@@ -86,13 +88,17 @@ scripts/
 
 ## Layout
 
-Phone: pickers and readout, the chart at full width, timeline, reference
-period, tasks, Merke; comparison and topics below. Desktop (automatic from
-1000 px, or via the "Desktop-/Handy-Ansicht" toggle, remembered for this app
-only): the chart on the left (a wide stage – time series), sized to the
-screen and sticky; pickers, readout, timeline, reference period and tasks on
-the right; comparison and topics full width below. Every chart has a
-fullscreen button.
+Kept compact so the chart gets the most room. Phone: variable, station and
+reference period as three dropdowns in one row, the readout (year, value,
+deviation) in one line, then the chart with back / play / forward and the
+fullscreen button inside its top-right corner (the play button glows until
+the first touch), the year slider and legend under it, and a button for the
+tasks dialog; comparison and topics below. The view toggle sits on the logo
+row. Desktop (automatic from 1000 px, or via the "Desktop-/Handy-Ansicht"
+toggle, remembered for this app only): the chart on the left, sized to the
+screen and sticky; pickers, readout and tasks on the right; comparison and
+topics full width below. Chart explanations live in the topic "Was sehe ich
+auf dem Diagramm?", not under the chart.
 
 ## Updating the data
 

@@ -1,6 +1,7 @@
 // Page "Tagesverlauf" (index.html): pickers, readout, chart (one line per
-// year, or monthly bars for sunshine), timeline with play, reference period,
-// tasks, the period comparison chart and the topics below.
+// year, or monthly bars for sunshine), reference period, timeline with play
+// controls inside the chart, the tasks dialog, the period comparison chart
+// and the topics below.
 (() => {
   'use strict';
 
@@ -28,16 +29,14 @@
     chart: $('chart'),
     chartBar: $('chart-bar'),
     tooltip: $('tooltip'),
-    hint: $('chart-hint'),
     legendLabelCold: $('legend-label-cold'),
     legendLabelWarm: $('legend-label-warm'),
     legendGradient: $('legend-gradient'),
-    legendPeriods: $('legend-periods'),
+    periodSelect: $('period-select'),
     deviationYear: $('deviation-year'),
     deviationMean: $('deviation-mean'),
     statLabelMean: $('stat-label-mean'),
     deviationValue: $('deviation-value'),
-    deviationPeriodLabel: $('deviation-period-label'),
     colorbarPeriodLabel: $('colorbar-period-label'),
     colorbarRow: $('colorbar-row'),
     barLegendRow: $('bar-legend-row'),
@@ -49,7 +48,6 @@
     timelineYearEnd: $('timeline-year-end'),
     slider: $('year-slider'),
     playBtn: $('play-btn'),
-    playLabel: $('play-label'),
     prevYearBtn: $('prev-year-btn'),
     nextYearBtn: $('next-year-btn'),
     compare: $('compare'),
@@ -59,20 +57,27 @@
     compareChart: $('compare-chart')
   };
 
-  // ---- first hint + tasks ---------------------------------------------------
-  const hintBadge = window.SCAPE.badge(el.frame);
-  hintBadge.show(t('daily.badge'));
-  const firstTouch = () => hintBadge.hide();
+  // ---- first interaction: the play button stops glowing ---------------------
+  const firstTouch = () => el.playBtn.classList.remove('pulse');
 
-  const tasks = window.SCAPE.tasks($('daily-tasks'));
-  // A year the visitor picked (slider, step buttons, stopping playback).
-  const checkColdYear = year => {
-    if (state.currentVariable !== 'temperature' || !year) return;
-    const data = state.currentData;
-    const amt = data.annual_metric[year];
-    const base = data[state.activePeriod].mean_annual_metric;
-    if (amt === undefined || base === null || base === undefined) return;
-    if (amt < base && tasks.done('cold')) KIS.status(t('daily.tasks.doneCold', year));
+  // ---- tasks dialog: questions about Frankfurt/Main temperature --------------
+  const setupQuiz = async () => {
+    KIS.wireDialog($('tasks-open'), $('tasks-dialog'), $('tasks-close'));
+    const data = await KIS.loadJSON(`data/processed/temperature/${KIS.DEFAULT_STATION_ID}.json`);
+    const am = data.annual_metric;
+    const pa = data.period_a.mean_annual_metric;
+    const pb = data.period_b.mean_annual_metric;
+    const name = data.meta.name;
+    const items = [];
+    if (am['2003'] !== undefined && pa !== null) {
+      items.push({ key: 'daily.quiz.dev2003', args: [name], answer: am['2003'] - pa, digits: 1, tolerance: 0.1, signed: true });
+    }
+    const warmest = Object.keys(am).reduce((best, y) => (best === null || am[y] > am[best] ? y : best), null);
+    if (warmest) items.push({ key: 'daily.quiz.warmest', args: [name], answer: +warmest, digits: 0, tolerance: 0 });
+    if (pa !== null && pb !== null) {
+      items.push({ key: 'daily.quiz.periods', args: [name], answer: pb - pa, digits: 1, tolerance: 0.1 });
+    }
+    KIS.quiz($('quiz'), $('quiz-progress'), items);
   };
 
   // Sums a 365-entry daily series into 12 monthly totals (null when a month
@@ -130,7 +135,6 @@
 
     el.select.addEventListener('change', () => {
       firstTouch();
-      if (el.select.value !== KIS.DEFAULT_STATION_ID && tasks.done('station')) KIS.status(t('daily.tasks.doneStation'));
       loadAndRender(el.select.value, state.currentVariable);
     });
     el.variableSelect.addEventListener('change', () => {
@@ -142,11 +146,14 @@
       stopPlaying();
       const year = state.currentData.years[+el.slider.value];
       showYear(year);
-      checkColdYear(year);
+    });
+    el.periodSelect.addEventListener('change', () => {
+      firstTouch();
+      setActivePeriod(el.periodSelect.value);
     });
     el.playBtn.addEventListener('click', () => {
       firstTouch();
-      if (state.playTimer) stopPlaying(true);
+      if (state.playTimer) stopPlaying();
       else startPlaying();
     });
     el.prevYearBtn.addEventListener('click', () => stepYear(-1));
@@ -182,7 +189,6 @@
     el.statLabelMean.textContent = config.valueLabel;
     el.legendLabelCold.textContent = config.legendCold;
     el.legendLabelWarm.textContent = config.legendWarm;
-    el.hint.textContent = config.hint;
     KIS.fillVariableNotes(config);
     KIS.fillStationNote(data);
 
@@ -232,18 +238,12 @@
   }
 
   const renderPeriodLegend = data => {
-    const items = ['period_a', 'period_b'].map(key => ({ key, label: `${data[key].start}–${data[key].end}` }));
-    KIS.fillSeg(el.legendPeriods, items, state.activePeriod, key => {
-      firstTouch();
-      setActivePeriod(key);
-    });
+    KIS.fillPeriodSelect(el.periodSelect, data, state.activePeriod);
     const active = data[state.activePeriod];
-    el.deviationPeriodLabel.textContent = t('daily.deviationVs', active.start, active.end);
     el.colorbarPeriodLabel.textContent = `${active.start}–${active.end}`;
   };
 
   const setActivePeriod = key => {
-    if (key === 'period_b' && tasks.done('period')) KIS.status(t('daily.tasks.donePeriod'));
     if (state.activePeriod === key) return;
     state.activePeriod = key;
     const data = state.currentData;
@@ -277,7 +277,6 @@
     const idx = Math.min(years.length - 1, Math.max(0, +el.slider.value + delta));
     el.slider.value = idx;
     showYear(years[idx]);
-    checkColdYear(years[idx]);
   };
 
   const setDeviation = (diff, config) => {
@@ -315,7 +314,7 @@
 
   const startPlaying = () => {
     const years = state.currentData.years;
-    KIS.setPlaying(el.playBtn, el.playLabel, true);
+    KIS.setPlaying(el.playBtn, true);
     let idx = +el.slider.value;
     state.playTimer = setInterval(() => {
       idx = (idx + 1) % years.length;
@@ -324,14 +323,12 @@
     }, 550);
   };
 
-  // byVisitor: the visitor stopped playback on purpose - the year shown now counts for the tasks.
-  function stopPlaying(byVisitor) {
+  function stopPlaying() {
     if (state.playTimer) {
       clearInterval(state.playTimer);
       state.playTimer = null;
     }
-    KIS.setPlaying(el.playBtn, el.playLabel, false);
-    if (byVisitor === true) checkColdYear(state.currentData.years[+el.slider.value]);
+    KIS.setPlaying(el.playBtn, false);
   }
 
   // ---- period comparison chart (full width below the lab) -------------------
@@ -464,4 +461,5 @@
   };
 
   main().catch(e => console.error(e));
+  setupQuiz().catch(e => console.error(e));
 })();
