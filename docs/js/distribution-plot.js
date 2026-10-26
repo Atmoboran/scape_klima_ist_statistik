@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 50, right: 14, bottom: 34, left: 34 }; // top: room for the year and the buttons
+  const MARGIN = { top: 64, right: 14, bottom: 34, left: 34 }; // top: room for the year and its deviation
   const SAMPLE_COUNT = 160;
 
   const DEFAULT_CONFIG = {
@@ -20,6 +20,7 @@
     activePeriod: "period_a",
     dailyIsCumulative: false,
     season: "full", // "full" | "winter" | "spring" | "summer" | "autumn"
+    aggregate: "mean", // how a year/season is summarised for its deviation: "mean" of its days or their "sum"
     formatValue: (v) => `${v.toFixed(1)}`,
   };
 
@@ -38,6 +39,14 @@
     summer: [[152, 243, 0]],
     autumn: [[244, 334, 0]],
   };
+
+  // A year/season only gets a deviation when every calendar year it draws on
+  // is complete (listed in annual_metric, as everywhere else in the app) -
+  // winter also needs the previous December.
+  function isComplete(data, year, season) {
+    const years = season === "winter" ? [year - 1, year] : [year];
+    return years.every((y) => data.annual_metric[String(y)] !== undefined);
+  }
 
   function mean(arr) {
     return arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -82,6 +91,11 @@
     const out = new Array(strand.length);
     let prev = 0;
     for (let i = 0; i < strand.length; i++) {
+      // a missing day stays missing (and doesn't reset the running total)
+      if (strand[i] === null || strand[i] === undefined) {
+        out[i] = null;
+        continue;
+      }
       out[i] = strand[i] - prev;
       prev = strand[i];
     }
@@ -137,6 +151,7 @@
     let height = 0;
     let xScale, yScale, colorScale, bandwidth, xs;
     let currentYear = null;
+    let refSummary = null; // the reference period's mean of the per-year summaries
 
     const gAxes = svg.append("g").attr("class", "axes-layer");
     const gDefs = svg.append("defs");
@@ -176,7 +191,13 @@
         (y) => y >= period.start && y <= period.end && data.annual_metric[String(y)] !== undefined
       );
       const refValues = [];
-      for (const y of refYears) refValues.push(...seasonValues(data, y, config.season, config.dailyIsCumulative));
+      const refSummaries = [];
+      for (const y of refYears) {
+        const v = seasonValues(data, y, config.season, config.dailyIsCumulative);
+        refValues.push(...v);
+        if (isComplete(data, y, config.season)) refSummaries.push(summarise(v));
+      }
+      refSummary = refSummaries.length ? mean(refSummaries) : null;
 
       // The x-axis is fixed from *every* year's values for the active season
       // (not just the reference period's) so switching which year is
@@ -323,12 +344,25 @@
       }
     }
 
+    // One number per year/season: mean of its days or their sum (see config.aggregate).
+    function summarise(values) {
+      const sum = values.reduce((a, b) => a + b, 0);
+      return config.aggregate === "sum" ? sum : sum / values.length;
+    }
+
     function setYear(year) {
       currentYear = year;
       const innerH = height - MARGIN.top - MARGIN.bottom;
       gYear.selectAll("*").remove();
-      if (year === null || year === undefined) return;
+      if (year === null || year === undefined) {
+        if (opts.onYearStats) opts.onYearStats(null);
+        return;
+      }
       const values = seasonValues(data, year, config.season, config.dailyIsCumulative);
+      if (opts.onYearStats) {
+        const complete = isComplete(data, year, config.season) && values.length > 0;
+        opts.onYearStats({ diff: !complete || refSummary === null ? null : summarise(values) - refSummary });
+      }
       if (values.length < 10) return; // too sparse a year/season to plot meaningfully
 
       const density = kde(values, bandwidth, xs);

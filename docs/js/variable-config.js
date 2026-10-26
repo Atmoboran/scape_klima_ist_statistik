@@ -12,6 +12,7 @@
     temperature: {
       axisSuffix: '°',
       axisUnit: '°C',
+      aggregate: 'mean', // a year/season is summarised by the mean of its days (precipitation, sunshine: the sum)
       yMin: null,
       digits: 1,
       // Fixed so the day-colour scale means the same deviation magnitude at
@@ -24,6 +25,7 @@
     precipitation: {
       axisSuffix: ' mm',
       axisUnit: 'mm',
+      aggregate: 'sum',
       yMin: 0,
       digits: 0,
       maxAbsDev: 250,
@@ -37,6 +39,7 @@
     sunshine: {
       axisSuffix: ' h',
       axisUnit: 'h',
+      aggregate: 'sum',
       yMin: 0,
       digits: 0,
       chartType: 'bar',

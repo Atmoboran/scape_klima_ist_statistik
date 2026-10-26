@@ -18,7 +18,11 @@ Two parts, reachable from the buttons in the header:
 2. **Klimatrend** (`docs/trend.html`) – annual bars with a 10-year moving
    average, or the distribution of daily values (bell curve) of one year
    against the reference period, for the whole year or one season, with its
-   own timeline.
+   own timeline. The bar chart's y-axis starts at the lowest annual value,
+   rounded down to an axis tick (not at 0). Under the year in the
+   distribution view: that year's (or season's) deviation from the
+   reference period – mean of the days for temperature, total for
+   precipitation and sunshine; "lückenhaft" for incomplete years.
 
 Each part has a tasks button that opens a dialog with questions about
 Frankfurt/Main; each has an answer field and a "Prüfen" button, and a wrong

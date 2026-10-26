@@ -39,6 +39,7 @@
     distChart: $('distribution-chart'),
     distributionYear: $('distribution-year'),
     distributionStationLabel: $('distribution-station-label'),
+    distributionDev: $('distribution-dev'),
     distSlider: $('dist-year-slider'),
     distYearStart: $('dist-year-start'),
     distYearEnd: $('dist-year-end'),
@@ -90,7 +91,7 @@
       tooltipEl: el.tooltip,
       onYear: onAnnualYear
     });
-    state.distPlot = window.DistributionPlot.create({ svgEl: el.distChart });
+    state.distPlot = window.DistributionPlot.create({ svgEl: el.distChart, onYearStats: showDistDeviation });
     renderModeToggle();
     renderSeasonToggle();
     setupDistTimeline();
@@ -188,7 +189,6 @@
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
-      yMin: config.yMin,
       activePeriod: state.activePeriod,
       formatValue: config.formatValue,
       formatDiff: config.formatDiff,
@@ -207,6 +207,7 @@
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
       dailyIsCumulative: !!config.dailyIsCumulative,
+      aggregate: config.aggregate,
       activePeriod: state.activePeriod,
       season: state.season,
       formatValue: config.formatValue,
@@ -253,6 +254,19 @@
     el.distSlider.value = idx;
     state.distPlot.setYear(year);
     updateDistYearBadge(year);
+  };
+
+  // Deviation of the shown year (or season) from the reference period, under the year.
+  const showDistDeviation = stats => {
+    const config = VARIABLE_CONFIG[state.currentVariable];
+    const period = state.currentData[state.activePeriod];
+    if (!stats || stats.diff === null) {
+      el.distributionDev.textContent = stats ? config.incompleteLabel : '';
+      el.distributionDev.style.color = '';
+      return;
+    }
+    el.distributionDev.textContent = t('trend.distDeviation', config.formatDiff(stats.diff), period.start, period.end);
+    el.distributionDev.style.color = stats.diff > 0 ? config.aboveColor : stats.diff < 0 ? config.belowColor : '';
   };
 
   const setupDistTimeline = () => {

@@ -162,6 +162,8 @@ window.TEXTS = {
       ' Bei der Ganzjahresansicht ist die Verteilung oft zweigipflig: Die Temperatur ändert sich um die kältesten ' +
       'Wintertage und die wärmsten Sommertage herum am langsamsten, weshalb sich die Tageswerte dort häufen – ' +
       'probiere Winter oder Sommer aus, um die einzelnen Jahreszeiten für sich zu sehen.',
+    // Under the year in the distribution view; diff arrives formatted with sign and unit.
+    distDeviation: (diff, start, end) => `${diff} zum Mittel ${start}–${end}`,
     // seasonLabel is null for the whole year.
     badgeSub: (seasonLabel, stationName) => (seasonLabel ? `${seasonLabel} · ${stationName}` : stationName),
     // Tasks of this page. Every function gets the station name; `solved` also the right answer, already formatted.

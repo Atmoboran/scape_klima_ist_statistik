@@ -135,7 +135,9 @@
 .dist-mean-label { fill: var(--ink); font-family: var(--font); font-size: 12px; font-weight: var(--fw-medium); }
 
 /* year over the distribution chart */
-.distribution-year-badge { position: absolute; top: 8px; left: 10px; right: 52px; pointer-events: none; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.distribution-year-badge { position: absolute; top: 8px; left: 10px; right: 52px; pointer-events: none; min-width: 0; }
+.distribution-year-badge .badge-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.distribution-year-badge .dev { display: block; margin-top: 3px; font-size: 14px; font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .distribution-year-badge .num { font-weight: var(--fw-light); font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 .distribution-year-badge .sub { font-size: 11px; font-weight: var(--fw-medium); letter-spacing: .04em; text-transform: var(--caps); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

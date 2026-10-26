@@ -138,9 +138,11 @@
       const minA = Math.min(...amts);
       const maxA = Math.max(...amts);
       const pad = (maxA - minA) * 0.08 || 1;
-      const floor = config.yMin !== null && config.yMin !== undefined ? config.yMin : minA - pad;
-      const yDomain = [floor, maxA + pad];
-      const y = d3.scaleLinear().domain(yDomain).nice().range([innerH, 0]).clamp(true);
+      // The axis starts at the station's lowest annual value, rounded down to
+      // the next axis tick - not at 0, so the year-to-year differences stay visible
+      // for totals like precipitation and sunshine too.
+      // nice(6) matches the 6 axis ticks, so the floor is itself a labelled tick.
+      const y = d3.scaleLinear().domain([minA, maxA + pad]).nice(6).range([innerH, 0]).clamp(true);
 
       drawAxes(x, y, innerW, innerH, years);
       drawBaselineLine(y, innerW, baseline);
