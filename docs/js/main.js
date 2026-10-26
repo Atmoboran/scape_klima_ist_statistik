@@ -1,6 +1,6 @@
 // Page "Tagesverlauf" (index.html): pickers, readout, chart (one line per
 // year, or monthly bars for sunshine), reference period, timeline with play
-// controls inside the chart, the tasks dialog, the period comparison chart
+// controls next to the year slider, the tasks dialog, the period comparison chart
 // and the topics below.
 (() => {
   'use strict';

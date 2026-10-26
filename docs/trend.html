@@ -84,14 +84,6 @@
 
     <div class="lab-stage">
       <div class="stage-frame chart-frame" id="stage-frame">
-        <div class="stage-tools" id="dist-tools" hidden>
-          <button type="button" class="tool" id="dist-prev-btn" data-t-aria="timeline.prevAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 5L8 12l9 7V5z"/></svg></button>
-          <button type="button" class="tool play pulse" id="dist-play-btn" data-t-aria="timeline.playAria">
-            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8V4z"/></svg>
-            <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12"/></svg>
-          </button>
-          <button type="button" class="tool" id="dist-next-btn" data-t-aria="timeline.nextAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l9 7-9 7V5z"/></svg></button>
-        </div>
         <div class="chart-pane" id="trend-annual-wrap">
           <svg id="trend-chart" class="chart" role="img"></svg>
         </div>
@@ -106,6 +98,14 @@
         <p class="load-error" id="load-error" hidden data-t="loadError"></p>
       </div>
       <div class="timeline" id="dist-timeline-wrap" hidden>
+        <span class="transport">
+          <button type="button" class="tool" id="dist-prev-btn" data-t-aria="timeline.prevAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h2.6v14H5zM19 5l-10 7 10 7z"/></svg></button>
+          <button type="button" class="tool play pulse" id="dist-play-btn" data-t-aria="timeline.playAria">
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8V4z"/></svg>
+            <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12"/></svg>
+          </button>
+          <button type="button" class="tool" id="dist-next-btn" data-t-aria="timeline.nextAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 5H19v14h-2.6zM5 5l10 7-10 7z"/></svg></button>
+        </span>
         <span class="year-bound" id="dist-year-start">–</span>
         <input type="range" id="dist-year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
         <span class="year-bound" id="dist-year-end">–</span>

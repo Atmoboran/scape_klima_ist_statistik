@@ -60,11 +60,11 @@
 #bar-legend-row { gap: 6px 18px; }
 
 /* ---- timeline: slider, step buttons, play ---- */
-.timeline { display: flex; align-items: center; gap: 10px; min-height: 36px; margin-top: 2px; }
+.timeline { display: flex; align-items: center; gap: 8px; min-height: 40px; margin-top: 6px; }
 .year-bound { flex: none; font-size: 13px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .year-slider { flex: 1; min-width: 0; height: 32px; accent-color: var(--active); }
-/* ---- buttons inside the chart: back, play, forward (left of fullscreen) ---- */
-.stage-tools { position: absolute; top: 6px; right: 50px; z-index: 6; display: flex; gap: 4px; }
+/* ---- back, play, forward: left of the year slider ---- */
+.transport { display: flex; gap: 4px; flex: none; }
 .tool {
   width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center;
   border: var(--line-width) solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; touch-action: manipulation;
@@ -135,7 +135,7 @@
 .dist-mean-label { fill: var(--ink); font-family: var(--font); font-size: 12px; font-weight: var(--fw-medium); }
 
 /* year over the distribution chart */
-.distribution-year-badge { position: absolute; top: 8px; left: 10px; right: 190px; pointer-events: none; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.distribution-year-badge { position: absolute; top: 8px; left: 10px; right: 52px; pointer-events: none; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .distribution-year-badge .num { font-weight: var(--fw-light); font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 .distribution-year-badge .sub { font-size: 11px; font-weight: var(--fw-medium); letter-spacing: .04em; text-transform: var(--caps); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -153,10 +153,10 @@
 :root[data-view="mobile"] .page { padding-top: 12px; }
 :root[data-view="desktop"] .lab { gap: 12px 28px; }
 
-/* legend in the free strip at the top of the chart, left of the buttons */
+/* legend in the strip at the top of the chart, next to the fullscreen button */
 .chart-legend {
-  position: absolute; top: 5px; left: 10px; right: 182px; z-index: 5; pointer-events: none; overflow: hidden;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 3px 12px;
+  position: absolute; top: 5px; left: 60px; right: 50px; z-index: 5; pointer-events: none; overflow: hidden;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 3px 12px;
   font-size: 11px; line-height: 1.25; color: var(--ink-muted);
 }
 .chart-legend .legend-scale, .chart-legend .legend-vs, .chart-legend .legend-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }

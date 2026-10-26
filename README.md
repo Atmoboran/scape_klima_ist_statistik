@@ -91,9 +91,9 @@ scripts/
 
 Kept compact so the chart gets the most room. Phone: variable, station and
 reference period as three dropdowns in one row, the readout (year, value,
-deviation) in one line, then the chart with back / play / forward and the
-fullscreen button inside its top-right corner (the play button glows until
-the first touch), the year slider and legend under it, and a button for the
+deviation) in one line, then the chart with the legend and the fullscreen
+button in its top-right corner, and under it one row with back / play /
+forward (the play button glows until the first touch) and the year slider, and a button for the
 tasks dialog; topics below. The view toggle sits on the logo
 row. Desktop (automatic from 1000 px, or via the "Desktop-/Handy-Ansicht"
 toggle, remembered for this app only): the chart on the left, sized to the

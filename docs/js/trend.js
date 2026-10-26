@@ -1,6 +1,6 @@
 // Page "Klimatrend" (trend.html): annual bars with a 10-year moving average,
 // or the distribution of daily values (bell curve) for one year against the
-// reference period, by season, with play controls inside the chart. Tasks
+// reference period, by season, with play controls next to the year slider. Tasks
 // dialog and topics.
 (() => {
   'use strict';
@@ -36,7 +36,6 @@
     annualWrap: $('trend-annual-wrap'),
     distWrap: $('trend-distribution-wrap'),
     distTimelineWrap: $('dist-timeline-wrap'),
-    distTools: $('dist-tools'),
     distChart: $('distribution-chart'),
     distributionYear: $('distribution-year'),
     distributionStationLabel: $('distribution-station-label'),
@@ -158,7 +157,6 @@
     el.tooltip.hidden = true;
     el.seasonGroup.hidden = !isDist;
     el.distTimelineWrap.hidden = !isDist;
-    el.distTools.hidden = !isDist;
     el.distWrap.hidden = !isDist;
     if (state.currentData) updateCaption();
   };
