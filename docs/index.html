@@ -38,7 +38,6 @@
     <path d="M0,300 C110,300 120,80 200,80 C280,80 290,300 400,300"/>
   </svg>
   <div class="poster-text">
-    <p class="kicker" data-t="page.kicker"></p>
     <h1 class="headline" data-t-html="page.headline"></h1>
     <p class="lead" data-t="page.lead"></p>
   </div>
@@ -172,8 +171,10 @@
       <section class="compare" id="compare">
         <h3 class="compare-title" id="compare-title" data-t="compare.titleDefault"></h3>
         <p class="compare-headline" id="compare-headline"></p>
-        <div class="compare-legend" id="compare-legend"></div>
-        <svg class="compare-chart" id="compare-chart" role="img" data-t-aria="compare.aria"></svg>
+        <div class="stage-frame chart-frame compare-frame" data-no-fs>
+          <div class="chart-legend" id="compare-legend" aria-hidden="true"></div>
+          <svg class="compare-chart" id="compare-chart" role="img" data-t-aria="compare.aria"></svg>
+        </div>
       </section>
     </details>
   </div>

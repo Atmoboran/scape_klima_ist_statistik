@@ -90,8 +90,7 @@ window.TEXTS = {
   // The page (index.html) and the texts of each view.
   page: {
     pageTitle: 'Klima ist Statistik',
-    kicker: 'Messdaten des Deutschen Wetterdienstes',
-    headline: 'Klima ist<br>Statistik',
+    headline: 'Klima ist Statistik',
     lead: 'Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster – und die Abweichung vom Mittelwert.',
     seasonAria: 'Jahreszeit',
     year: 'Jahr',

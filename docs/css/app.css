@@ -136,11 +136,14 @@
 
 
 /* ---- period comparison (full width below the lab) ---- */
-.compare { margin: 0 0 16px; padding: 14px 14px 16px; background: var(--panel); border: var(--line-width) solid var(--line); }
-.compare-title { font-weight: var(--fw-medium); font-size: 16px; margin: 0 0 6px; }
-.compare-headline { font-size: 16px; line-height: 1.5; max-width: 46em; margin: 0 0 12px; }
+.compare { margin: 4px 0 18px; }
+.compare-title { font-weight: var(--fw-medium); font-size: 12px; letter-spacing: .1em; text-transform: var(--caps); margin: 0 0 6px; }
+.compare-headline { font-size: 15.5px; line-height: 1.5; max-width: 46em; margin: 0 0 10px; }
 .compare-headline strong { font-weight: var(--fw-medium); }
-.compare-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+/* the comparison chart sits in the same frame as the main charts; no fullscreen button, so the legend may use the full top strip */
+.compare-frame { padding: 0; }
+.compare-frame .chart-legend { right: 10px; font-variant-numeric: tabular-nums; }
+.compare-frame .swatch-line { width: 16px; border-top-width: 2.5px; }
 .compare-chart { display: block; width: 100%; }
 
 .next-part.back { justify-content: flex-start; }
@@ -171,3 +174,9 @@
 /* the five season buttons always share one row */
 #season-toggle { flex-wrap: nowrap; }
 #season-toggle .btn { flex: 1 1 0; min-width: 0; padding: 4px 2px; font-size: 11.5px; letter-spacing: .02em; }
+
+/* headline in one line; on narrow phones it shrinks to fit */
+.poster .headline { white-space: nowrap; overflow-wrap: normal; }
+:root[data-view="mobile"] .poster.small .headline { font-size: min(36px, 8.4vw); }
+/* phone: the small bar shape stays below the lead text */
+:root[data-view="mobile"] .poster .l2 { width: 60px; height: 60px; left: calc(58% - 30px); bottom: 18px; }

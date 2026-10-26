@@ -388,8 +388,8 @@
     }
 
     // Drawn at the real pixel size, so axis text keeps its CSS size on phones.
-    const W = Math.max(300, el.compareChart.clientWidth || el.compare.clientWidth || 800);
-    const H = Math.round(Math.max(220, Math.min(360, W * 0.4)));
+    const W = Math.max(280, el.compareChart.clientWidth || el.compare.clientWidth || 800);
+    const H = Math.round(Math.max(260, Math.min(420, W * 0.5)));
     svg.attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
     if (isBar) renderCompareBars(svg, pa, pb, config, W, H);
     else renderCompareLines(svg, pa, pb, config, W, H);
@@ -398,7 +398,7 @@
   // Variables whose main chart is a daily line (temperature, precipitation):
   // period_a vs period_b as two lines over the day of year, gap shaded.
   const renderCompareLines = (svg, pa, pb, config, W, H) => {
-    const M = { top: 16, right: 16, bottom: 34, left: 52 };
+    const M = { top: 46, right: 12, bottom: 28, left: 40 }; // same frame as the main charts: legend strip on top
     const innerW = W - M.left - M.right;
     const innerH = H - M.top - M.bottom;
 
@@ -415,7 +415,9 @@
     g.append('g').attr('class', 'axis month-axis').attr('transform', `translate(0,${innerH})`)
       .call(d3.axisBottom(x).tickValues(monthStarts.filter((d, i) => i % every === 0))
         .tickFormat(d => months[monthStarts.indexOf(d)]));
-    g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5).tickFormat(d => KIS.tick(d) + config.axisSuffix));
+    g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5).tickFormat(d => KIS.tick(d)));
+    // the unit stands above the y-axis, as in the main charts
+    g.append('text').attr('class', 'axis-unit-label').attr('x', 0).attr('y', -8).attr('text-anchor', 'middle').text(config.axisUnit);
 
     const rows = pa.daily_series.map((v, i) => ({ doy: i + 1, a: v, b: pb.daily_series[i] }));
     const areaWarmer = d3.area()
@@ -438,7 +440,7 @@
   // Variables whose main chart is monthly bars (sunshine): period_a vs
   // period_b as a grouped bar pair per month.
   const renderCompareBars = (svg, pa, pb, config, W, H) => {
-    const M = { top: 16, right: 16, bottom: 34, left: 56 };
+    const M = { top: 46, right: 12, bottom: 28, left: 40 };
     const innerW = W - M.left - M.right;
     const innerH = H - M.top - M.bottom;
 
@@ -457,7 +459,9 @@
     const every = innerW < 420 ? 2 : 1;
     g.append('g').attr('class', 'axis month-axis').attr('transform', `translate(0,${innerH})`)
       .call(d3.axisBottom(x).tickValues(monthLabels.filter((d, i) => i % every === 0)));
-    g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5).tickFormat(d => KIS.tick(d) + config.axisSuffix));
+    g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(5).tickFormat(d => KIS.tick(d)));
+    // the unit stands above the y-axis, as in the main charts
+    g.append('text').attr('class', 'axis-unit-label').attr('x', 0).attr('y', -8).attr('text-anchor', 'middle').text(config.axisUnit);
 
     const rows = monthLabels.map((month, i) => ({ month, a: sumsA[i], b: sumsB[i] }));
     const groups = g.selectAll('g.compare-month-group')
