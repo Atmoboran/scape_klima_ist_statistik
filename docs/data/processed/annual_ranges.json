@@ -1,0 +1,14 @@
+{
+  "temperature": {
+    "min": 3.78,
+    "max": 12.93
+  },
+  "precipitation": {
+    "min": 305.8,
+    "max": 1572.4
+  },
+  "sunshine": {
+    "min": 1068.5,
+    "max": 2281.8
+  }
+}

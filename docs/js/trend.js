@@ -84,6 +84,8 @@
 
   const main = async () => {
     state.stations = await KIS.loadStations();
+    // lowest annual value per variable across all stations (bar chart y-axis floor)
+    state.annualRanges = await KIS.loadJSON('data/processed/annual_ranges.json');
     KIS.fillStationSelect(el.select, state.stations);
 
     state.annualPlot = window.AnnualTrendPlot.create({
@@ -182,6 +184,15 @@
     renderDistribution(true);
   };
 
+  // Lowest annual value of all stations, rounded down to a step that only
+  // depends on the variable's overall range - so every station gets the same floor.
+  const annualFloor = variable => {
+    const r = state.annualRanges && state.annualRanges[variable];
+    if (!r) return null;
+    const step = d3.tickStep(r.min, r.max, 6);
+    return Math.floor(r.min / step) * step;
+  };
+
   const renderAnnual = () => {
     const data = state.currentData;
     const config = VARIABLE_CONFIG[state.currentVariable];
@@ -189,6 +200,7 @@
       colorStops: config.colorStops,
       axisSuffix: config.axisSuffix,
       axisUnit: config.axisUnit,
+      yFloor: annualFloor(state.currentVariable),
       activePeriod: state.activePeriod,
       formatValue: config.formatValue,
       formatDiff: config.formatDiff,

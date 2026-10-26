@@ -236,6 +236,10 @@ def main() -> None:
     stations_meta = json.loads((RAW_DIR / "stations_meta.json").read_text(encoding="utf-8"))
 
     index = []
+    # lowest/highest annual value per variable across all stations - the
+    # Klimatrend bar chart starts its y-axis at the overall minimum, so the
+    # axis floor stays the same when switching stations
+    annual_ranges: dict[str, dict[str, float]] = {}
     for station_id in STATION_IDS:
         print(f"Building {station_id}...")
         df = load_station_frame(station_id)
@@ -247,6 +251,10 @@ def main() -> None:
 
         for variable_key, spec in VARIABLES.items():
             payload = build_variable_payload(df, variable_key, spec, meta, years_all, first_year, last_year)
+            values = list(payload["annual_metric"].values())
+            if values:
+                r = annual_ranges.setdefault(variable_key, {"min": min(values), "max": max(values)})
+                r["min"], r["max"] = min(r["min"], min(values)), max(r["max"], max(values))
             out_dir = OUT_DIR / spec["subdir"]
             out_dir.mkdir(parents=True, exist_ok=True)
             out_path = out_dir / f"{station_id}.json"
@@ -271,6 +279,9 @@ def main() -> None:
         json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     print(f"Wrote {OUT_DIR / 'stations_index.json'}")
+
+    (OUT_DIR / "annual_ranges.json").write_text(json.dumps(annual_ranges, indent=2), encoding="utf-8")
+    print(f"Wrote {OUT_DIR / 'annual_ranges.json'}")
 
 
 if __name__ == "__main__":
