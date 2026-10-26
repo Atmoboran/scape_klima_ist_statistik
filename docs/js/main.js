@@ -158,6 +158,10 @@
     });
     el.prevYearBtn.addEventListener('click', () => stepYear(-1));
     el.nextYearBtn.addEventListener('click', () => stepYear(1));
+    // The comparison sits in a collapsed topic: draw it at its real width once it opens.
+    $('topic-climate-details').addEventListener('toggle', e => {
+      if (e.target.open && state.currentData) renderCompare(state.currentData);
+    });
     window.addEventListener('resize', KIS.debounce(() => {
       if (state.currentData) renderCompare(state.currentData);
     }, 200));

@@ -140,8 +140,8 @@
 .distribution-year-badge .sub { font-size: 11px; font-weight: var(--fw-medium); letter-spacing: .04em; text-transform: var(--caps); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- period comparison (full width below the lab) ---- */
-.compare { margin: 28px 0 0; padding: 20px var(--gutter) 22px; background: var(--panel); border: var(--line-width) solid var(--line); }
-:root[data-view="mobile"] .compare { margin-inline: calc(-1 * var(--gutter)); border-left: 0; border-right: 0; }
+.compare { margin: 0 0 16px; padding: 14px 14px 16px; background: var(--panel); border: var(--line-width) solid var(--line); }
+.compare-title { font-weight: var(--fw-medium); font-size: 16px; margin: 0 0 6px; }
 .compare-headline { font-size: 16px; line-height: 1.5; max-width: 46em; margin: 0 0 12px; }
 .compare-headline strong { font-weight: var(--fw-medium); }
 .compare-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }

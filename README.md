@@ -13,7 +13,8 @@ Two parts, reachable from the buttons in the header:
    step buttons and a yellow "Abspielen" button runs through the years; a
    readout shows the year, its annual value and the deviation. Hovering or
    tapping the chart shows the record coldest/warmest day for that date. A
-   comparison chart below puts both reference periods side by side.
+   comparison chart of both reference periods sits inside the topic "Was hat
+   das mit dem Klimawandel zu tun?" (drawn when the topic is opened).
 2. **Klimatrend** (`docs/trend.html`) – annual bars with a 10-year moving
    average, or the distribution of daily values (bell curve) of one year
    against the reference period, for the whole year or one season, with its
@@ -93,11 +94,11 @@ reference period as three dropdowns in one row, the readout (year, value,
 deviation) in one line, then the chart with back / play / forward and the
 fullscreen button inside its top-right corner (the play button glows until
 the first touch), the year slider and legend under it, and a button for the
-tasks dialog; comparison and topics below. The view toggle sits on the logo
+tasks dialog; topics below. The view toggle sits on the logo
 row. Desktop (automatic from 1000 px, or via the "Desktop-/Handy-Ansicht"
 toggle, remembered for this app only): the chart on the left, sized to the
-screen and sticky; pickers, readout and tasks on the right; comparison and
-topics full width below. Chart explanations live in the topic "Was sehe ich
+screen and sticky; pickers, readout and tasks on the right; topics full
+width below. Chart explanations live in the topic "Was sehe ich
 auf dem Diagramm?", not under the chart.
 
 ## Updating the data

@@ -133,17 +133,19 @@
     <ol class="quiz" id="quiz"></ol>
   </dialog>
 
-  <section class="compare" id="compare">
-    <h2 class="h2-short" id="compare-title" data-t="daily.compareTitleDefault"></h2>
-    <p class="compare-headline" id="compare-headline"></p>
-    <div class="compare-legend" id="compare-legend"></div>
-    <svg class="compare-chart" id="compare-chart" role="img" data-t-aria="daily.compareAria"></svg>
-  </section>
-
   <div class="topics">
     <details class="topic"><summary data-t="common.topics.chartTitle"></summary><div class="topic-body" id="topic-chart"></div></details>
     <details class="topic"><summary data-t="common.topics.calcTitle"></summary><div class="topic-body" id="topic-calc"></div></details>
-    <details class="topic"><summary data-t="common.topics.climateTitle"></summary><div class="topic-body" id="topic-climate"></div></details>
+    <details class="topic" id="topic-climate-details">
+      <summary data-t="common.topics.climateTitle"></summary>
+      <div class="topic-body" id="topic-climate"></div>
+      <section class="compare" id="compare">
+        <h3 class="compare-title" id="compare-title" data-t="daily.compareTitleDefault"></h3>
+        <p class="compare-headline" id="compare-headline"></p>
+        <div class="compare-legend" id="compare-legend"></div>
+        <svg class="compare-chart" id="compare-chart" role="img" data-t-aria="daily.compareAria"></svg>
+      </section>
+    </details>
   </div>
 
   <div class="next-part"><a class="btn" href="trend.html" data-t="daily.next"></a></div>
