@@ -41,6 +41,7 @@
     const gAxes = svg.append("g").attr("class", "axes-layer");
     const gAnomaly = svg.append("g").attr("class", "anomaly-layer");
     const gStrands = svg.append("g").attr("class", "strands-layer");
+    const gVeil = svg.append("g").attr("class", "season-veil"); // greys out months outside the chosen season
     const gGuide = svg.append("g").attr("class", "guide-layer");
     const overlay = svg.append("rect").attr("class", "overlay").attr("fill", "transparent");
 
@@ -116,6 +117,7 @@
       gAxes.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gAnomaly.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gStrands.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+      gVeil.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
       gGuide.attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
 
       overlay
@@ -127,6 +129,7 @@
 
       drawAxes(innerW, innerH);
       drawStrands();
+      drawVeil(innerH);
       wireOverlay();
 
       if (data.years.length) {
@@ -160,6 +163,21 @@
           .attr("y", -8)
           .attr("text-anchor", "middle")
           .text(config.axisUnit);
+      }
+    }
+
+    // config.seasonMonths: month indexes to keep (null = whole year).
+    function drawVeil(innerH) {
+      gVeil.selectAll("*").remove();
+      const keep = config.seasonMonths;
+      if (!keep) return;
+      for (let m = 0; m < 12; m++) {
+        if (keep.includes(m)) continue;
+        const start = MONTH_STARTS[m];
+        const end = m < 11 ? MONTH_STARTS[m + 1] - 1 : 365;
+        const x0 = xScale(Math.max(1, start - 0.5));
+        const x1 = xScale(Math.min(365, end + 0.5));
+        gVeil.append("rect").attr("class", "veil").attr("x", x0).attr("width", x1 - x0).attr("y", 0).attr("height", innerH);
       }
     }
 
@@ -309,7 +327,7 @@
     }
 
     window.addEventListener("resize", window.KIS.debounce(() => {
-      if (data) render(data, Object.assign({}, config, { preserveYear: true }));
+      if (data && opts.svgEl.getBoundingClientRect().width > 0) render(data, Object.assign({}, config, { preserveYear: true }));
     }, 200));
 
     return { render, setYear };

@@ -10,7 +10,7 @@ window.TEXTS = {
   locale: 'de-DE', // dates in tooltips, station sorting
   months: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
   dash: '–',
-  description: 'Messdaten des Deutschen Wetterdienstes zum Ausprobieren: jedes Jahr als eine Linie, Referenzperioden 1961–1990 und 1991–2020, Jahresbalken und die Verteilung der Tageswerte.',
+  description: 'Messdaten des Deutschen Wetterdienstes zum Ausprobieren: der Verlauf jedes Jahres, die Häufigkeit der Tageswerte und der Trend über alle Jahre – für das ganze Jahr oder eine Jahreszeit.',
 
   // Texts of the shared kit (js/view.js, js/kit.js).
   kit: {
@@ -27,10 +27,12 @@ window.TEXTS = {
     devLink: '(dev)'
   },
 
-  nav: {
-    ariaLabel: 'Teile der Ausstellung',
-    daily: 'Tagesverlauf',
-    trend: 'Klimatrend'
+  // The three views of the page, in this order. `question` stands above the chart.
+  views: {
+    ariaLabel: 'Ansichten',
+    verlauf: { nav: 'Verlauf', question: 'Wie ist ein Jahr Tag für Tag verlaufen?' },
+    haeufigkeit: { nav: 'Häufigkeit', question: 'Wie oft gab es welche Tageswerte?' },
+    trend: { nav: 'Trend', question: 'Wie verändern sich die Jahre?' }
   },
 
   // Footer sources line (licence requirement).
@@ -85,127 +87,130 @@ window.TEXTS = {
     }
   },
 
-  // index.html — "Tagesverlauf"
-  daily: {
-    pageTitle: 'Klima ist Statistik – Tagesverlauf',
-    kicker: 'Teil 1 von 2 · Tagesverlauf',
+  // The page (index.html) and the texts of each view.
+  page: {
+    pageTitle: 'Klima ist Statistik',
+    kicker: 'Messdaten des Deutschen Wetterdienstes',
     headline: 'Klima ist<br>Statistik',
     lead: 'Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster – und die Abweichung vom Mittelwert.',
+    seasonAria: 'Jahreszeit',
     year: 'Jahr',
-    deviation: 'Abweichung',
-    legendReference: 'Referenz',
-    barLegendYear: 'Ausgewähltes Jahr',
-    barLegendPeriod: (start, end) => `Referenz ${start}–${end}`,
-    compareTitleDefault: 'Klimavergleich',
-    compareTitle: (stationName) => `Klimavergleich für ${stationName}`,
-    compareTooFewYears: (start, end) =>
-      `Für die Referenzperiode ${start}–${end} liegen bei dieser Station zu wenige vollständige Jahre vor, ` +
-      'um einen verlässlichen Vergleich zu berechnen.',
-    compareAria: 'Vergleich der beiden Referenzperioden über das Jahr',
-    next: 'Weiter zu Klimatrend →',
-    // Tasks of this page. Every function gets the station name; `solved` also the right answer, already formatted.
-    quiz: {
-      dev2003: {
-        question: (name) => `Um wie viel Grad lag die Jahresmitteltemperatur 2003 in ${name} über dem Mittel der Referenzperiode 1961–1990?`,
-        unit: '°C',
-        hint: 'Stell Temperatur und Referenz 1961–1990 ein, schieb den Regler auf 2003 und lies die Abweichung ab.',
-        solved: (name, answer) => `Richtig: ${answer} °C. 2003 war das Jahr des großen Hitzesommers.`
-      },
-      warmest: {
-        question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am wärmsten?`,
-        unit: '',
-        hint: 'Spiel die Jahre ab und achte auf das Jahresmittel – oder schau im Klimatrend nach dem höchsten Balken.',
-        solved: (name, answer) => `Richtig: ${answer}. Die wärmsten Jahre liegen fast alle in der jüngsten Zeit.`
-      },
-      periods: {
-        question: (name) => `Um wie viel Grad war die Referenzperiode 1991–2020 in ${name} wärmer als 1961–1990?`,
-        unit: '°C',
-        hint: 'Die Antwort steht im Klimavergleich unter dem Diagramm.',
-        solved: (name, answer) => `Richtig: ${answer} °C. Das „normale“ Klima selbst hat sich verschoben.`
-      }
-    },
+    deviation: 'Abweichung'
   },
 
-  // trend.html — "Klimatrend"
-  trend: {
-    pageTitle: 'Klima ist Statistik – Klimatrend',
-    kicker: 'Teil 2 von 2 · Klimatrend',
-    headline: 'Klimatrend',
-    lead: 'Jahreswerte im Vergleich zur Referenzperiode – und wie sich die ganze Verteilung der Tageswerte über die Zeit verschoben hat.',
-    viewLabel: 'Ansicht',
-    seasonLabel: 'Jahreszeit',
-    back: '← Zurück zum Tagesverlauf',
-    modes: {
-      annual: 'Jahresbalken',
-      distribution: 'Verteilung'
-    },
-    seasons: {
-      full: 'Jahr',
-      winter: 'Winter',
-      spring: 'Frühling',
-      summer: 'Sommer',
-      autumn: 'Herbst'
-    },
-    annualAria: (variableLabel, firstYear, lastYear) =>
-      `${variableLabel} je Jahr im Vergleich zur Referenzperiode, ${firstYear}–${lastYear}`,
-    distributionAria: (variableLabel) => `Verteilung der Tageswerte (${variableLabel}) im Vergleich zur Referenzperiode`,
-    // seasonLabel is null for the whole year.
-    annualCaption: (seasonLabel) =>
-      `Jeder Balken zeigt den tatsächlichen Wert ${seasonLabel ? `des ${seasonLabel}s` : 'des Jahres'}. ` +
-      'Die gestrichelte Linie markiert das Mittel der Referenzperiode, die Farbe die Abweichung davon. ' +
-      'Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt.' +
-      (seasonLabel === 'Winter' ? ' Ein Winter gehört zu dem Jahr, in dem sein Januar und Februar liegen; der Dezember davor zählt mit.' : ''),
-    // seasonLabel is null for the whole year.
-    distributionCaption: (seasonLabel, start, end) =>
-      `Die farbige Fläche zeigt, wie die ${seasonLabel ? `${seasonLabel}-Tageswerte` : 'Tageswerte'} im ausgewählten Jahr verteilt sind. ` +
+  // Season buttons; `stems` build the readout label ("Sommermittel", "Frühlingssumme").
+  seasons: {
+    full: 'Jahr',
+    winter: 'Winter',
+    spring: 'Frühling',
+    summer: 'Sommer',
+    autumn: 'Herbst',
+    stems: { winter: 'Winter', spring: 'Frühlings', summer: 'Sommer', autumn: 'Herbst' }
+  },
+
+  // Legends in the top-right corner of the chart.
+  legends: {
+    reference: 'Referenz',
+    barYear: 'Ausgewähltes Jahr',
+    barPeriod: (start, end) => `Referenz ${start}–${end}`,
+    distYear: 'gewähltes Jahr',
+    distReference: (start, end) => `Referenz ${start}–${end}`,
+    movingAverage: '10-Jahres-Mittel'
+  },
+
+  // View "Verlauf": comparison of the two reference periods (inside the climate topic).
+  compare: {
+    titleDefault: 'Klimavergleich',
+    title: (stationName) => `Klimavergleich für ${stationName}`,
+    tooFewYears: (start, end) =>
+      `Für die Referenzperiode ${start}–${end} liegen bei dieser Station zu wenige vollständige Jahre vor, ` +
+      'um einen verlässlichen Vergleich zu berechnen.',
+    aria: 'Vergleich der beiden Referenzperioden über das Jahr'
+  },
+
+  // View "Häufigkeit" and "Trend": aria labels and the "Was sehe ich auf dem Diagramm?" text.
+  // seasonLabel is null for the whole year.
+  haeufigkeit: {
+    aria: (variableLabel) => `Verteilung der Tageswerte (${variableLabel}) im Vergleich zur Referenzperiode`,
+    caption: (seasonLabel, start, end) =>
+      `Die farbige Fläche zeigt, wie die ${seasonLabel ? `${seasonLabel}-Tageswerte` : 'Tageswerte'} im ausgewählten Jahr verteilt sind: ` +
+      'je höher die Kurve, desto mehr Tage hatten diesen Wert. ' +
       `Die gestrichelte Linie ist dieselbe Verteilung für die Referenzperiode <strong>${start}–${end}</strong>. ` +
       'Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
-    // Appended to the caption for temperature over the whole year only.
+    // Appended for temperature over the whole year only.
     bimodalNote:
       ' Bei der Ganzjahresansicht ist die Verteilung oft zweigipflig: Die Temperatur ändert sich um die kältesten ' +
       'Wintertage und die wärmsten Sommertage herum am langsamsten, weshalb sich die Tageswerte dort häufen – ' +
-      'probiere Winter oder Sommer aus, um die einzelnen Jahreszeiten für sich zu sehen.',
-    // Under the year in the distribution view; diff arrives formatted with sign and unit.
-    distDeviation: (diff, start, end) => `${diff} zum Mittel ${start}–${end}`,
-    // seasonLabel is null for the whole year.
-    badgeSub: (seasonLabel, stationName) => (seasonLabel ? `${seasonLabel} · ${stationName}` : stationName),
-    // Tasks of this page. Every function gets the station name; `solved` also the right answer, already formatted.
-    quiz: {
-      lastTen: {
-        question: (name, first, last) => `Wie viele der Jahre ${first}–${last} waren in ${name} wärmer als das Mittel 1961–1990?`,
-        unit: '',
-        hint: 'Stell Temperatur, Jahresbalken, Jahreszeit „Jahr“ und Referenz 1961–1990 ein und zähl ganz rechts die roten Balken.',
-        solved: (name, answer) => `Richtig: ${answer}. Ein kaltes Jahr ist inzwischen die Ausnahme.`
-      },
-      coldest: {
-        question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am kältesten?`,
-        unit: '',
-        hint: 'Stell Temperatur, Jahresbalken und Jahreszeit „Jahr“ ein und such den längsten blauen Balken. Tippe darauf, um das Jahr zu sehen.',
-        solved: (name, answer) => `Richtig: ${answer}. Die kältesten Jahre liegen weit zurück.`
-      },
-      rain2018: {
-        question: (name) => `Wie viel Niederschlag fiel 2018 in ${name}? (Jahressumme)`,
-        unit: 'mm',
-        hint: 'Wähl Niederschlag, Jahresbalken und Jahreszeit „Jahr“ und tippe auf den Balken 2018.',
-        solved: (name, answer) => `Richtig: rund ${answer} mm. 2018 war ein sehr trockenes Jahr.`
-      }
-    },
+      'probiere Winter oder Sommer aus, um die einzelnen Jahreszeiten für sich zu sehen.'
   },
+  trend: {
+    aria: (variableLabel, firstYear, lastYear) =>
+      `${variableLabel} je Jahr im Vergleich zur Referenzperiode, ${firstYear}–${lastYear}`,
+    caption: (seasonLabel) =>
+      `Jeder Balken zeigt den tatsächlichen Wert ${seasonLabel ? `des ${seasonLabel}s` : 'des Jahres'}. ` +
+      'Die gestrichelte Linie markiert das Mittel der Referenzperiode, die Farbe die Abweichung davon. ' +
+      'Die schwarze Linie ist der gleitende 10-Jahres-Durchschnitt. Das Jahr am Regler ist hervorgehoben; tippe auf einen Balken, um es zu wählen.'
+  },
+  // Appended to every view's text when a season is chosen.
+  seasonNote: (seasonLabel) =>
+    ` Im Verlauf sind die Monate außerhalb der Jahreszeit ${seasonLabel} ausgegraut.` +
+    (seasonLabel === 'Winter' ? ' Ein Winter gehört zu dem Jahr, in dem sein Januar und Februar liegen; der Dezember davor zählt mit.' : ''),
 
   // Tasks dialog: a question, an answer field and a "Prüfen" button each.
-  // The right answers are computed from the data in js/main.js / js/trend.js;
+  // The right answers are computed from the data in js/main.js (setupQuiz);
   // `tolerance` there decides how close an answer must be.
   quiz: {
     open: 'Aufgaben',
     title: 'Aufgaben',
     closeAria: 'Aufgaben schließen',
-    intro: 'Finde die Antworten mit dem Diagramm heraus und trag sie ein.',
+    intro: 'Finde die Antworten mit den drei Ansichten heraus und trag sie ein.',
     check: 'Prüfen',
     answerAria: 'Deine Antwort',
     empty: 'Trag zuerst eine Zahl ein.',
     wrong: 'Noch nicht ganz.',
     hintLabel: 'Tipp:',
     progress: (done, total) => `${done}/${total}`
+  },
+
+  // The tasks, in this order. Every function gets the station name (lastTen also the first
+  // and last year); `solved` also the right answer, already formatted.
+  tasks: {
+    dev2003: {
+      question: (name) => `Um wie viel Grad lag die Jahresmitteltemperatur 2003 in ${name} über dem Mittel der Referenzperiode 1961–1990?`,
+      unit: '°C',
+      hint: 'Ansicht „Verlauf“, Temperatur, Jahreszeit „Jahr“ und Referenz 1961–1990: schieb den Regler auf 2003 und lies die Abweichung ab.',
+      solved: (name, answer) => `Richtig: ${answer} °C. 2003 war das Jahr des großen Hitzesommers.`
+    },
+    warmest: {
+      question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am wärmsten?`,
+      unit: '',
+      hint: 'Ansicht „Trend“ mit Temperatur und Jahreszeit „Jahr“: such den höchsten Balken und tippe darauf.',
+      solved: (name, answer) => `Richtig: ${answer}. Die wärmsten Jahre liegen fast alle in der jüngsten Zeit.`
+    },
+    coldest: {
+      question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am kältesten?`,
+      unit: '',
+      hint: 'Ansicht „Trend“ mit Temperatur und Jahreszeit „Jahr“: such den längsten blauen Balken und tippe darauf.',
+      solved: (name, answer) => `Richtig: ${answer}. Die kältesten Jahre liegen weit zurück.`
+    },
+    lastTen: {
+      question: (name, first, last) => `Wie viele der Jahre ${first}–${last} waren in ${name} wärmer als das Mittel 1961–1990?`,
+      unit: '',
+      hint: 'Ansicht „Trend“ mit Temperatur, Jahreszeit „Jahr“ und Referenz 1961–1990: zähl ganz rechts die roten Balken.',
+      solved: (name, answer) => `Richtig: ${answer}. Ein kaltes Jahr ist inzwischen die Ausnahme.`
+    },
+    periods: {
+      question: (name) => `Um wie viel Grad war die Referenzperiode 1991–2020 in ${name} wärmer als 1961–1990?`,
+      unit: '°C',
+      hint: 'Die Antwort steht im Klimavergleich unter „Was hat das mit dem Klimawandel zu tun?“.',
+      solved: (name, answer) => `Richtig: ${answer} °C. Das „normale“ Klima selbst hat sich verschoben.`
+    },
+    rain2018: {
+      question: (name) => `Wie viel Niederschlag fiel 2018 in ${name}? (Jahressumme)`,
+      unit: 'mm',
+      hint: 'Wähl Niederschlag und Jahreszeit „Jahr“, schieb den Regler auf 2018 und lies die Jahressumme ab.',
+      solved: (name, answer) => `Richtig: rund ${answer} mm. 2018 war ein sehr trockenes Jahr.`
+    }
   },
 
   // Text drawn inside the charts themselves.
@@ -223,6 +228,7 @@ window.TEXTS = {
       legendCold: 'kälter',
       legendWarm: 'wärmer',
       valueLabel: 'Jahresmittel',
+      seasonValueLabel: (stem) => `${stem}mittel`,
       incompleteLabel: 'lückenhaft',
       chartAriaLabel: 'Verlauf der Tagesmitteltemperatur für jedes verfügbare Jahr',
       generalInfo:
@@ -249,6 +255,7 @@ window.TEXTS = {
       legendCold: 'trockener',
       legendWarm: 'nasser',
       valueLabel: 'Jahressumme',
+      seasonValueLabel: (stem) => `${stem}summe`,
       incompleteLabel: 'lückenhaft',
       chartAriaLabel: 'Kumulierter Niederschlag im Jahresverlauf für jedes verfügbare Jahr',
       generalInfo:
@@ -275,6 +282,7 @@ window.TEXTS = {
       legendCold: 'trüber',
       legendWarm: 'sonniger',
       valueLabel: 'Jahressumme',
+      seasonValueLabel: (stem) => `${stem}summe`,
       incompleteLabel: 'lückenhaft',
       chartAriaLabel: 'Monatliche Sonnenscheindauer des ausgewählten Jahres im Vergleich zur Referenzperiode',
       generalInfo:

@@ -1,7 +1,11 @@
-// Page "Tagesverlauf" (index.html): pickers, readout, chart (one line per
-// year, or monthly bars for sunshine), reference period, timeline with play
-// controls next to the year slider, the tasks dialog, the period comparison chart
-// and the topics below.
+// The page (index.html): one set of pickers - variable, station, reference
+// period, season - and one year timeline drive three views of the same data:
+//   1 Verlauf      one line per year (monthly bars for sunshine), day by day
+//   2 Häufigkeit   distribution of the days of one year vs. the reference period
+//   3 Trend        one bar per year with a 10-year moving average
+// The view is in the URL hash (#verlauf, #haeufigkeit, #trend), so a view can
+// be linked to directly. Also: readout, legends, tasks dialog, topics and the
+// comparison of the two reference periods.
 (() => {
   'use strict';
 
@@ -9,47 +13,48 @@
   const VARIABLE_CONFIG = window.VARIABLE_CONFIG;
   const C = window.THEME.klimastatistik;
   const $ = id => document.getElementById(id);
+  const VIEWS = ['verlauf', 'haeufigkeit', 'trend'];
+  const SEASON_KEYS = ['full', 'winter', 'spring', 'summer', 'autumn'];
 
   const state = {
     stations: [],
-    currentStationId: null,
-    currentVariable: 'temperature',
-    currentData: null,
-    activePeriod: 'period_a',
-    annualDiffScale: null,
-    plot: null,
-    plotMode: 'line',
+    stationId: null,
+    variable: 'temperature',
+    data: null,      // station data as loaded
+    seasonal: null,  // the same, seen through the chosen season (KIS.seasons.seasonalData)
+    period: 'period_a',
+    season: 'full',
+    view: 'verlauf',
+    ranges: null,    // lowest/highest annual value of all stations (Trend y-axis floor)
+    diffScale: null, // colour of the deviation in the readout
     playTimer: null
   };
 
   const el = {
     variableSelect: $('variable-select'),
-    select: $('station-select'),
-    frame: $('stage-frame'),
+    stationSelect: $('station-select'),
+    periodSelect: $('period-select'),
+    seasonToggle: $('season-toggle'),
+    question: $('view-question'),
     chart: $('chart'),
     chartBar: $('chart-bar'),
+    distChart: $('distribution-chart'),
+    trendChart: $('trend-chart'),
     tooltip: $('tooltip'),
-    legendLabelCold: $('legend-label-cold'),
-    legendLabelWarm: $('legend-label-warm'),
-    legendGradient: $('legend-gradient'),
-    periodSelect: $('period-select'),
-    deviationYear: $('deviation-year'),
-    deviationMean: $('deviation-mean'),
-    statLabelMean: $('stat-label-mean'),
-    deviationValue: $('deviation-value'),
-    colorbarPeriodLabel: $('colorbar-period-label'),
-    colorbarRow: $('colorbar-row'),
-    barLegendRow: $('bar-legend-row'),
-    barLegendYearSwatch: $('bar-legend-year-swatch'),
-    barLegendYearLabel: $('bar-legend-year-label'),
-    barLegendPeriodSwatch: $('bar-legend-period-swatch'),
-    barLegendPeriodLabel: $('bar-legend-period-label'),
-    timelineYearStart: $('timeline-year-start'),
-    timelineYearEnd: $('timeline-year-end'),
+    verlaufLegend: $('verlauf-legend'),
+    barLegend: $('bar-legend'),
+    readoutYear: $('readout-year'),
+    readoutValueLabel: $('readout-value-label'),
+    readoutValue: $('readout-value'),
+    readoutDeviation: $('readout-deviation'),
     slider: $('year-slider'),
+    yearStart: $('timeline-year-start'),
+    yearEnd: $('timeline-year-end'),
     playBtn: $('play-btn'),
-    prevYearBtn: $('prev-year-btn'),
-    nextYearBtn: $('next-year-btn'),
+    prevBtn: $('prev-year-btn'),
+    nextBtn: $('next-year-btn'),
+    topicChart: $('topic-chart'),
+    climateTopic: $('topic-climate-details'),
     compare: $('compare'),
     compareTitle: $('compare-title'),
     compareHeadline: $('compare-headline'),
@@ -57,32 +62,276 @@
     compareChart: $('compare-chart')
   };
 
+  const config = () => VARIABLE_CONFIG[state.variable];
+  const currentYear = () => (state.data ? state.data.years[+el.slider.value] : null);
+  const seasonLabel = () => (state.season === 'full' ? null : t('seasons.' + state.season));
+
   // ---- first interaction: the play button stops glowing ---------------------
   const firstTouch = () => el.playBtn.classList.remove('pulse');
 
-  // ---- tasks dialog: questions about Frankfurt/Main temperature --------------
+  // ---- plots ----------------------------------------------------------------
+  const plots = {};
+  const createPlots = () => {
+    plots.lines = window.SpaghettiPlot.create({ svgEl: el.chart, tooltipEl: el.tooltip, onPointer: firstTouch });
+    plots.bars = window.MonthlyBarPlot.create({ svgEl: el.chartBar, tooltipEl: el.tooltip, onPointer: firstTouch });
+    plots.dist = window.DistributionPlot.create({ svgEl: el.distChart });
+    plots.trend = window.AnnualTrendPlot.create({
+      svgEl: el.trendChart,
+      tooltipEl: el.tooltip,
+      // a tap on a bar picks that year on the timeline
+      onYear: (year, type) => {
+        if (type !== 'pointerdown') return;
+        firstTouch();
+        const idx = state.data.years.indexOf(+year);
+        if (idx >= 0) { stopPlaying(); setYearIndex(idx); }
+      }
+    });
+  };
+
+  // Draws the visible view at its real size. Hidden views are drawn when they are opened.
+  const renderView = () => {
+    const cfg = config();
+    const data = state.data;
+    const year = currentYear();
+    if (state.view === 'verlauf') {
+      const bar = cfg.chartType === 'bar';
+      el.chart.toggleAttribute('hidden', bar);
+      el.chartBar.toggleAttribute('hidden', !bar);
+      el.verlaufLegend.hidden = bar;
+      el.barLegend.hidden = !bar;
+      const plot = bar ? plots.bars : plots.lines;
+      (bar ? el.chartBar : el.chart).setAttribute('aria-label', cfg.chartAriaLabel);
+      plot.render(data, {
+        colorStops: cfg.colorStops, axisSuffix: cfg.axisSuffix, axisUnit: cfg.axisUnit, digits: cfg.digits,
+        maxAbsDev: cfg.maxAbsDev, yMin: cfg.yMin, aboveColor: cfg.aboveColor, belowColor: cfg.belowColor,
+        formatDayTooltip: cfg.formatDayTooltip, formatMonthTooltip: cfg.formatMonthTooltip,
+        activePeriod: state.period,
+        seasonMonths: state.season === 'full' ? null : KIS.seasons.MONTHS[state.season]
+      });
+      plot.setYear(year);
+    } else if (state.view === 'haeufigkeit') {
+      el.distChart.setAttribute('aria-label', t('haeufigkeit.aria', cfg.label));
+      plots.dist.render(data, {
+        colorStops: cfg.colorStops, axisSuffix: cfg.axisSuffix, axisUnit: cfg.axisUnit,
+        dailyIsCumulative: !!cfg.dailyIsCumulative, aggregate: cfg.aggregate,
+        activePeriod: state.period, season: state.season, formatValue: cfg.formatValue
+      });
+      plots.dist.setYear(year);
+    } else {
+      el.trendChart.setAttribute('aria-label', t('trend.aria', cfg.label, data.years[0], data.years[data.years.length - 1]));
+      plots.trend.render(state.seasonal, {
+        colorStops: cfg.colorStops, axisSuffix: cfg.axisSuffix, axisUnit: cfg.axisUnit,
+        yFloor: trendFloor(),
+        activePeriod: state.period,
+        formatValue: cfg.formatValue, formatDiff: cfg.formatDiff, incompleteLabel: cfg.incompleteLabel
+      });
+      plots.trend.setYear(year);
+    }
+  };
+
+  // Trend: the lowest value of all stations for this variable and season,
+  // rounded down to a step that only depends on the overall range - the same
+  // floor at every station (data/processed/annual_ranges.json).
+  const trendFloor = () => {
+    const v = state.ranges && state.ranges[state.variable];
+    const r = v && (state.season === 'full' ? v : v.seasons && v.seasons[state.season]);
+    if (!r) return null;
+    const step = d3.tickStep(r.min, r.max, 6);
+    return Math.floor(r.min / step) * step;
+  };
+
+  // ---- views ------------------------------------------------------------------
+  const setView = view => {
+    if (!VIEWS.includes(view)) view = 'verlauf';
+    state.view = view;
+    document.querySelectorAll('.nav [data-view]').forEach(a => {
+      if (a.dataset.view === view) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('.chart-pane[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== view; });
+    el.tooltip.hidden = true;
+    el.question.textContent = t('views.' + view + '.question');
+    if (state.data) {
+      renderView();
+      updateTopic();
+    }
+  };
+  const viewFromHash = () => location.hash.replace('#', '');
+
+  // ---- readout: year, value and deviation of the chosen season ----------------
+  const buildDiffScale = () => {
+    const base = state.seasonal[state.period].mean_annual_metric;
+    const diffs = Object.values(state.seasonal.annual_metric).map(v => v - base);
+    if (base === null || base === undefined || !diffs.length) return null;
+    const maxAbs = Math.max(...diffs.map(Math.abs)) || 1;
+    return d3.scaleLinear().domain([-maxAbs, 0, maxAbs]).range(config().colorStops).interpolate(d3.interpolateRgb).clamp(true);
+  };
+
+  const updateReadout = () => {
+    const cfg = config();
+    const year = currentYear();
+    el.readoutValueLabel.textContent = state.season === 'full' ? cfg.valueLabel : cfg.seasonValueLabel(t('seasons.stems.' + state.season));
+    el.readoutYear.textContent = year || t('dash');
+    const amt = year ? state.seasonal.annual_metric[String(year)] : undefined;
+    const base = state.seasonal[state.period].mean_annual_metric;
+    el.readoutDeviation.style.color = '';
+    if (amt === undefined) {
+      el.readoutValue.textContent = year ? cfg.incompleteLabel : t('dash');
+      el.readoutDeviation.textContent = t('dash');
+      return;
+    }
+    el.readoutValue.textContent = cfg.formatValue(amt);
+    if (base === null || base === undefined) {
+      el.readoutDeviation.textContent = t('dash');
+      return;
+    }
+    const diff = amt - base;
+    el.readoutDeviation.textContent = cfg.formatDiff(diff);
+    el.readoutDeviation.style.color = state.diffScale ? state.diffScale(diff) : '';
+  };
+
+  // ---- legends and the "Was sehe ich auf dem Diagramm?" text -------------------
+  const updateLegends = () => {
+    const cfg = config();
+    const p = state.data[state.period];
+    const gradient = `linear-gradient(to right, ${cfg.colorStops.join(', ')})`;
+    document.querySelectorAll('.legend-gradient').forEach(g => { g.style.background = gradient; });
+    document.querySelectorAll('.legend-cold').forEach(n => { n.textContent = cfg.legendCold; });
+    document.querySelectorAll('.legend-warm').forEach(n => { n.textContent = cfg.legendWarm; });
+    document.querySelectorAll('.legend-period').forEach(n => { n.textContent = `${p.start}–${p.end}`; });
+    document.querySelectorAll('.legend-dist-period').forEach(n => { n.textContent = t('legends.distReference', p.start, p.end); });
+    $('bar-legend-year-swatch').style.background = cfg.aboveColor;
+    $('bar-legend-period-swatch').style.background = C.periodBar;
+    $('bar-legend-period-label').textContent = t('legends.barPeriod', p.start, p.end);
+  };
+
+  const updateTopic = () => {
+    const cfg = config();
+    const p = state.seasonal[state.period];
+    let html;
+    if (state.view === 'verlauf') {
+      html = cfg.chartExplanation;
+    } else if (p.mean_annual_metric === null || p.mean_annual_metric === undefined) {
+      html = t('common.periodTooFewYears');
+    } else if (state.view === 'haeufigkeit') {
+      html = t('haeufigkeit.caption', seasonLabel(), p.start, p.end);
+      if (state.season === 'full' && state.variable === 'temperature') html += t('haeufigkeit.bimodalNote');
+    } else {
+      html = t('trend.caption', seasonLabel());
+    }
+    if (state.season !== 'full') html += t('seasonNote', seasonLabel());
+    el.topicChart.innerHTML = `<p>${html}</p>`;
+  };
+
+  // ---- timeline ---------------------------------------------------------------
+  const setYearIndex = idx => {
+    el.slider.value = idx;
+    const year = currentYear();
+    if (state.view === 'verlauf') (config().chartType === 'bar' ? plots.bars : plots.lines).setYear(year);
+    else if (state.view === 'haeufigkeit') plots.dist.setYear(year);
+    else plots.trend.setYear(year);
+    updateReadout();
+  };
+
+  const stepYear = delta => {
+    firstTouch();
+    stopPlaying();
+    const n = state.data.years.length;
+    setYearIndex(Math.min(n - 1, Math.max(0, +el.slider.value + delta)));
+  };
+
+  const startPlaying = () => {
+    KIS.setPlaying(el.playBtn, true);
+    state.playTimer = setInterval(() => setYearIndex((+el.slider.value + 1) % state.data.years.length), 550);
+  };
+
+  function stopPlaying() {
+    if (state.playTimer) {
+      clearInterval(state.playTimer);
+      state.playTimer = null;
+    }
+    KIS.setPlaying(el.playBtn, false);
+  }
+
+  // ---- pickers -----------------------------------------------------------------
+  const renderSeasonToggle = () => {
+    const items = SEASON_KEYS.map(key => ({ key, label: t('seasons.' + key) }));
+    KIS.fillSeg(el.seasonToggle, items, state.season, key => {
+      firstTouch();
+      if (key === state.season) return;
+      state.season = key;
+      renderSeasonToggle();
+      refresh();
+    });
+  };
+
+  // Everything that depends on variable, station, period or season.
+  const refresh = () => {
+    state.seasonal = KIS.seasons.seasonalData(state.data, state.season, config());
+    state.diffScale = buildDiffScale();
+    updateLegends();
+    renderView();
+    updateReadout();
+    updateTopic();
+    if (el.climateTopic.open) renderCompare(state.data);
+  };
+
+  const load = async (stationId, variable) => {
+    stopPlaying();
+    const keepYear = currentYear();
+    state.stationId = stationId;
+    state.variable = variable;
+    el.stationSelect.value = stationId;
+    el.variableSelect.value = variable;
+    state.data = await KIS.loadJSON(`data/processed/${variable}/${stationId}.json`);
+    const years = state.data.years;
+    el.yearStart.textContent = years[0];
+    el.yearEnd.textContent = years[years.length - 1];
+    el.slider.min = 0;
+    el.slider.max = years.length - 1;
+    // stay on the year being looked at when switching station or variable
+    const idx = keepYear ? years.indexOf(keepYear) : -1;
+    el.slider.value = idx >= 0 ? idx : years.length - 1;
+    KIS.fillPeriodSelect(el.periodSelect, state.data, state.period);
+    KIS.fillVariableNotes(config());
+    KIS.fillStationNote(state.data);
+    refresh();
+  };
+
+  // ---- tasks dialog: questions about the default station (Frankfurt/Main) ------
   const setupQuiz = async () => {
     KIS.wireDialog($('tasks-open'), $('tasks-dialog'), $('tasks-close'));
-    const data = await KIS.loadJSON(`data/processed/temperature/${KIS.DEFAULT_STATION_ID}.json`);
-    const am = data.annual_metric;
-    const pa = data.period_a.mean_annual_metric;
-    const pb = data.period_b.mean_annual_metric;
-    const name = data.meta.name;
+    const id = KIS.DEFAULT_STATION_ID;
+    const [temp, rain] = await Promise.all([
+      KIS.loadJSON(`data/processed/temperature/${id}.json`),
+      KIS.loadJSON(`data/processed/precipitation/${id}.json`)
+    ]);
+    const name = temp.meta.name;
+    const am = temp.annual_metric;
+    const pa = temp.period_a.mean_annual_metric;
+    const pb = temp.period_b.mean_annual_metric;
+    const byValue = cmp => Object.keys(am).reduce((best, y) => (best === null || cmp(am[y], am[best]) ? y : best), null);
     const items = [];
     if (am['2003'] !== undefined && pa !== null) {
-      items.push({ key: 'daily.quiz.dev2003', args: [name], answer: am['2003'] - pa, digits: 1, tolerance: 0.1, signed: true });
+      items.push({ key: 'tasks.dev2003', args: [name], answer: am['2003'] - pa, digits: 1, tolerance: 0.1, signed: true });
     }
-    const warmest = Object.keys(am).reduce((best, y) => (best === null || am[y] > am[best] ? y : best), null);
-    if (warmest) items.push({ key: 'daily.quiz.warmest', args: [name], answer: +warmest, digits: 0, tolerance: 0 });
-    if (pa !== null && pb !== null) {
-      items.push({ key: 'daily.quiz.periods', args: [name], answer: pb - pa, digits: 1, tolerance: 0.1 });
+    const warmest = byValue((a, b) => a > b);
+    if (warmest) items.push({ key: 'tasks.warmest', args: [name], answer: +warmest, digits: 0, tolerance: 0 });
+    const coldest = byValue((a, b) => a < b);
+    if (coldest) items.push({ key: 'tasks.coldest', args: [name], answer: +coldest, digits: 0, tolerance: 0 });
+    const lastTen = temp.years.slice(-10).filter(y => am[y] !== undefined);
+    if (pa !== null && lastTen.length) {
+      items.push({
+        key: 'tasks.lastTen', args: [name, lastTen[0], lastTen[lastTen.length - 1]],
+        answer: lastTen.filter(y => am[y] > pa).length, digits: 0, tolerance: 0
+      });
+    }
+    if (pa !== null && pb !== null) items.push({ key: 'tasks.periods', args: [name], answer: pb - pa, digits: 1, tolerance: 0.1 });
+    if (rain.annual_metric['2018'] !== undefined) {
+      items.push({ key: 'tasks.rain2018', args: [name], answer: rain.annual_metric['2018'], digits: 0, tolerance: 5 });
     }
     KIS.quiz($('quiz'), $('quiz-progress'), items);
   };
 
-  // Sums a 365-entry daily series into 12 monthly totals (null when a month
-  // has no valid days at all) - used by the comparison chart for variables
-  // (sunshine) whose main chart is monthly bars, not lines.
   const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   const monthlySumsFromDaily = series => {
     const sums = [];
@@ -102,253 +351,20 @@
     return sums;
   };
 
-  const renderOptions = (config, extra) => Object.assign({
-    colorStops: config.colorStops,
-    axisSuffix: config.axisSuffix,
-    axisUnit: config.axisUnit,
-    digits: config.digits,
-    maxAbsDev: config.maxAbsDev,
-    yMin: config.yMin,
-    aboveColor: config.aboveColor,
-    belowColor: config.belowColor,
-    formatDayTooltip: config.formatDayTooltip,
-    formatMonthTooltip: config.formatMonthTooltip,
-    activePeriod: state.activePeriod
-  }, extra || {});
-
-  const main = async () => {
-    state.stations = await KIS.loadStations();
-    KIS.fillStationSelect(el.select, state.stations);
-
-    state.spaghettiPlot = window.SpaghettiPlot.create({
-      svgEl: el.chart,
-      tooltipEl: el.tooltip,
-      onColorScaleReady: renderLegend,
-      onPointer: firstTouch
-    });
-    state.barPlot = window.MonthlyBarPlot.create({
-      svgEl: el.chartBar,
-      tooltipEl: el.tooltip,
-      onPointer: firstTouch
-    });
-    state.plot = state.spaghettiPlot;
-
-    el.select.addEventListener('change', () => {
-      firstTouch();
-      loadAndRender(el.select.value, state.currentVariable);
-    });
-    el.variableSelect.addEventListener('change', () => {
-      firstTouch();
-      loadAndRender(state.currentStationId, el.variableSelect.value);
-    });
-    el.slider.addEventListener('input', () => {
-      firstTouch();
-      stopPlaying();
-      const year = state.currentData.years[+el.slider.value];
-      showYear(year);
-    });
-    el.periodSelect.addEventListener('change', () => {
-      firstTouch();
-      setActivePeriod(el.periodSelect.value);
-    });
-    el.playBtn.addEventListener('click', () => {
-      firstTouch();
-      if (state.playTimer) stopPlaying();
-      else startPlaying();
-    });
-    el.prevYearBtn.addEventListener('click', () => stepYear(-1));
-    el.nextYearBtn.addEventListener('click', () => stepYear(1));
-    // The comparison sits in a collapsed topic: draw it at its real width once it opens.
-    $('topic-climate-details').addEventListener('toggle', e => {
-      if (e.target.open && state.currentData) renderCompare(state.currentData);
-    });
-    window.addEventListener('resize', KIS.debounce(() => {
-      if (state.currentData) renderCompare(state.currentData);
-    }, 200));
-
-    const defaultStation = state.stations.find(s => s.station_id === KIS.DEFAULT_STATION_ID) || state.stations[0];
-    await loadAndRender(defaultStation.station_id, state.currentVariable);
-  };
-
-  const loadAndRender = async (stationId, variableKey) => {
-    stopPlaying();
-    state.currentStationId = stationId;
-    state.currentVariable = variableKey;
-    el.select.value = stationId;
-    el.variableSelect.value = variableKey;
-
-    const data = await KIS.loadJSON(`data/processed/${variableKey}/${stationId}.json`);
-    state.currentData = data;
-    const config = VARIABLE_CONFIG[variableKey];
-
-    const mode = config.chartType === 'bar' ? 'bar' : 'line';
-    state.plotMode = mode;
-    state.plot = mode === 'bar' ? state.barPlot : state.spaghettiPlot;
-    // SVG elements have no .hidden property - toggle the attribute
-    el.chart.toggleAttribute('hidden', mode === 'bar');
-    el.chartBar.toggleAttribute('hidden', mode !== 'bar');
-    el.colorbarRow.hidden = mode === 'bar';
-    el.barLegendRow.hidden = mode !== 'bar';
-    (mode === 'bar' ? el.chartBar : el.chart).setAttribute('aria-label', config.chartAriaLabel);
-    el.statLabelMean.textContent = config.valueLabel;
-    el.legendLabelCold.textContent = config.legendCold;
-    el.legendLabelWarm.textContent = config.legendWarm;
-    KIS.fillVariableNotes(config);
-    KIS.fillStationNote(data);
-
-    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
-    state.plot.render(data, renderOptions(config));
-    renderPeriodLegend(data);
-    renderBarLegend(data, config);
-    setupTimeline(data);
-    renderCompare(data);
-  };
-
-  const renderBarLegend = (data, config) => {
-    if (state.plotMode !== 'bar') return;
-    el.barLegendYearSwatch.style.background = config.aboveColor;
-    el.barLegendYearLabel.textContent = t('daily.barLegendYear');
-    el.barLegendPeriodSwatch.style.background = C.periodBar;
-    const period = data[state.activePeriod];
-    el.barLegendPeriodLabel.textContent = t('daily.barLegendPeriod', period.start, period.end);
-  };
-
-  // A symmetric diverging scale over how far each complete year's annual
-  // metric sits from the active reference period's mean - drives the colour
-  // of the deviation figure so it reflects magnitude, not just sign.
-  const buildAnnualDiffScale = (data, activePeriodKey, colorStops) => {
-    const baselineMean = data[activePeriodKey].mean_annual_metric;
-    if (baselineMean === null || baselineMean === undefined) return null;
-    const diffs = Object.values(data.annual_metric).map(v => v - baselineMean);
-    if (!diffs.length) return null;
-    const maxAbs = Math.max(...diffs.map(Math.abs)) || 1;
-    return d3.scaleLinear().domain([-maxAbs, 0, maxAbs]).range(colorStops).interpolate(d3.interpolateRgb).clamp(true);
-  };
-
-  function renderLegend(colorScale, minAmt, maxAmt) {
-    const width = 44;
-    const height = 8;
-    el.legendGradient.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    el.legendGradient.innerHTML = '';
-    const svg = d3.select(el.legendGradient);
-    const gradId = 'legend-grad';
-    const grad = svg.append('defs').append('linearGradient').attr('id', gradId).attr('x1', '0%').attr('x2', '100%');
-    const stopCount = 12;
-    for (let i = 0; i <= stopCount; i++) {
-      const f = i / stopCount;
-      grad.append('stop').attr('offset', `${f * 100}%`).attr('stop-color', colorScale(minAmt + f * (maxAmt - minAmt)));
-    }
-    svg.append('rect').attr('width', width).attr('height', height).attr('fill', `url(#${gradId})`);
-  }
-
-  const renderPeriodLegend = data => {
-    KIS.fillPeriodSelect(el.periodSelect, data, state.activePeriod);
-    const active = data[state.activePeriod];
-    el.colorbarPeriodLabel.textContent = `${active.start}–${active.end}`;
-  };
-
-  const setActivePeriod = key => {
-    if (state.activePeriod === key) return;
-    state.activePeriod = key;
-    const data = state.currentData;
-    const config = VARIABLE_CONFIG[state.currentVariable];
-    state.annualDiffScale = buildAnnualDiffScale(data, state.activePeriod, config.colorStops);
-    state.plot.render(data, renderOptions(config, { preserveYear: true }));
-    renderPeriodLegend(data);
-    renderBarLegend(data, config);
-    updateReadout(data.years[+el.slider.value]);
-  };
-
-  const showYear = year => {
-    state.plot.setYear(year);
-    updateReadout(year);
-  };
-
-  const setupTimeline = data => {
-    const years = data.years;
-    el.timelineYearStart.textContent = years[0];
-    el.timelineYearEnd.textContent = years[years.length - 1];
-    el.slider.min = 0;
-    el.slider.max = years.length - 1;
-    el.slider.value = years.length - 1;
-    updateReadout(years[years.length - 1]);
-  };
-
-  const stepYear = delta => {
-    firstTouch();
-    stopPlaying();
-    const years = state.currentData.years;
-    const idx = Math.min(years.length - 1, Math.max(0, +el.slider.value + delta));
-    el.slider.value = idx;
-    showYear(years[idx]);
-  };
-
-  const setDeviation = (diff, config) => {
-    if (diff === null || diff === undefined) {
-      el.deviationValue.textContent = t('dash');
-      el.deviationValue.style.color = '';
-      return;
-    }
-    el.deviationValue.textContent = config.formatDiff(diff);
-    el.deviationValue.style.color = state.annualDiffScale
-      ? state.annualDiffScale(diff)
-      : diff >= 0 ? config.aboveColor : config.belowColor;
-  };
-
-  const updateReadout = year => {
-    const data = state.currentData;
-    const config = VARIABLE_CONFIG[state.currentVariable];
-    const period = data[state.activePeriod];
-    el.deviationYear.textContent = year || t('dash');
-    if (!year) {
-      el.deviationMean.textContent = t('dash');
-      setDeviation(null, config);
-      return;
-    }
-    const amt = data.annual_metric[year];
-    const baseline = period.mean_annual_metric;
-    if (amt === undefined) {
-      el.deviationMean.textContent = config.incompleteLabel;
-      setDeviation(null, config);
-      return;
-    }
-    el.deviationMean.textContent = config.formatValue(amt);
-    setDeviation(baseline === null || baseline === undefined ? null : amt - baseline, config);
-  };
-
-  const startPlaying = () => {
-    const years = state.currentData.years;
-    KIS.setPlaying(el.playBtn, true);
-    let idx = +el.slider.value;
-    state.playTimer = setInterval(() => {
-      idx = (idx + 1) % years.length;
-      el.slider.value = idx;
-      showYear(years[idx]);
-    }, 550);
-  };
-
-  function stopPlaying() {
-    if (state.playTimer) {
-      clearInterval(state.playTimer);
-      state.playTimer = null;
-    }
-    KIS.setPlaying(el.playBtn, false);
-  }
-
-  // ---- period comparison chart (full width below the lab) -------------------
+  // ---- period comparison chart (inside the topic "Was hat das mit dem Klimawandel zu tun?") ----
   const renderCompare = data => {
     const meta = data.meta;
     const pa = data.period_a;
     const pb = data.period_b;
-    const config = VARIABLE_CONFIG[state.currentVariable];
+    const config = VARIABLE_CONFIG[state.variable];
 
-    el.compareTitle.textContent = t('daily.compareTitle', meta.name);
+    el.compareTitle.textContent = t('compare.title', meta.name);
     const svg = d3.select(el.compareChart);
     svg.selectAll('*').remove();
 
     if (pa.mean_annual_metric === null || pb.mean_annual_metric === null) {
       const missing = pa.mean_annual_metric === null ? pa : pb;
-      el.compareHeadline.textContent = t('daily.compareTooFewYears', missing.start, missing.end);
+      el.compareHeadline.textContent = t('compare.tooFewYears', missing.start, missing.end);
       el.compareLegend.innerHTML = '';
       return;
     }
@@ -462,6 +478,38 @@
         .attr('height', b => innerH - y(b.val))
         .attr('fill', b => b.color);
     });
+  };
+
+
+  // ---- start ----------------------------------------------------------------
+  const main = async () => {
+    createPlots();
+    setView(viewFromHash());
+    window.addEventListener('hashchange', () => setView(viewFromHash()));
+    renderSeasonToggle();
+
+    [state.stations, state.ranges] = await Promise.all([
+      KIS.loadStations(),
+      KIS.loadJSON('data/processed/annual_ranges.json')
+    ]);
+    KIS.fillStationSelect(el.stationSelect, state.stations);
+
+    el.stationSelect.addEventListener('change', () => { firstTouch(); load(el.stationSelect.value, state.variable); });
+    el.variableSelect.addEventListener('change', () => { firstTouch(); load(state.stationId, el.variableSelect.value); });
+    el.periodSelect.addEventListener('change', () => { firstTouch(); state.period = el.periodSelect.value; refresh(); });
+    el.slider.addEventListener('input', () => { firstTouch(); stopPlaying(); setYearIndex(+el.slider.value); });
+    el.playBtn.addEventListener('click', () => {
+      firstTouch();
+      if (state.playTimer) stopPlaying(); else startPlaying();
+    });
+    el.prevBtn.addEventListener('click', () => stepYear(-1));
+    el.nextBtn.addEventListener('click', () => stepYear(1));
+    // the comparison sits in a collapsed topic: draw it at its real width once it opens
+    el.climateTopic.addEventListener('toggle', () => { if (el.climateTopic.open && state.data) renderCompare(state.data); });
+    window.addEventListener('resize', KIS.debounce(() => { if (state.data && el.climateTopic.open) renderCompare(state.data); }, 200));
+
+    const start = state.stations.find(s => s.station_id === KIS.DEFAULT_STATION_ID) || state.stations[0];
+    await load(start.station_id, state.variable);
   };
 
   main().catch(e => console.error(e));

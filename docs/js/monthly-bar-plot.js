@@ -181,7 +181,10 @@
       const groups = gBars.selectAll("g.month-group").data(rows, (d) => d.month).join((enter) =>
         enter.append("g").attr("class", "month-group")
       );
-      groups.attr("transform", (d) => `translate(${xScale(d.month)},0)`);
+      groups
+        .attr("transform", (d) => `translate(${xScale(d.month)},0)`)
+        // months outside the chosen season (config.seasonMonths) fade out
+        .attr("opacity", (d, i) => (!config.seasonMonths || config.seasonMonths.includes(MONTH_LABELS.indexOf(d.month)) ? 1 : 0.22));
 
       groups.each(function (d) {
         const barsData = [
@@ -242,7 +245,7 @@
     window.addEventListener(
       "resize",
       window.KIS.debounce(() => {
-        if (data) render(data, Object.assign({}, config, { preserveYear: true }));
+        if (data && opts.svgEl.getBoundingClientRect().width > 0) render(data, Object.assign({}, config, { preserveYear: true }));
       }, 200)
     );
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title data-t="daily.pageTitle">Klima ist Statistik</title>
+<title data-t="page.pageTitle">Klima ist Statistik</title>
 <meta name="description" content="">
 <!-- Structure only. Design: theme/ · texts: content/texts.de.js · layout: css/ · behaviour: js/ -->
 <script src="js/view.js" data-app="klimastatistik"></script>
@@ -16,9 +16,11 @@
 <header class="top">
   <a class="logo" href="index.html" data-brand="logo"></a>
   <div class="top-right">
-    <nav class="nav" data-t-aria="nav.ariaLabel">
-      <a href="index.html" aria-current="page"><span class="num">1</span><span data-t="nav.daily"></span></a>
-      <a href="trend.html"><span class="num">2</span><span data-t="nav.trend"></span></a>
+    <!-- the three views of the page; js/main.js switches them (#verlauf, #haeufigkeit, #trend) -->
+    <nav class="nav" data-t-aria="views.ariaLabel">
+      <a href="#verlauf" data-view="verlauf"><span class="num">1</span><span data-t="views.verlauf.nav"></span></a>
+      <a href="#haeufigkeit" data-view="haeufigkeit"><span class="num">2</span><span data-t="views.haeufigkeit.nav"></span></a>
+      <a href="#trend" data-view="trend"><span class="num">3</span><span data-t="views.trend.nav"></span></a>
     </nav>
     <button type="button" class="view-toggle"></button>
   </div>
@@ -36,9 +38,9 @@
     <path d="M0,300 C110,300 120,80 200,80 C280,80 290,300 400,300"/>
   </svg>
   <div class="poster-text">
-    <p class="kicker" data-t="daily.kicker"></p>
-    <h1 class="headline" data-t-html="daily.headline"></h1>
-    <p class="lead" data-t="daily.lead"></p>
+    <p class="kicker" data-t="page.kicker"></p>
+    <h1 class="headline" data-t-html="page.headline"></h1>
+    <p class="lead" data-t="page.lead"></p>
   </div>
 </div>
 
@@ -76,29 +78,57 @@
       <div class="info-note" id="station-note" hidden></div>
       <div class="info-note" id="period-note" hidden data-t-html="common.periodInfo"></div>
 
+      <div class="seg-row">
+        <div class="seg" id="season-toggle" role="group" data-t-aria="page.seasonAria"></div>
+      </div>
+
       <div class="readout-grid" aria-live="polite">
-        <div><span data-t="daily.year"></span><b id="deviation-year">–</b></div>
-        <div><span id="stat-label-mean"></span><b id="deviation-mean">–</b></div>
-        <div><span data-t="daily.deviation"></span><b id="deviation-value">–</b></div>
+        <div><span data-t="page.year"></span><b id="readout-year">–</b></div>
+        <div><span id="readout-value-label"></span><b id="readout-value">–</b></div>
+        <div><span data-t="page.deviation"></span><b id="readout-deviation">–</b></div>
       </div>
     </div>
 
     <div class="lab-stage">
+      <p class="view-question" id="view-question"></p>
       <div class="stage-frame chart-frame" id="stage-frame">
-        <div class="chart-legend" id="colorbar-row" aria-hidden="true">
-          <span class="legend-scale">
-            <span class="legend-label" id="legend-label-cold"></span>
-            <svg id="legend-gradient" width="44" height="8"></svg>
-            <span class="legend-label" id="legend-label-warm"></span>
-          </span>
-          <span class="legend-vs"><span class="line-swatch"></span> <span data-t="daily.legendReference"></span> <span id="colorbar-period-label"></span></span>
+        <!-- 1 Verlauf: one line per year (or monthly bars for sunshine) -->
+        <div class="chart-pane" data-pane="verlauf">
+          <div class="chart-legend" id="verlauf-legend" aria-hidden="true">
+            <span class="legend-scale">
+              <span class="legend-label legend-cold"></span>
+              <span class="legend-gradient"></span>
+              <span class="legend-label legend-warm"></span>
+            </span>
+            <span class="legend-vs"><span class="line-swatch"></span> <span data-t="legends.reference"></span> <span class="legend-period"></span></span>
+          </div>
+          <div class="chart-legend" id="bar-legend" aria-hidden="true" hidden>
+            <span class="legend-item"><span class="swatch-box" id="bar-legend-year-swatch"></span><span data-t="legends.barYear"></span></span>
+            <span class="legend-item"><span class="swatch-box" id="bar-legend-period-swatch"></span><span id="bar-legend-period-label"></span></span>
+          </div>
+          <svg id="chart" class="chart" role="img"></svg>
+          <svg id="chart-bar" class="chart" role="img" hidden></svg>
         </div>
-        <div class="chart-legend" id="bar-legend-row" aria-hidden="true" hidden>
-          <span class="legend-item"><span class="swatch-box" id="bar-legend-year-swatch"></span><span id="bar-legend-year-label"></span></span>
-          <span class="legend-item"><span class="swatch-box" id="bar-legend-period-swatch"></span><span id="bar-legend-period-label"></span></span>
+        <!-- 2 Häufigkeit: distribution of the days of one year against the reference period -->
+        <div class="chart-pane" data-pane="haeufigkeit" hidden>
+          <div class="chart-legend" aria-hidden="true">
+            <span class="legend-item"><span class="line-swatch"></span> <span data-t="legends.distYear"></span></span>
+            <span class="legend-item"><span class="line-swatch dashed"></span> <span class="legend-dist-period"></span></span>
+          </div>
+          <svg id="distribution-chart" class="chart" role="img"></svg>
         </div>
-        <svg id="chart" class="chart" role="img"></svg>
-        <svg id="chart-bar" class="chart" role="img" hidden></svg>
+        <!-- 3 Trend: one bar per year, 10-year moving average -->
+        <div class="chart-pane" data-pane="trend" hidden>
+          <div class="chart-legend" aria-hidden="true">
+            <span class="legend-scale">
+              <span class="legend-label legend-cold"></span>
+              <span class="legend-gradient"></span>
+              <span class="legend-label legend-warm"></span>
+            </span>
+            <span class="legend-vs"><span class="line-swatch"></span> <span data-t="legends.movingAverage"></span></span>
+          </div>
+          <svg id="trend-chart" class="chart" role="img"></svg>
+        </div>
         <div id="tooltip" class="tooltip" hidden></div>
         <p class="load-error" id="load-error" hidden data-t="loadError"></p>
       </div>
@@ -140,15 +170,13 @@
       <summary data-t="common.topics.climateTitle"></summary>
       <div class="topic-body" id="topic-climate"></div>
       <section class="compare" id="compare">
-        <h3 class="compare-title" id="compare-title" data-t="daily.compareTitleDefault"></h3>
+        <h3 class="compare-title" id="compare-title" data-t="compare.titleDefault"></h3>
         <p class="compare-headline" id="compare-headline"></p>
         <div class="compare-legend" id="compare-legend"></div>
-        <svg class="compare-chart" id="compare-chart" role="img" data-t-aria="daily.compareAria"></svg>
+        <svg class="compare-chart" id="compare-chart" role="img" data-t-aria="compare.aria"></svg>
       </section>
     </details>
   </div>
-
-  <div class="next-part"><a class="btn" href="trend.html" data-t="daily.next"></a></div>
 </main>
 
 <footer class="foot">
@@ -166,6 +194,8 @@
 <script src="js/variable-config.js"></script>
 <script src="js/spaghetti-plot.js"></script>
 <script src="js/monthly-bar-plot.js"></script>
+<script src="js/distribution-plot.js"></script>
+<script src="js/annual-trend-plot.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

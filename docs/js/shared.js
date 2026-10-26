@@ -118,6 +118,8 @@
     summer: [[152, 243, 0]],
     autumn: [[244, 334, 0]]
   };
+  // Month indexes (0 = January) of each season, for greying out the rest of the year.
+  const SEASON_MONTHS = { winter: [11, 0, 1], spring: [2, 3, 4], summer: [5, 6, 7], autumn: [8, 9, 10] };
 
   // Per-day values of a strand; precipitation strands are a running total
   // (see build_data.py) and are differenced back into daily amounts.
@@ -302,7 +304,7 @@
     num, signed, tick, loadJSON, loadStations, fillStationSelect,
     fillVariableNotes, fillStationNote, fillSeg, fillPeriodSelect, setPlaying, wireDialog, quiz, parseAnswer,
     placeTooltip, debounce,
-    seasons: { RANGES: SEASON_RANGES, values: seasonValues, complete: seasonComplete, summarise, seasonalData },
+    seasons: { RANGES: SEASON_RANGES, MONTHS: SEASON_MONTHS, values: seasonValues, complete: seasonComplete, summarise, seasonalData },
     // LOCAL: default station when the page opens (Frankfurt/Main)
     DEFAULT_STATION_ID: '01420'
   };

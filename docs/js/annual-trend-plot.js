@@ -58,6 +58,7 @@
     let width = 0;
     let height = 0;
     let idleTimer = null;
+    let selectedYear = null; // highlighted bar (the year on the timeline); the others fade
 
     const gAxes = svg.append("g").attr("class", "axes-layer");
     const gZero = svg.append("g").attr("class", "zero-layer");
@@ -212,6 +213,19 @@
         .attr("y", (d) => Math.min(y(d.amt), y(baseline)))
         .attr("height", (d) => Math.abs(y(d.amt) - y(baseline)))
         .attr("fill", (d) => colorScale(d.diff));
+      applyHighlight();
+    }
+
+    function applyHighlight() {
+      gBars
+        .selectAll("rect.trend-bar")
+        .classed("dimmed", (d) => selectedYear !== null && String(d.year) !== String(selectedYear))
+        .classed("selected", (d) => selectedYear !== null && String(d.year) === String(selectedYear));
+    }
+
+    function setYear(year) {
+      selectedYear = year === undefined ? null : year;
+      applyHighlight();
     }
 
     function drawTrend(rows, x, y) {
@@ -291,11 +305,11 @@
     window.addEventListener(
       "resize",
       window.KIS.debounce(() => {
-        if (data) render(data, config);
+        if (data && opts.svgEl.getBoundingClientRect().width > 0) render(data, config);
       }, 200)
     );
 
-    return { render };
+    return { render, setYear };
   }
 
   window.AnnualTrendPlot = { create: createAnnualTrendPlot };

@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 64, right: 14, bottom: 34, left: 34 }; // top: room for the year and its deviation
+  const MARGIN = { top: 54, right: 14, bottom: 34, left: 34 }; // top: room for the legend
   const SAMPLE_COUNT = 160;
 
   const DEFAULT_CONFIG = {
@@ -317,7 +317,7 @@
     window.addEventListener(
       "resize",
       window.KIS.debounce(() => {
-        if (data) render(data, Object.assign({}, config, { preserveYear: true }));
+        if (data && opts.svgEl.getBoundingClientRect().width > 0) render(data, Object.assign({}, config, { preserveYear: true }));
       }, 200)
     );
 
