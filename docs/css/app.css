@@ -152,3 +152,13 @@
 /* ---- compact page around the chart ---- */
 :root[data-view="mobile"] .page { padding-top: 12px; }
 :root[data-view="desktop"] .lab { gap: 12px 28px; }
+
+/* legend in the free strip at the top of the chart, left of the buttons */
+.chart-legend {
+  position: absolute; top: 5px; left: 10px; right: 182px; z-index: 5; pointer-events: none; overflow: hidden;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 3px 12px;
+  font-size: 11px; line-height: 1.25; color: var(--ink-muted);
+}
+.chart-legend .legend-scale, .chart-legend .legend-vs, .chart-legend .legend-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.chart-legend .line-swatch { width: 16px; border-top-width: 2.5px; }
+.chart-legend .swatch-box { width: 10px; height: 10px; }

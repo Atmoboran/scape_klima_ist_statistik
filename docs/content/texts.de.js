@@ -93,10 +93,9 @@ window.TEXTS = {
     lead: 'Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster – und die Abweichung vom Mittelwert.',
     year: 'Jahr',
     deviation: 'Abweichung',
-    legendVs: 'als',
-    legendReference: 'Referenzperiode',
+    legendReference: 'Referenz',
     barLegendYear: 'Ausgewähltes Jahr',
-    barLegendPeriod: (start, end) => `Referenzperiode ${start}–${end}`,
+    barLegendPeriod: (start, end) => `Referenz ${start}–${end}`,
     compareTitleDefault: 'Klimavergleich',
     compareTitle: (stationName) => `Klimavergleich für ${stationName}`,
     compareTooFewYears: (start, end) =>

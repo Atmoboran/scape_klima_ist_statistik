@@ -9,7 +9,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 46, right: 12, bottom: 28, left: 40 }; // top: room for the buttons inside the chart; unit sits above the y-axis
+  const MARGIN = { top: 54, right: 12, bottom: 28, left: 40 }; // top: room for the buttons inside the chart; unit sits above the y-axis
   const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // non-leap, matches the 365-day daily series
   const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
@@ -163,7 +163,7 @@
           .append("text")
           .attr("class", "axis-unit-label")
           .attr("x", 0)
-          .attr("y", -12)
+          .attr("y", -8)
           .attr("text-anchor", "middle")
           .text(config.axisUnit);
       }

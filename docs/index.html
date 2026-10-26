@@ -93,6 +93,18 @@
           </button>
           <button type="button" class="tool" id="next-year-btn" data-t-aria="timeline.nextAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l9 7-9 7V5z"/></svg></button>
         </div>
+        <div class="chart-legend" id="colorbar-row" aria-hidden="true">
+          <span class="legend-scale">
+            <span class="legend-label" id="legend-label-cold"></span>
+            <svg id="legend-gradient" width="44" height="8"></svg>
+            <span class="legend-label" id="legend-label-warm"></span>
+          </span>
+          <span class="legend-vs"><span class="line-swatch"></span> <span data-t="daily.legendReference"></span> <span id="colorbar-period-label"></span></span>
+        </div>
+        <div class="chart-legend" id="bar-legend-row" aria-hidden="true" hidden>
+          <span class="legend-item"><span class="swatch-box" id="bar-legend-year-swatch"></span><span id="bar-legend-year-label"></span></span>
+          <span class="legend-item"><span class="swatch-box" id="bar-legend-period-swatch"></span><span id="bar-legend-period-label"></span></span>
+        </div>
         <svg id="chart" class="chart" role="img"></svg>
         <svg id="chart-bar" class="chart" role="img" hidden></svg>
         <div id="tooltip" class="tooltip" hidden></div>
@@ -102,19 +114,6 @@
         <span class="year-bound" id="timeline-year-start">–</span>
         <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
         <span class="year-bound" id="timeline-year-end">–</span>
-      </div>
-      <div class="legend-row" id="colorbar-row" aria-hidden="true">
-        <span class="legend-label" id="legend-label-cold"></span>
-        <svg id="legend-gradient" width="120" height="10"></svg>
-        <span class="legend-label" id="legend-label-warm"></span>
-        <span class="legend-vs">
-          <span data-t="daily.legendVs"></span> <span class="line-swatch"></span>
-          <span data-t="daily.legendReference"></span> <span id="colorbar-period-label"></span>
-        </span>
-      </div>
-      <div class="legend-row" id="bar-legend-row" aria-hidden="true" hidden>
-        <span class="legend-item"><span class="swatch-box" id="bar-legend-year-swatch"></span><span id="bar-legend-year-label"></span></span>
-        <span class="legend-item"><span class="swatch-box" id="bar-legend-period-swatch"></span><span id="bar-legend-period-label"></span></span>
       </div>
     </div>
 

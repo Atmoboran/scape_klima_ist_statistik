@@ -222,8 +222,8 @@
   };
 
   function renderLegend(colorScale, minAmt, maxAmt) {
-    const width = 160;
-    const height = 10;
+    const width = 44;
+    const height = 8;
     el.legendGradient.setAttribute('viewBox', `0 0 ${width} ${height}`);
     el.legendGradient.innerHTML = '';
     const svg = d3.select(el.legendGradient);

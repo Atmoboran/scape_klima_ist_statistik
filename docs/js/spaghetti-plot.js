@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 46, right: 12, bottom: 28, left: 40 }; // top: room for the buttons inside the chart; unit sits above the y-axis
+  const MARGIN = { top: 54, right: 12, bottom: 28, left: 40 }; // top: room for the buttons inside the chart; unit sits above the y-axis
   const MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
   const MONTH_LABELS = window.TEXTS.months;
   const TOOLTIP_IDLE_MS = 5000;
@@ -157,7 +157,7 @@
           .append("text")
           .attr("class", "axis-unit-label")
           .attr("x", 0)
-          .attr("y", -12)
+          .attr("y", -8)
           .attr("text-anchor", "middle")
           .text(config.axisUnit);
       }
