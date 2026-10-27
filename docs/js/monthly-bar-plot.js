@@ -236,8 +236,10 @@
     }
 
     function showMonthTooltip(d, clientX, clientY) {
-      const fmt = (v) => (v !== null && v !== undefined ? window.KIS.num(v, 0) : null);
-      tooltipEl.innerHTML = config.formatMonthTooltip(d.month, highlightedYear, fmt(d.yearVal), fmt(d.periodVal));
+      const has = (v) => v !== null && v !== undefined;
+      const value = has(d.yearVal) ? config.formatValue(d.yearVal) : null;
+      const diff = value !== null && has(d.periodVal) ? config.formatDiff(d.yearVal - d.periodVal) : null;
+      tooltipEl.innerHTML = config.formatMonthTooltip(d.month, highlightedYear, value, diff);
       tooltipEl.hidden = false;
       window.KIS.placeTooltip(tooltipEl, tooltipEl.parentElement, clientX, clientY);
     }

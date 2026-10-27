@@ -12,7 +12,7 @@
 (() => {
   'use strict';
 
-  const MARGIN = { top: 54, right: 14, bottom: 34, left: 34 }; // top: room for the legend
+  const MARGIN = { top: 54, right: 14, bottom: 34, left: 56 }; // top: room for the legend; left: day counts + axis title
   const SAMPLE_COUNT = 160;
 
   const DEFAULT_CONFIG = {
@@ -90,6 +90,7 @@
     let xScale, yScale, colorScale, bandwidth, xs;
     let currentYear = null;
     let refSummary = null; // the reference period's mean of the per-year summaries
+    let daysInSeason = 365;
 
     const gAxes = svg.append("g").attr("class", "axes-layer");
     const gDefs = svg.append("defs");
@@ -137,12 +138,12 @@
       }
       refSummary = refSummaries.length ? mean(refSummaries) : null;
 
-      // The x-axis is fixed from *every* year's values for the active season
-      // (not just the reference period's) so switching which year is
-      // highlighted never rescales the axis - only loading a different
-      // station/variable/season does.
+      // The x-axis is fixed from *every* day of *every* year (whole year, not
+      // just the chosen season), so neither the highlighted year nor the
+      // season rescales it - a summer sits where summer days are on the
+      // whole-year axis. Only another station or variable changes it.
       const allValues = [];
-      for (const y of data.years) allValues.push(...seasonValues(data, y, config.season, config.dailyIsCumulative));
+      for (const y of data.years) allValues.push(...seasonValues(data, y, "full", config.dailyIsCumulative));
 
       if (!refValues.length || !allValues.length) {
         gAxes.selectAll("*").remove();
@@ -161,6 +162,11 @@
       const pad = (hiAll - loAll) * 0.08 || 1;
       const xDomain = [loAll - pad, hiAll + pad];
       xScale = d3.scaleLinear().domain(xDomain).range([0, innerW]);
+
+      // A density times the number of days in the season = days per 1-unit
+      // band (1 °C, 1 mm, 1 h) - a number a visitor can read off the y-axis.
+      const ranges = window.KIS.seasons.RANGES[config.season] || [[1, 365, 0]];
+      daysInSeason = ranges.reduce((n, [a, b]) => n + (b - a + 1), 0);
 
       bandwidth = silvermanBandwidth(refValues);
       xs = d3.range(SAMPLE_COUNT + 1).map((i) => xDomain[0] + (i / SAMPLE_COUNT) * (xDomain[1] - xDomain[0]));
@@ -199,7 +205,7 @@
         .axisBottom(xScale)
         .ticks(6)
         .tickSize(-innerH)
-        .tickFormat((d) => window.KIS.tick(d) + config.axisSuffix);
+        .tickFormat((d) => window.KIS.tick(d)); // the unit stands at the right end of the axis
       gAxes.append("g").attr("class", "axis").attr("transform", `translate(0,${innerH})`).call(xAxis);
 
       if (config.axisUnit) {
@@ -212,18 +218,17 @@
           .text(config.axisUnit);
       }
 
-      // No numeric density ticks - a raw KDE value ("0.034") means nothing
-      // to a lay reader - just a vertical rule and a rotated title so the
-      // axis still reads as "this dimension is how often, not how much".
-      gAxes.append("g").attr("class", "axis").call(d3.axisLeft(yScale).ticks(0).tickSize(0));
+      // y-axis in days per 1-unit band (see daysInSeason), not raw density
+      const yDays = yScale.copy().domain(yScale.domain().map((v) => v * daysInSeason));
+      gAxes.append("g").attr("class", "axis").call(d3.axisLeft(yDays).ticks(5).tickFormat((d) => window.KIS.tick(d)));
       gAxes
         .append("text")
         .attr("class", "axis-unit-label dist-y-label")
         .attr("transform", "rotate(-90)")
         .attr("x", -innerH / 2)
-        .attr("y", -22)
+        .attr("y", -40)
         .attr("text-anchor", "middle")
-        .text(window.TEXTS.charts.frequencyAxis);
+        .text(window.TEXTS.charts.frequencyAxis(config.axisUnit));
     }
 
     // A dotted vertical guide at the reference period's own mean, since the

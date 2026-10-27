@@ -105,6 +105,7 @@
         colorStops: cfg.colorStops, axisSuffix: cfg.axisSuffix, axisUnit: cfg.axisUnit, digits: cfg.digits,
         maxAbsDev: cfg.maxAbsDev, yMin: cfg.yMin, aboveColor: cfg.aboveColor, belowColor: cfg.belowColor,
         formatDayTooltip: cfg.formatDayTooltip, formatMonthTooltip: cfg.formatMonthTooltip,
+        formatValue: cfg.formatValue, formatDiff: cfg.formatDiff,
         activePeriod: state.period,
         seasonMonths: state.season === 'full' ? null : KIS.seasons.MONTHS[state.season]
       });
@@ -121,7 +122,8 @@
       el.trendChart.setAttribute('aria-label', t('trend.aria', cfg.label, data.years[0], data.years[data.years.length - 1]));
       plots.trend.render(state.seasonal, {
         colorStops: cfg.colorStops, axisSuffix: cfg.axisSuffix, axisUnit: cfg.axisUnit,
-        yFloor: trendFloor(),
+        yFloor: trendRange()[0],
+        yCeil: trendRange()[1],
         activePeriod: state.period,
         formatValue: cfg.formatValue, formatDiff: cfg.formatDiff, incompleteLabel: cfg.incompleteLabel
       });
@@ -129,15 +131,15 @@
     }
   };
 
-  // Trend: the lowest value of all stations for this variable and season,
-  // rounded down to a step that only depends on the overall range - the same
-  // floor at every station (data/processed/annual_ranges.json).
-  const trendFloor = () => {
+  // Trend: the lowest and highest value of all stations for this variable and
+  // season, rounded outwards to a step that only depends on that overall
+  // range - the same y-axis at every station (data/processed/annual_ranges.json).
+  const trendRange = () => {
     const v = state.ranges && state.ranges[state.variable];
     const r = v && (state.season === 'full' ? v : v.seasons && v.seasons[state.season]);
-    if (!r) return null;
+    if (!r) return [null, null];
     const step = d3.tickStep(r.min, r.max, 6);
-    return Math.floor(r.min / step) * step;
+    return [Math.floor(r.min / step) * step, Math.ceil(r.max / step) * step];
   };
 
   // ---- views ------------------------------------------------------------------

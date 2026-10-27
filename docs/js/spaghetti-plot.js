@@ -242,21 +242,18 @@
       return d.toLocaleDateString(window.TEXTS.locale, { month: "short", day: "numeric", timeZone: "UTC" });
     }
 
+    // The chosen year on the hovered day: its value and the deviation from the reference period.
     function showDayTooltip(doy, clientX, clientY) {
-      const stat = data.by_day_stats[doy - 1];
-      if (!stat || stat.mean === null) {
+      const year = highlightedYear;
+      if (!year || !data.strands[year]) {
         tooltipEl.hidden = true;
         return;
       }
-      const digits = config.digits || 0;
-      const shown = {
-        mean: window.KIS.num(stat.mean, digits),
-        min: window.KIS.num(stat.min, digits),
-        max: window.KIS.num(stat.max, digits),
-        minYear: stat.minYear,
-        maxYear: stat.maxYear,
-      };
-      tooltipEl.innerHTML = config.formatDayTooltip(shown, doyToDateLabel(doy));
+      const v = data.strands[year][doy - 1];
+      const b = baseline[doy - 1];
+      const value = v === null || v === undefined ? null : config.formatValue(v);
+      const diff = value === null || b === null || b === undefined ? null : config.formatDiff(v - b);
+      tooltipEl.innerHTML = config.formatDayTooltip(doyToDateLabel(doy), year, value, diff);
       tooltipEl.hidden = false;
       window.KIS.placeTooltip(tooltipEl, tooltipEl.parentElement, clientX, clientY);
     }

@@ -12,14 +12,18 @@ old `trend.html` forwards to `index.html#trend`.
 1. **Verlauf** – "Wie ist ein Jahr Tag für Tag verlaufen?" Every available
    year of a station as one thin line (daily mean temperature, cumulative
    precipitation) or as monthly bars (sunshine), coloured by the deviation
-   from the reference period. Hovering or tapping shows the record
-   coldest/warmest day for that date.
+   from the reference period. Hovering or tapping shows the chosen year on
+   that day: its value and the deviation from the reference period (for
+   sunshine the same per month).
 2. **Häufigkeit** – "Wie oft gab es welche Tageswerte?" The distribution of
    the daily values of one year (bell curve) against the reference period.
+   The y-axis counts days per 1-unit band (1 °C, 1 mm, 1 h); the x-axis is
+   always the whole-year range, so a season sits where its days are.
 3. **Trend** – "Wie verändern sich die Jahre?" One bar per year with a
-   10-year moving average. The y-axis starts at the lowest value of all
-   stations (`data/processed/annual_ranges.json`, written by
-   `build_data.py`), rounded down – the same floor at every station, not 0.
+   10-year moving average. The y-axis runs from the lowest to the highest
+   value of all stations for the variable and season
+   (`data/processed/annual_ranges.json`, written by `build_data.py`),
+   rounded outwards – the same axis at every station, not from 0.
    The year on the timeline has a black outline; tapping a bar picks it.
 
 Shared by all three views: variable, station and reference period (1961–1990

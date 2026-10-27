@@ -133,7 +133,7 @@ window.TEXTS = {
     aria: (variableLabel) => `Verteilung der Tageswerte (${variableLabel}) im Vergleich zur Referenzperiode`,
     caption: (seasonLabel, start, end) =>
       `Die farbige Fläche zeigt, wie die ${seasonLabel ? `${seasonLabel}-Tageswerte` : 'Tageswerte'} im ausgewählten Jahr verteilt sind: ` +
-      'je höher die Kurve, desto mehr Tage hatten diesen Wert. ' +
+      'Die Achse links zählt, wie viele Tage in einen Bereich von einer Einheit fallen (z. B. 1 °C). ' +
       `Die gestrichelte Linie ist dieselbe Verteilung für die Referenzperiode <strong>${start}–${end}</strong>. ` +
       'Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
     // Appended for temperature over the whole year only.
@@ -214,7 +214,8 @@ window.TEXTS = {
 
   // Text drawn inside the charts themselves.
   charts: {
-    frequencyAxis: 'Häufigkeit der Tage',
+    // y-axis of the Häufigkeit view: how many days fall into a 1-unit band (1 °C, 1 mm, 1 h)
+    frequencyAxis: (unit) => `Anzahl Tage je 1 ${unit}`,
     meanPrefix: 'Ø',
     vsReference: 'ggü. Referenzperiode'
   },
@@ -233,11 +234,10 @@ window.TEXTS = {
       generalInfo:
         'Die Lufttemperatur beschreibt, wie warm oder kalt die Luft in Bodennähe ist. Sie wird in Grad Celsius (°C) gemessen und ist einer der wichtigsten Klimaindikatoren: Ihr langfristiger Verlauf zeigt, ob sich ein Ort über Jahrzehnte erwärmt oder abkühlt.',
       chartExplanation:
-        'Jede dünne Linie zeigt den Tagesverlauf der Tagesmitteltemperatur eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe jedes Punkts zeigt, ob dieser Tag im Vergleich zum selben Tag der Referenzperiode wärmer (rot) oder kälter (blau) war. Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
-      formatDayTooltip: (stat, dateLabel) =>
-        `<b>${dateLabel}</b><br>Durchschnitt: ${stat.mean} °C<br>` +
-        `<span class="tt-cold">kälteste: ${stat.min} °C (${stat.minYear})</span><br>` +
-        `<span class="tt-warm">wärmste: ${stat.max} °C (${stat.maxYear})</span>`,
+        'Jede dünne Linie zeigt den Tagesverlauf der Tagesmitteltemperatur eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe jedes Punkts zeigt, ob dieser Tag im Vergleich zum selben Tag der Referenzperiode wärmer (rot) oder kälter (blau) war. Fahre über das Diagramm, um für einen Tag den Wert des gewählten Jahres und seine Abweichung von der Referenzperiode zu sehen. Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
+      // Hovering the chart: the chosen year on that day. value/diff arrive formatted with unit, or null.
+      formatDayTooltip: (dateLabel, year, value, diff) =>
+        `<b>${dateLabel} ${year}</b><br>` + (value === null ? 'keine Daten' : `${value}` + (diff === null ? '' : `<br>${diff} ggü. Referenz`)),
       formatCompareHeadline: (pa, pb, diff, amount) =>
         `${pb.start}–${pb.end} war im Jahresmittel <strong>${amount} °C ${diff >= 0 ? 'wärmer' : 'kühler'}</strong> ` +
         `als ${pa.start}–${pa.end}.`,
@@ -260,11 +260,10 @@ window.TEXTS = {
       generalInfo:
         'Niederschlag umfasst alles Wasser, das als Regen, Schnee, Hagel oder Nieselregen auf den Boden fällt. Er wird in Millimetern (mm) gemessen – 1 mm entspricht 1 Liter Wasser pro Quadratmeter. Niederschlag ist entscheidend für Wasserversorgung, Landwirtschaft und das Risiko von Dürren oder Überschwemmungen.',
       chartExplanation:
-        'Jede Linie zeigt den im Jahresverlauf aufsummierten (kumulierten) Niederschlag eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe zeigt, ob an diesem Tag bislang mehr (blau, nasser) oder weniger (orange, trockener) Niederschlag gefallen ist als in der Referenzperiode. Fahre über das Diagramm, um einen Tag im Vergleich aller Jahre zu sehen. Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
-      formatDayTooltip: (stat, dateLabel) =>
-        `<b>bis ${dateLabel}</b><br>im Schnitt: ${stat.mean} mm<br>` +
-        `<span class="tt-cold">am wenigsten: ${stat.min} mm (${stat.minYear})</span><br>` +
-        `<span class="tt-warm">am meisten: ${stat.max} mm (${stat.maxYear})</span>`,
+        'Jede Linie zeigt den im Jahresverlauf aufsummierten (kumulierten) Niederschlag eines einzelnen Jahres. Die dicke schwarze Linie zeigt die aktuell ausgewählte Referenzperiode. Die Farbe zeigt, ob an diesem Tag bislang mehr (blau, nasser) oder weniger (orange, trockener) Niederschlag gefallen ist als in der Referenzperiode. Fahre über das Diagramm, um für einen Tag den Wert des gewählten Jahres und seine Abweichung von der Referenzperiode zu sehen. Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
+      // Hovering the chart: the chosen year's total up to that day. value/diff arrive formatted with unit, or null.
+      formatDayTooltip: (dateLabel, year, value, diff) =>
+        `<b>bis ${dateLabel} ${year}</b><br>` + (value === null ? 'keine Daten' : `${value}` + (diff === null ? '' : `<br>${diff} ggü. Referenz`)),
       formatCompareHeadline: (pa, pb, diff, amount) =>
         `${pb.start}–${pb.end} brachte im Schnitt <strong>${amount} mm ${diff >= 0 ? 'mehr' : 'weniger'} Niederschlag pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,
@@ -287,16 +286,12 @@ window.TEXTS = {
       generalInfo:
         'Die Sonnenscheindauer gibt an, wie viele Stunden am Tag die Sonne direkt und ungehindert scheint – bewölkter oder diesiger Himmel zählt nicht mit. Sie wird in Stunden (h) gemessen und beeinflusst unter anderem Temperatur, Verdunstung und das Wohlbefinden von Menschen und Ökosystemen.',
       chartExplanation:
-        'Für jeden Monat zeigt der graue Balken die durchschnittliche Sonnenscheindauer der aktuell ausgewählten Referenzperiode, der farbige Balken die Sonnenscheindauer im ausgewählten Jahr. Fahre über einen Monat, um die genauen Werte zu vergleichen. Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
-      formatDayTooltip: (stat, dateLabel) =>
-        `<b>${dateLabel}</b><br>Durchschnitt: ${stat.mean} h<br>` +
-        `<span class="tt-cold">am wenigsten: ${stat.min} h (${stat.minYear})</span><br>` +
-        `<span class="tt-warm">am meisten: ${stat.max} h (${stat.maxYear})</span>`,
-      // yearVal / periodVal: formatted numbers, or null when missing.
-      formatMonthTooltip: (monthLabel, year, yearVal, periodVal) =>
-        `<b>${monthLabel}</b><br>` +
-        (yearVal !== null ? `${year}: <b>${yearVal} h</b><br>` : `${year}: keine Daten<br>`) +
-        `Referenzperiode: ${periodVal !== null ? periodVal + ' h' : '–'}`,
+        'Für jeden Monat zeigt der graue Balken die durchschnittliche Sonnenscheindauer der aktuell ausgewählten Referenzperiode, der farbige Balken die Sonnenscheindauer im ausgewählten Jahr. Fahre über einen Monat, um die Sonnenstunden des gewählten Jahres und ihre Abweichung von der Referenzperiode zu sehen. Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
+      formatDayTooltip: (dateLabel, year, value, diff) =>
+        `<b>${dateLabel} ${year}</b><br>` + (value === null ? 'keine Daten' : `${value}` + (diff === null ? '' : `<br>${diff} ggü. Referenz`)),
+      // Hovering a month: the chosen year's total of that month. value/diff arrive formatted with unit, or null.
+      formatMonthTooltip: (monthLabel, year, value, diff) =>
+        `<b>${monthLabel} ${year}</b><br>` + (value === null ? 'keine Daten' : `${value}` + (diff === null ? '' : `<br>${diff} ggü. Referenz`)),
       formatCompareHeadline: (pa, pb, diff, amount) =>
         `${pb.start}–${pb.end} brachte im Schnitt <strong>${amount} h ${diff >= 0 ? 'mehr' : 'weniger'} Sonnenschein pro Jahr</strong> ` +
         `als ${pa.start}–${pa.end}.`,

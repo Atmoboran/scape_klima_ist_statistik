@@ -139,14 +139,22 @@
       const minA = Math.min(...amts);
       const maxA = Math.max(...amts);
       const pad = (maxA - minA) * 0.08 || 1;
-      // The axis starts at the lowest annual value of all stations
-      // (config.yFloor, from data/processed/annual_ranges.json) rounded down
-      // to an axis tick - not at 0, so year-to-year differences stay visible
-      // for totals like precipitation and sunshine, and the floor stays put
-      // when switching stations. nice(6) matches the 6 axis ticks.
-      const hasFloor = config.yFloor !== null && config.yFloor !== undefined;
-      const y = d3.scaleLinear().domain([hasFloor ? Math.min(config.yFloor, minA) : minA, maxA + pad]).nice(6).range([innerH, 0]).clamp(true);
-      if (hasFloor && config.yFloor <= minA) y.domain([config.yFloor, y.domain()[1]]); // same floor at every station
+      // The axis runs from the lowest to the highest annual value of all
+      // stations (config.yFloor / config.yCeil, from
+      // data/processed/annual_ranges.json, rounded outwards) - not from 0, so
+      // year-to-year differences stay visible for totals like precipitation
+      // and sunshine, and the axis stays put when switching stations. Without
+      // those values: the station's own range, nice(6) to match the 6 ticks.
+      const given = (v) => v !== null && v !== undefined;
+      let y;
+      if (given(config.yFloor) && given(config.yCeil) && config.yFloor <= minA && config.yCeil >= maxA) {
+        // the same axis at every station: overall min/max of the variable and season
+        y = d3.scaleLinear().domain([config.yFloor, config.yCeil]).range([innerH, 0]).clamp(true);
+      } else {
+        const floor = given(config.yFloor) ? Math.min(config.yFloor, minA) : minA;
+        y = d3.scaleLinear().domain([floor, maxA + pad]).nice(6).range([innerH, 0]).clamp(true);
+        if (given(config.yFloor) && config.yFloor <= minA) y.domain([config.yFloor, y.domain()[1]]); // same floor at every station
+      }
 
       drawAxes(x, y, innerW, innerH, years);
       drawBaselineLine(y, innerW, baseline);
