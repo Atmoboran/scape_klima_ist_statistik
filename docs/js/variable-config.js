@@ -19,6 +19,8 @@
       // every station - an adaptive per-station domain would make the same
       // colour read as different values when switching stations.
       maxAbsDev: 10,
+      // Häufigkeit view: column width; the columns cover every day ever measured
+      histogram: { width: 1 },
       formatValue: v => `${num(v, 1)} °C`,
       formatDiff: diff => `${signed(diff, 1)} °C`
     },
@@ -29,6 +31,9 @@
       yMin: 0,
       digits: 0,
       maxAbsDev: 250,
+      // Häufigkeit view: 1-mm columns up to 30 mm, one hatched column for all
+      // heavier days, and a broken y-axis because dry days outnumber all others
+      histogram: { width: 1, max: 30, brokenAxis: true },
       // strands are a *cumulative* running total by day-of-year (see
       // build_data.py), not the raw daily amount - anything that needs the
       // actual per-day value (e.g. distribution-plot.js) must diff it first.
@@ -43,6 +48,7 @@
       yMin: 0,
       digits: 0,
       chartType: 'bar',
+      histogram: { width: 0.5 },
       formatValue: v => `${num(v, 0)} h`,
       formatDiff: diff => `${signed(diff, 0)} h`
     }

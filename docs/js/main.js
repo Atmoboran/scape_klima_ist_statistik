@@ -114,7 +114,7 @@
       el.distChart.setAttribute('aria-label', t('haeufigkeit.aria', cfg.label));
       plots.dist.render(data, {
         colorStops: cfg.colorStops, axisSuffix: cfg.axisSuffix, axisUnit: cfg.axisUnit,
-        dailyIsCumulative: !!cfg.dailyIsCumulative,
+        dailyIsCumulative: !!cfg.dailyIsCumulative, histogram: cfg.histogram,
         activePeriod: state.period, season: state.season, formatValue: cfg.formatValue
       });
       plots.dist.setYear(year);
@@ -217,6 +217,7 @@
     } else if (state.view === 'haeufigkeit') {
       html = t('haeufigkeit.caption', seasonLabel(), p.start, p.end);
       if (state.season === 'full' && state.variable === 'temperature') html += t('haeufigkeit.bimodalNote');
+      if (cfg.histogramNote) html += cfg.histogramNote;
     } else {
       html = t('trend.caption', seasonLabel());
     }
@@ -321,7 +322,7 @@
     // Verlauf
     const aug2018 = temp.strands['2018'] ? temp.strands['2018'][212] : null; // 1 August = day 213
     // Häufigkeit: the 20-21 °C column of 2025, counted with the chart's own bands
-    const bands = window.DistributionPlot.bands(temp, false);
+    const bands = window.DistributionPlot.bands(temp, false, VARIABLE_CONFIG.temperature.histogram);
     let band2025 = null;
     if (bands && temp.strands['2025']) {
       const i = bands.index(20.5);

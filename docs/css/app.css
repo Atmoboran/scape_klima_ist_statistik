@@ -197,3 +197,7 @@
 .quiz-level-easy { background: var(--c-pale-green); }
 .quiz-level-hard { background: var(--c-orange); }
 .quiz-list { list-style: none; margin: 0; padding: 0; counter-reset: q; }
+
+/* Häufigkeit: broken y-axis (precipitation) */
+.axis-break-gap { fill: var(--paper); }
+.axis-break-mark { stroke: var(--ink); stroke-width: 1.5; }

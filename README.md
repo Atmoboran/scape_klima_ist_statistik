@@ -16,11 +16,14 @@ old `trend.html` forwards to `index.html#trend`.
    that day: its value and the deviation from the reference period (for
    sunshine the same per month).
 2. **Häufigkeit** – "Wie oft gab es welche Tageswerte?" Columns: how many
-   days of the chosen year fell into each value band (1 °C, 0,5 mm, 0,5 h),
-   against a dashed step line for the reference period's average days per
-   year. Hovering or tapping a column shows both counts. The bands always
-   cover the whole-year range, so a season sits where its days are; the
-   first and last band are open-ended.
+   days of the chosen year fell into each value band, against a dashed step
+   line for the reference period's average days per year. Hovering or
+   tapping a column shows both counts. Column width and range per variable
+   (`histogram` in `js/variable-config.js`): temperature 1 °C and sunshine
+   0,5 h over every value ever measured at the station (a season keeps the
+   whole-year axis); precipitation 1-mm columns from 0 to 30 mm plus one
+   hatched column for all days with 30 mm or more, and a broken y-axis,
+   because dry days outnumber all other columns many times over.
 3. **Trend** – "Wie verändern sich die Jahre?" One bar per year with a
    10-year moving average. The y-axis runs from the lowest to the highest
    value of all stations for the variable and season

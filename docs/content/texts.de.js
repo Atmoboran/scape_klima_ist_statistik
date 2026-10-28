@@ -312,6 +312,10 @@ window.TEXTS = {
     },
     precipitation: {
       label: 'Niederschlag',
+      // Appended to "Was sehe ich auf dem Diagramm?" in the Häufigkeit view.
+      histogramNote:
+        ' Die y-Achse ist unterbrochen: Die erste Säule (Tage ohne nennenswerten Regen) ist viel höher als alle anderen. ' +
+        'Die schraffierte Säule ganz rechts sammelt alle Tage mit 30 mm oder mehr.',
       legendCold: 'trockener',
       legendWarm: 'nasser',
       valueLabel: 'Jahressumme',
