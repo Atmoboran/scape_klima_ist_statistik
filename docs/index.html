@@ -86,6 +86,20 @@
         <div><span id="readout-value-label"></span><b id="readout-value">–</b></div>
         <div><span data-t="page.deviation"></span><b id="readout-deviation">–</b></div>
       </div>
+      <!-- year timeline right under the readout (phone and desktop) -->
+      <div class="timeline">
+        <span class="transport">
+          <button type="button" class="tool" id="prev-year-btn" data-t-aria="timeline.prevAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h2.6v14H5zM19 5l-10 7 10 7z"/></svg></button>
+          <button type="button" class="tool play pulse" id="play-btn" data-t-aria="timeline.playAria">
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8V4z"/></svg>
+            <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12"/></svg>
+          </button>
+          <button type="button" class="tool" id="next-year-btn" data-t-aria="timeline.nextAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 5H19v14h-2.6zM5 5l10 7-10 7z"/></svg></button>
+        </span>
+        <span class="year-bound" id="timeline-year-start">–</span>
+        <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
+        <span class="year-bound" id="timeline-year-end">–</span>
+      </div>
     </div>
 
     <div class="lab-stage">
@@ -111,7 +125,7 @@
         <!-- 2 Häufigkeit: distribution of the days of one year against the reference period -->
         <div class="chart-pane" data-pane="haeufigkeit" hidden>
           <div class="chart-legend" aria-hidden="true">
-            <span class="legend-item"><span class="line-swatch"></span> <span data-t="legends.distYear"></span></span>
+            <span class="legend-item"><span class="legend-gradient swatch-bars"></span> <span data-t="legends.distYear"></span></span>
             <span class="legend-item"><span class="line-swatch dashed"></span> <span class="legend-dist-period"></span></span>
           </div>
           <svg id="distribution-chart" class="chart" role="img"></svg>
@@ -131,19 +145,6 @@
         <div id="tooltip" class="tooltip" hidden></div>
         <p class="load-error" id="load-error" hidden data-t="loadError"></p>
       </div>
-      <div class="timeline">
-        <span class="transport">
-          <button type="button" class="tool" id="prev-year-btn" data-t-aria="timeline.prevAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h2.6v14H5zM19 5l-10 7 10 7z"/></svg></button>
-          <button type="button" class="tool play pulse" id="play-btn" data-t-aria="timeline.playAria">
-            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8V4z"/></svg>
-            <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12"/></svg>
-          </button>
-          <button type="button" class="tool" id="next-year-btn" data-t-aria="timeline.nextAria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 5H19v14h-2.6zM5 5l10 7-10 7z"/></svg></button>
-        </span>
-        <span class="year-bound" id="timeline-year-start">–</span>
-        <input type="range" id="year-slider" class="year-slider" min="0" max="0" value="0" step="1" data-t-aria="timeline.sliderAria">
-        <span class="year-bound" id="timeline-year-end">–</span>
-      </div>
     </div>
 
     <div class="lab-post">
@@ -159,7 +160,7 @@
       <button type="button" class="quiz-close" id="tasks-close" data-t-aria="quiz.closeAria">&times;</button>
     </div>
     <p class="quiz-intro" data-t="quiz.intro"></p>
-    <ol class="quiz" id="quiz"></ol>
+    <div class="quiz" id="quiz"></div>
   </dialog>
 
   <div class="topics">

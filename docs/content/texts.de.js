@@ -91,7 +91,7 @@ window.TEXTS = {
   page: {
     pageTitle: 'Klima ist Statistik',
     headline: 'Klima ist Statistik',
-    lead: 'Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster – und die Abweichung vom Mittelwert.',
+    lead: 'Ein einzelnes Jahr sagt wenig über das Klima. Erst im Vergleich vieler Jahre zeigt sich das Muster und die Abweichung vom Mittelwert.',
     seasonAria: 'Jahreszeit',
     year: 'Jahr',
     deviation: 'Abweichung'
@@ -112,7 +112,7 @@ window.TEXTS = {
     reference: 'Referenz',
     barYear: 'Ausgewähltes Jahr',
     barPeriod: (start, end) => `Referenz ${start}–${end}`,
-    distYear: 'gewähltes Jahr',
+    distYear: 'Tage im gewählten Jahr',
     distReference: (start, end) => `Referenz ${start}–${end}`,
     movingAverage: '10-Jahres-Mittel'
   },
@@ -132,10 +132,9 @@ window.TEXTS = {
   haeufigkeit: {
     aria: (variableLabel) => `Verteilung der Tageswerte (${variableLabel}) im Vergleich zur Referenzperiode`,
     caption: (seasonLabel, start, end) =>
-      `Die farbige Fläche zeigt, wie die ${seasonLabel ? `${seasonLabel}-Tageswerte` : 'Tageswerte'} im ausgewählten Jahr verteilt sind: ` +
-      'Die Achse links zählt, wie viele Tage in einen Bereich von einer Einheit fallen (z. B. 1 °C). ' +
-      `Die gestrichelte Linie ist dieselbe Verteilung für die Referenzperiode <strong>${start}–${end}</strong>. ` +
-      'Nutze den Regler, um durch die einzelnen Jahre zu blättern.',
+      `Jede Säule zählt, an wie vielen Tagen ${seasonLabel ? `im ${seasonLabel} ` : ''}des gewählten Jahres der Wert in diesem Bereich lag, z. B. zwischen 18 und 19 °C. ` +
+      `Die gestrichelte Linie zeigt, wie viele Tage es in der Referenzperiode <strong>${start}–${end}</strong> im Schnitt pro Jahr waren. ` +
+      'Fahre über eine Säule, um die genauen Zahlen zu sehen, und nutze den Regler, um durch die Jahre zu blättern.',
     // Appended for temperature over the whole year only.
     bimodalNote:
       ' Bei der Ganzjahresansicht ist die Verteilung oft zweigipflig: Die Temperatur ändert sich um die kältesten ' +
@@ -162,7 +161,7 @@ window.TEXTS = {
     open: 'Aufgaben',
     title: 'Aufgaben',
     closeAria: 'Aufgaben schließen',
-    intro: 'Finde die Antworten mit den drei Ansichten heraus und trag sie ein.',
+    intro: 'Für jede Ansicht gibt es leichte und knifflige Aufgaben. Finde die Antworten in der Grafik und trag sie ein.',
     check: 'Prüfen',
     answerAria: 'Deine Antwort',
     empty: 'Trag zuerst eine Zahl ein.',
@@ -171,51 +170,113 @@ window.TEXTS = {
     progress: (done, total) => `${done}/${total}`
   },
 
-  // The tasks, in this order. Every function gets the station name (lastTen also the first
-  // and last year); `solved` also the right answer, already formatted.
+  // The tasks, grouped by view and level, in this order. Every function gets the
+  // station name; `solved` also the right answer, already formatted.
   tasks: {
-    dev2003: {
-      question: (name) => `Um wie viel Grad lag die Jahresmitteltemperatur 2003 in ${name} über dem Mittel der Referenzperiode 1961–1990?`,
-      unit: '°C',
-      hint: 'Ansicht „Verlauf“, Temperatur, Jahreszeit „Jahr“ und Referenz 1961–1990: schieb den Regler auf 2003 und lies die Abweichung ab.',
-      solved: (name, answer) => `Richtig: ${answer} °C. 2003 war das Jahr des großen Hitzesommers.`
+    levels: { easy: 'Leicht', hard: 'Knifflig' },
+    verlauf: {
+      easy: {
+        dev2003: {
+          question: (name) => `Um wie viel Grad lag die Jahresmitteltemperatur 2003 in ${name} über dem Mittel 1961–1990?`,
+          unit: '°C',
+          hint: 'Temperatur, Jahreszeit „Jahr“, Referenz 1961–1990: schieb den Regler auf 2003 und lies die Abweichung ab.',
+          solved: (name, answer) => `Richtig: ${answer} °C. 2003 war das Jahr des großen Hitzesommers.`
+        },
+        rain2018: {
+          question: (name) => `Wie viel Niederschlag fiel 2018 in ${name}? (Jahressumme)`,
+          unit: 'mm',
+          hint: 'Wähl Niederschlag und Jahreszeit „Jahr“, schieb den Regler auf 2018 und lies die Jahressumme ab.',
+          solved: (name, answer) => `Richtig: rund ${answer} mm. 2018 war ein sehr trockenes Jahr.`
+        }
+      },
+      hard: {
+        aug2018: {
+          question: (name) => `Wie warm war es in ${name} am 1. August 2018 im Tagesmittel?`,
+          unit: '°C',
+          hint: 'Temperatur, Regler auf 2018, dann mit Maus oder Finger genau über den 1. August fahren.',
+          solved: (name, answer) => `Richtig: ${answer} °C – mitten in einer langen Hitzewelle.`
+        },
+        periods: {
+          question: (name) => `Um wie viel Grad war die Referenzperiode 1991–2020 in ${name} wärmer als 1961–1990?`,
+          unit: '°C',
+          hint: 'Die Antwort steht im Klimavergleich unter „Was hat das mit dem Klimawandel zu tun?“.',
+          solved: (name, answer) => `Richtig: ${answer} °C. Das „normale“ Klima selbst hat sich verschoben.`
+        }
+      }
     },
-    warmest: {
-      question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am wärmsten?`,
-      unit: '',
-      hint: 'Ansicht „Trend“ mit Temperatur und Jahreszeit „Jahr“: such den höchsten Balken und tippe darauf.',
-      solved: (name, answer) => `Richtig: ${answer}. Die wärmsten Jahre liegen fast alle in der jüngsten Zeit.`
+    haeufigkeit: {
+      easy: {
+        band2025: {
+          question: (name) => `An wie vielen Tagen lag die Tagesmitteltemperatur 2025 in ${name} zwischen 20 und 21 °C?`,
+          unit: 'Tage',
+          hint: 'Ansicht „Häufigkeit“, Temperatur, Jahreszeit „Jahr“, Jahr 2025: fahr über die Säule „20 bis 21 °C“.',
+          solved: (name, answer) => `Richtig: ${answer} Tage.`
+        },
+        summerMean: {
+          question: (name) => `Wie warm waren die Sommertage in ${name} 1961–1990 im Durchschnitt? (die Ø-Linie)`,
+          unit: '°C',
+          hint: 'Ansicht „Häufigkeit“, Temperatur, Jahreszeit „Sommer“, Referenz 1961–1990: lies den Wert an der gepunkteten Ø-Linie ab.',
+          solved: (name, answer) => `Richtig: ${answer} °C. Vergleiche das mit einem Sommer von heute!`
+        }
+      },
+      hard: {
+        hot2003: {
+          question: (name) => `An wie vielen Tagen lag die Tagesmitteltemperatur 2003 in ${name} bei 20 °C oder mehr?`,
+          unit: 'Tage',
+          hint: 'Ansicht „Häufigkeit“, Temperatur, Jahreszeit „Jahr“, Jahr 2003: zähl die Tage aller Säulen ab 20 °C zusammen.',
+          solved: (name, answer) => `Richtig: ${answer} Tage – fast ein Viertel des Jahres.`
+        },
+        frost2025: {
+          question: (name) => `Wie viele Tage mit einem Tagesmittel unter 0 °C hatte der Winter 2025 in ${name}? (Dezember 2024 bis Februar 2025)`,
+          unit: 'Tage',
+          hint: 'Ansicht „Häufigkeit“, Temperatur, Jahreszeit „Winter“, Jahr 2025: zähl die Tage aller Säulen unter 0 °C zusammen.',
+          solved: (name, answer) => `Richtig: ${answer} Tage. Vergleiche mit der gestrichelten Linie: Früher waren es mehr.`
+        }
+      }
     },
-    coldest: {
-      question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am kältesten?`,
-      unit: '',
-      hint: 'Ansicht „Trend“ mit Temperatur und Jahreszeit „Jahr“: such den längsten blauen Balken und tippe darauf.',
-      solved: (name, answer) => `Richtig: ${answer}. Die kältesten Jahre liegen weit zurück.`
-    },
-    lastTen: {
-      question: (name, first, last) => `Wie viele der Jahre ${first}–${last} waren in ${name} wärmer als das Mittel 1961–1990?`,
-      unit: '',
-      hint: 'Ansicht „Trend“ mit Temperatur, Jahreszeit „Jahr“ und Referenz 1961–1990: zähl ganz rechts die roten Balken.',
-      solved: (name, answer) => `Richtig: ${answer}. Ein kaltes Jahr ist inzwischen die Ausnahme.`
-    },
-    periods: {
-      question: (name) => `Um wie viel Grad war die Referenzperiode 1991–2020 in ${name} wärmer als 1961–1990?`,
-      unit: '°C',
-      hint: 'Die Antwort steht im Klimavergleich unter „Was hat das mit dem Klimawandel zu tun?“.',
-      solved: (name, answer) => `Richtig: ${answer} °C. Das „normale“ Klima selbst hat sich verschoben.`
-    },
-    rain2018: {
-      question: (name) => `Wie viel Niederschlag fiel 2018 in ${name}? (Jahressumme)`,
-      unit: 'mm',
-      hint: 'Wähl Niederschlag und Jahreszeit „Jahr“, schieb den Regler auf 2018 und lies die Jahressumme ab.',
-      solved: (name, answer) => `Richtig: rund ${answer} mm. 2018 war ein sehr trockenes Jahr.`
+    trend: {
+      easy: {
+        warmest: {
+          question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am wärmsten?`,
+          unit: '',
+          hint: 'Ansicht „Trend“, Temperatur, Jahreszeit „Jahr“: tippe auf den höchsten Balken.',
+          solved: (name, answer) => `Richtig: ${answer}. Die wärmsten Jahre liegen fast alle in der jüngsten Zeit.`
+        },
+        coldest: {
+          question: (name) => `In welchem Jahr war es in ${name} im Jahresmittel am kältesten?`,
+          unit: '',
+          hint: 'Ansicht „Trend“, Temperatur, Jahreszeit „Jahr“: tippe auf den längsten blauen Balken.',
+          solved: (name, answer) => `Richtig: ${answer}. Die kältesten Jahre liegen weit zurück.`
+        }
+      },
+      hard: {
+        lastTen: {
+          question: (name, first, last) => `Wie viele der Jahre ${first}–${last} waren in ${name} wärmer als das Mittel 1961–1990?`,
+          unit: '',
+          hint: 'Ansicht „Trend“, Temperatur, Jahreszeit „Jahr“, Referenz 1961–1990: zähl ganz rechts die Balken über der gestrichelten Linie.',
+          solved: (name, answer) => `Richtig: ${answer}. Ein kaltes Jahr ist inzwischen die Ausnahme.`
+        },
+        summerMax: {
+          question: (name) => `In welchem Jahr war der Sommer in ${name} am wärmsten?`,
+          unit: '',
+          hint: 'Ansicht „Trend“, Temperatur, Jahreszeit „Sommer“: tippe auf den höchsten Balken.',
+          solved: (name, answer) => `Richtig: ${answer}. Der wärmste Sommer ist nicht im wärmsten Jahr – schau, welches Jahr insgesamt vorn liegt.`
+        }
+      }
     }
   },
 
   // Text drawn inside the charts themselves.
   charts: {
-    // y-axis of the Häufigkeit view: how many days fall into a 1-unit band (1 °C, 1 mm, 1 h)
-    frequencyAxis: (unit) => `Anzahl Tage je 1 ${unit}`,
+    // Häufigkeit view: y-axis title (width: formatted band width, e.g. "1" or "0,5"),
+    // the value band of a column, and the tooltip of a column.
+    frequencyAxis: (width, unit) => `Anzahl Tage je ${width} ${unit}`,
+    band: (lo, hi, unit) => `${lo} bis ${hi} ${unit}`,
+    bandBelow: (hi, unit) => `unter ${hi} ${unit}`,
+    bandFrom: (lo, unit) => `ab ${lo} ${unit}`,
+    bandTooltip: (range, year, yearDays, period, refDays) =>
+      `<b>${range}</b><br>${year}: ${yearDays === null ? 'keine Daten' : `${yearDays} ${yearDays === 1 ? 'Tag' : 'Tage'}`}<br>` +
+      `Referenz ${period}: ${refDays} Tage im Schnitt`,
     meanPrefix: 'Ø',
     vsReference: 'ggü. Referenzperiode'
   },

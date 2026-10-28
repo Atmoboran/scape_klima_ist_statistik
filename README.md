@@ -15,10 +15,12 @@ old `trend.html` forwards to `index.html#trend`.
    from the reference period. Hovering or tapping shows the chosen year on
    that day: its value and the deviation from the reference period (for
    sunshine the same per month).
-2. **Häufigkeit** – "Wie oft gab es welche Tageswerte?" The distribution of
-   the daily values of one year (bell curve) against the reference period.
-   The y-axis counts days per 1-unit band (1 °C, 1 mm, 1 h); the x-axis is
-   always the whole-year range, so a season sits where its days are.
+2. **Häufigkeit** – "Wie oft gab es welche Tageswerte?" Columns: how many
+   days of the chosen year fell into each value band (1 °C, 0,5 mm, 0,5 h),
+   against a dashed step line for the reference period's average days per
+   year. Hovering or tapping a column shows both counts. The bands always
+   cover the whole-year range, so a season sits where its days are; the
+   first and last band are open-ended.
 3. **Trend** – "Wie verändern sich die Jahre?" One bar per year with a
    10-year moving average. The y-axis runs from the lowest to the highest
    value of all stations for the variable and season
@@ -29,18 +31,18 @@ old `trend.html` forwards to `index.html#trend`.
 Shared by all three views: variable, station and reference period (1961–1990
 or 1991–2020), a season filter (Jahr / Winter / Frühling / Sommer / Herbst;
 winter = the December before plus January and February), one year timeline
-with back / play / forward, and the readout (year, value and deviation of
-the chosen season, e.g. "Sommermittel"). In Verlauf the months outside the
+with back / play / forward right under the readout (year, value and
+deviation of the chosen season, e.g. "Sommermittel"). In Verlauf the months outside the
 season are greyed out. Seasonal values and reference means are computed in
 the browser from the daily data (`KIS.seasons` in `js/shared.js`).
 
-A tasks button opens a dialog with six questions about Frankfurt/Main
-(deviation of 2003, warmest and coldest year, how many of the last ten
-years were warmer than 1961–1990, how much warmer 1991–2020 was, the
-precipitation total of 2018); each has an answer field and a "Prüfen"
-button, and a wrong answer shows a tip naming the view that helps. The
-right answers are computed from the data (`setupQuiz` in `js/main.js`), the
-wording sits in `quiz` and `tasks` in `content/texts.de.js`.
+A tasks button opens a dialog with twelve questions about Frankfurt/Main,
+in one block per view, each with two "Leicht" and two "Knifflig" tasks;
+each has an answer field and a "Prüfen" button, and a wrong answer shows a
+tip naming the view and settings that help. The right answers are computed
+from the data (`setupQuiz` in `js/main.js`; Häufigkeit tasks count days
+with the chart's own bands), the wording sits in `quiz` and `tasks` in
+`content/texts.de.js`.
 
 The comparison chart of both reference periods sits inside the topic "Was
 hat das mit dem Klimawandel zu tun?" (drawn when the topic is opened).
@@ -104,13 +106,14 @@ scripts/
 Kept compact so the chart gets the most room. Phone: the logo with the view
 toggle, below it the three view buttons; variable, station and reference
 period as three dropdowns in one row, the season buttons, the readout in
-one line, the view's question, then the chart with the legend and the
-fullscreen button in its top-right corner, and under it one row with back /
-play / forward (the play button glows until the first touch) and the year
-slider, and a button for the tasks dialog; topics below. Desktop (automatic
-from 1000 px, or via the "Desktop-/Handy-Ansicht" toggle, remembered for
-this app only): the chart on the left, sized to the screen and sticky;
-pickers, seasons, readout and tasks on the right; topics full width below.
+one line and right under it one row with back / play / forward (the play
+button glows until the first touch) and the year slider; then the view's
+question, the chart with the legend and the fullscreen button in its
+top-right corner, and a button for the tasks dialog; topics below. Desktop
+(automatic from 1000 px, or via the "Desktop-/Handy-Ansicht" toggle,
+remembered for this app only): the chart on the left, sized to the screen
+and sticky; pickers, seasons, readout, year row and tasks on the right;
+topics full width below.
 Chart explanations live in the topic "Was sehe ich auf dem Diagramm?" and
 follow the view and season.
 

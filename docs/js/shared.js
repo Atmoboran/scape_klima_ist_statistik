@@ -218,63 +218,85 @@
     return Number.isFinite(v) ? v : null;
   };
 
-  // Tasks with an answer field and a "Prüfen" button.
-  //   items: [{ key: 'daily.quiz.dev2003', args: [stationName, …], answer, digits, tolerance }]
+  // Tasks with an answer field and a "Prüfen" button, in visually separate groups.
+  //   groups: [{ num, title, levels: [{ label, level, items: [{ key, args, answer, digits, tolerance, signed }] }] }]
   // Texts come from <key>.question / .unit / .hint / .solved in content/texts.de.js.
-  const quiz = (list, progressEl, items) => {
-    list.innerHTML = '';
+  const quiz = (box, progressEl, groups) => {
+    box.innerHTML = '';
     let solved = 0;
-    const progress = () => { progressEl.textContent = t('quiz.progress', solved, items.length); };
-    for (const item of items) {
-      const li = document.createElement('li');
-      li.className = 'quiz-item';
-      const q = document.createElement('p');
-      q.className = 'quiz-q';
-      q.textContent = t(item.key + '.question', ...item.args);
-      const form = document.createElement('form');
-      form.className = 'quiz-row';
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.inputMode = 'decimal';
-      input.autocomplete = 'off';
-      input.className = 'quiz-input';
-      input.setAttribute('aria-label', t('quiz.answerAria'));
-      const unit = document.createElement('span');
-      unit.className = 'quiz-unit';
-      unit.textContent = t(item.key + '.unit');
-      const btn = document.createElement('button');
-      btn.type = 'submit';
-      btn.className = 'btn quiz-check';
-      btn.textContent = t('quiz.check');
-      const feedback = document.createElement('p');
-      feedback.className = 'quiz-feedback';
-      feedback.setAttribute('aria-live', 'polite');
-      form.append(input, unit, btn);
-      li.append(q, form, feedback);
-      list.appendChild(li);
-
-      form.addEventListener('submit', e => {
-        e.preventDefault();
-        if (li.classList.contains('done')) return;
-        const v = parseAnswer(input.value);
-        li.classList.remove('wrong');
-        if (v === null) { feedback.textContent = t('quiz.empty'); return; }
-        const right = Number(item.answer.toFixed(item.digits || 0));
-        if (Math.abs(v - right) <= (item.tolerance || 0) + 1e-9) {
-          li.classList.add('done');
-          input.disabled = true;
-          btn.disabled = true;
-          feedback.textContent = t(item.key + '.solved', item.args[0], signedIf(item, right));
-          solved++;
-          progress();
-        } else {
-          li.classList.add('wrong');
-          feedback.innerHTML = `${t('quiz.wrong')} <b>${t('quiz.hintLabel')}</b> ${t(item.key + '.hint')}`;
-        }
-      });
+    const total = groups.reduce((n, g) => n + g.levels.reduce((m, l) => m + l.items.length, 0), 0);
+    const progress = () => { progressEl.textContent = t('quiz.progress', solved, total); };
+    const make = (tag, cls, text) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined) n.textContent = text;
+      return n;
+    };
+    for (const group of groups) {
+      const section = make('section', 'quiz-group');
+      const head = make('h3', 'quiz-group-title');
+      head.append(make('span', 'num', String(group.num)), make('span', '', group.title));
+      section.appendChild(head);
+      for (const level of group.levels) {
+        if (!level.items.length) continue;
+        section.appendChild(make('p', 'quiz-level quiz-level-' + level.level, level.label));
+        const list = make('ol', 'quiz-list');
+        for (const item of level.items) list.appendChild(quizItem(item, () => { solved++; progress(); }));
+        section.appendChild(list);
+      }
+      box.appendChild(section);
     }
     progress();
   };
+
+  const quizItem = (item, onSolved) => {
+    const li = document.createElement('li');
+    li.className = 'quiz-item';
+    const q = document.createElement('p');
+    q.className = 'quiz-q';
+    q.textContent = t(item.key + '.question', ...item.args);
+    const form = document.createElement('form');
+    form.className = 'quiz-row';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.autocomplete = 'off';
+    input.className = 'quiz-input';
+    input.setAttribute('aria-label', t('quiz.answerAria'));
+    const unit = document.createElement('span');
+    unit.className = 'quiz-unit';
+    unit.textContent = t(item.key + '.unit');
+    const btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.className = 'btn quiz-check';
+    btn.textContent = t('quiz.check');
+    const feedback = document.createElement('p');
+    feedback.className = 'quiz-feedback';
+    feedback.setAttribute('aria-live', 'polite');
+    form.append(input, unit, btn);
+    li.append(q, form, feedback);
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (li.classList.contains('done')) return;
+      const v = parseAnswer(input.value);
+      li.classList.remove('wrong');
+      if (v === null) { feedback.textContent = t('quiz.empty'); return; }
+      const right = Number(item.answer.toFixed(item.digits || 0));
+      if (Math.abs(v - right) <= (item.tolerance || 0) + 1e-9) {
+        li.classList.add('done');
+        input.disabled = true;
+        btn.disabled = true;
+        feedback.textContent = t(item.key + '.solved', item.args[0], signedIf(item, right));
+        onSolved();
+      } else {
+        li.classList.add('wrong');
+        feedback.innerHTML = `${t('quiz.wrong')} <b>${t('quiz.hintLabel')}</b> ${t(item.key + '.hint')}`;
+      }
+    });
+    return li;
+  };
+
   // Deviations read "+1,8", plain values "2018" / "401".
   const signedIf = (item, v) => (item.signed ? signed(v, item.digits || 0) : num(v, item.digits || 0));
 

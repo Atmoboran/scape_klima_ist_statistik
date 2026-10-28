@@ -74,7 +74,7 @@
   const createPlots = () => {
     plots.lines = window.SpaghettiPlot.create({ svgEl: el.chart, tooltipEl: el.tooltip, onPointer: firstTouch });
     plots.bars = window.MonthlyBarPlot.create({ svgEl: el.chartBar, tooltipEl: el.tooltip, onPointer: firstTouch });
-    plots.dist = window.DistributionPlot.create({ svgEl: el.distChart });
+    plots.dist = window.DistributionPlot.create({ svgEl: el.distChart, tooltipEl: el.tooltip, onPointer: firstTouch });
     plots.trend = window.AnnualTrendPlot.create({
       svgEl: el.trendChart,
       tooltipEl: el.tooltip,
@@ -114,7 +114,7 @@
       el.distChart.setAttribute('aria-label', t('haeufigkeit.aria', cfg.label));
       plots.dist.render(data, {
         colorStops: cfg.colorStops, axisSuffix: cfg.axisSuffix, axisUnit: cfg.axisUnit,
-        dailyIsCumulative: !!cfg.dailyIsCumulative, aggregate: cfg.aggregate,
+        dailyIsCumulative: !!cfg.dailyIsCumulative,
         activePeriod: state.period, season: state.season, formatValue: cfg.formatValue
       });
       plots.dist.setYear(year);
@@ -300,6 +300,8 @@
   };
 
   // ---- tasks dialog: questions about the default station (Frankfurt/Main) ------
+  // Grouped by view, each with easy and hard tasks; every answer is computed
+  // from the data, counting days the same way as the charts do.
   const setupQuiz = async () => {
     KIS.wireDialog($('tasks-open'), $('tasks-dialog'), $('tasks-close'));
     const id = KIS.DEFAULT_STATION_ID;
@@ -309,29 +311,60 @@
     ]);
     const name = temp.meta.name;
     const am = temp.annual_metric;
-    const pa = temp.period_a.mean_annual_metric;
-    const pb = temp.period_b.mean_annual_metric;
-    const byValue = cmp => Object.keys(am).reduce((best, y) => (best === null || cmp(am[y], am[best]) ? y : best), null);
-    const items = [];
-    if (am['2003'] !== undefined && pa !== null) {
-      items.push({ key: 'tasks.dev2003', args: [name], answer: am['2003'] - pa, digits: 1, tolerance: 0.1, signed: true });
+    const pa = temp.period_a;
+    const has = v => v !== null && v !== undefined;
+    const best = (map, cmp) => Object.keys(map).reduce((b, y) => (b === null || cmp(map[y], map[b]) ? y : b), null);
+    const days = (year, season, test) => KIS.seasons.values(temp, year, season, false).filter(test).length;
+    const item = (view, level, task, answer, opts) =>
+      (has(answer) ? Object.assign({ key: `tasks.${view}.${level}.${task}`, args: [name], answer, digits: 0, tolerance: 0 }, opts) : null);
+
+    // Verlauf
+    const aug2018 = temp.strands['2018'] ? temp.strands['2018'][212] : null; // 1 August = day 213
+    // Häufigkeit: the 20-21 °C column of 2025, counted with the chart's own bands
+    const bands = window.DistributionPlot.bands(temp, false);
+    let band2025 = null;
+    if (bands && temp.strands['2025']) {
+      const i = bands.index(20.5);
+      if (bands.edge(i) === 20 && bands.edge(i + 1) === 21) {
+        band2025 = window.DistributionPlot.countDays(KIS.seasons.values(temp, 2025, 'full', false), bands)[i];
+      }
     }
-    const warmest = byValue((a, b) => a > b);
-    if (warmest) items.push({ key: 'tasks.warmest', args: [name], answer: +warmest, digits: 0, tolerance: 0 });
-    const coldest = byValue((a, b) => a < b);
-    if (coldest) items.push({ key: 'tasks.coldest', args: [name], answer: +coldest, digits: 0, tolerance: 0 });
+    const refSummer = temp.years.filter(y => y >= pa.start && y <= pa.end && KIS.seasons.complete(temp, y, 'summer'))
+      .flatMap(y => KIS.seasons.values(temp, y, 'summer', false));
+    // Trend
     const lastTen = temp.years.slice(-10).filter(y => am[y] !== undefined);
-    if (pa !== null && lastTen.length) {
-      items.push({
-        key: 'tasks.lastTen', args: [name, lastTen[0], lastTen[lastTen.length - 1]],
-        answer: lastTen.filter(y => am[y] > pa).length, digits: 0, tolerance: 0
-      });
-    }
-    if (pa !== null && pb !== null) items.push({ key: 'tasks.periods', args: [name], answer: pb - pa, digits: 1, tolerance: 0.1 });
-    if (rain.annual_metric['2018'] !== undefined) {
-      items.push({ key: 'tasks.rain2018', args: [name], answer: rain.annual_metric['2018'], digits: 0, tolerance: 5 });
-    }
-    KIS.quiz($('quiz'), $('quiz-progress'), items);
+    const summers = KIS.seasons.seasonalData(temp, 'summer', { aggregate: 'mean' }).annual_metric;
+
+    const groups = [
+      { view: 'verlauf', easy: [
+        item('verlauf', 'easy', 'dev2003', am['2003'] !== undefined && has(pa.mean_annual_metric) ? am['2003'] - pa.mean_annual_metric : null, { digits: 1, tolerance: 0.1, signed: true }),
+        item('verlauf', 'easy', 'rain2018', rain.annual_metric['2018'], { tolerance: 5 })
+      ], hard: [
+        item('verlauf', 'hard', 'aug2018', aug2018, { digits: 1, tolerance: 0.1 }),
+        item('verlauf', 'hard', 'periods', has(pa.mean_annual_metric) && has(temp.period_b.mean_annual_metric) ? temp.period_b.mean_annual_metric - pa.mean_annual_metric : null, { digits: 1, tolerance: 0.1 })
+      ] },
+      { view: 'haeufigkeit', easy: [
+        item('haeufigkeit', 'easy', 'band2025', band2025),
+        item('haeufigkeit', 'easy', 'summerMean', refSummer.length ? refSummer.reduce((a, b) => a + b, 0) / refSummer.length : null, { digits: 1, tolerance: 0.1 })
+      ], hard: [
+        item('haeufigkeit', 'hard', 'hot2003', am['2003'] !== undefined ? days(2003, 'full', v => v >= 20) : null),
+        item('haeufigkeit', 'hard', 'frost2025', KIS.seasons.complete(temp, 2025, 'winter') ? days(2025, 'winter', v => v < 0) : null)
+      ] },
+      { view: 'trend', easy: [
+        item('trend', 'easy', 'warmest', +best(am, (a, b) => a > b)),
+        item('trend', 'easy', 'coldest', +best(am, (a, b) => a < b))
+      ], hard: [
+        has(pa.mean_annual_metric) && lastTen.length
+          ? Object.assign(item('trend', 'hard', 'lastTen', lastTen.filter(y => am[y] > pa.mean_annual_metric).length), { args: [name, lastTen[0], lastTen[lastTen.length - 1]] })
+          : null,
+        item('trend', 'hard', 'summerMax', Object.keys(summers).length ? +best(summers, (a, b) => a > b) : null)
+      ] }
+    ].map((g, i) => ({
+      num: i + 1,
+      title: t('views.' + g.view + '.nav'),
+      levels: ['easy', 'hard'].map(level => ({ level, label: t('tasks.levels.' + level), items: g[level].filter(Boolean) }))
+    }));
+    KIS.quiz($('quiz'), $('quiz-progress'), groups);
   };
 
   const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
